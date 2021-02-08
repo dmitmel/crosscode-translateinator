@@ -1,0 +1,11 @@
+{
+  "id": "translateinator-connector",
+  "title": "Translateinator connector",
+  "description": {
+    "en_US": "Next generation CrossCode translation tool",
+    "ru_RU": "Инструмент переводчика CrossCode нового поколения"
+  },
+  "version": "0.0.0",
+  "prestart": "src/mod/prestart.js",
+  "preload": "src/mod/preload.js"
+}
