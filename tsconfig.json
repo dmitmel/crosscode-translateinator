@@ -1,0 +1,16 @@
+{
+  "include": ["src", "node_modules/ultimate-crosscode-typedefs/nw.d.ts"],
+  "compilerOptions": {
+    "outDir": "target/tmp",
+    "sourceMap": true,
+    "strict": true,
+    "jsx": "react",
+    "jsxFactory": "jsx.createElement",
+    "jsxFragmentFactory": "jsx.createFragment",
+    "moduleResolution": "Node",
+    "module": "ESNext",
+    "target": "ES2019",
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
