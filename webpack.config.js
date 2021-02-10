@@ -23,7 +23,10 @@ module.exports = (_env, { mode }) => ({
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
     alias: {
-      inferno: mode === 'production' ? 'inferno/index.esm.js' : 'inferno/dist/index.dev.esm.js',
+      inferno: `inferno/${mode === 'production' ? 'index' : 'dist/index.dev'}.esm.js`,
+      'inferno-create-element': `inferno-create-element/dist/index${
+        mode === 'production' ? '' : '.dev'
+      }.esm.js`,
     },
   },
 
