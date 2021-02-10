@@ -15,10 +15,15 @@ rules:
   node/no-unpublished-require: off
 
 overrides:
-  - files: '**/*.ts'
+  - files: '**/*.{ts,tsx}'
     extends: eslint-config-dmitmel/presets/typescript-with-type-checking-addon
 
-  - files:
-      - 'src/**/*.ts'
+  - files: 'src/**/*.{ts,tsx}'
     parserOptions:
       project: 'tsconfig.json'
+
+  - files: 'src/mod/**/*.js'
+    globals:
+      sc: true
+      ig: true
+      ccmod: true

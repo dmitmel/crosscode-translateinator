@@ -35,6 +35,7 @@ function recursivelyPatchLangLabels(obj, filePath, jsonPathStack = []) {
 // actually means that it checks for dictionaries and arrays. In other words,
 // stuff that can be iterated with the for-in loop.
 function isObject(value) {
+  // eslint-disable-next-line eqeqeq
   return typeof value === 'object' && value !== null;
 }
 
