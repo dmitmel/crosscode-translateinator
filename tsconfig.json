@@ -8,6 +8,7 @@
     "jsxFactory": "jsx.createElement",
     "jsxFragmentFactory": "jsx.createFragment",
     "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
     "module": "ESNext",
     "target": "ES2019",
     "allowJs": true,

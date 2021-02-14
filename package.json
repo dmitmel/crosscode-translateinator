@@ -13,6 +13,8 @@
     "check-fmt": "prettier --check '**/*.{js,jsx,ts,tsx,json,css,scss,html}' --ignore-path .gitignore"
   },
   "dependencies": {
+    "@types/binary-split": "^1.0.0",
+    "binary-split": "^1.0.5",
     "inferno": "^7.4.7",
     "inferno-create-element": "^7.4.7"
   },

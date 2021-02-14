@@ -1,5 +1,23 @@
+import './uncaught_exception';
+
 import * as Inferno from 'inferno';
 import './main.scss';
+import * as backend from './backend';
+import * as utils from './utils';
+
+(async () => {
+  let bk = new backend.Backend();
+  Object.assign(window, { backend: bk });
+  await bk.connect();
+  while (true) {
+    let { id } = (await bk.send_request({
+      type: 'Project/open',
+      dir: '/home/dmitmel/Projects/Rust/crosscode-localization-engine/tmp',
+    })) as backend.ResponseMessageType & { type: 'Project/open' };
+    await bk.send_request({ type: 'Project/close', id });
+    await utils.wait(3000);
+  }
+})();
 
 class CounterComponent extends Inferno.Component<unknown, { counter: number }> {
   public state = { counter: 1 };

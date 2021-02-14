@@ -5,6 +5,10 @@ env:
 parserOptions:
   sourceType: module
 
+settings:
+  node:
+    tryExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json']
+
 rules:
   func-names: off
   node/no-unsupported-features/es-syntax:
@@ -17,6 +21,9 @@ rules:
 overrides:
   - files: '**/*.{ts,tsx}'
     extends: eslint-config-dmitmel/presets/typescript-with-type-checking-addon
+    rules:
+      '@typescript-eslint/no-use-before-define': off
+      '@typescript-eslint/naming-convention': off
 
   - files: 'src/**/*.{ts,tsx}'
     parserOptions:
