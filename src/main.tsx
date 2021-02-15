@@ -10,11 +10,11 @@ import * as utils from './utils';
   Object.assign(window, { backend: bk });
   await bk.connect();
   while (true) {
-    let { id } = (await bk.send_request({
+    let { project_id } = (await bk.send_request({
       type: 'Project/open',
       dir: '/home/dmitmel/Projects/Rust/crosscode-localization-engine/tmp',
     })) as backend.ResponseMessageType & { type: 'Project/open' };
-    await bk.send_request({ type: 'Project/close', id });
+    await bk.send_request({ type: 'Project/close', project_id });
     await utils.wait(3000);
   }
 })();

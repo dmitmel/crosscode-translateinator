@@ -22,24 +22,37 @@ export interface ResponseMessage {
 
 export interface ErrorResponseMessage {
   type: 'err';
-  id: number;
+  id?: number | null;
   message: string;
 }
 
 export type RequestMessageType =
-  | { type: 'handshake'; protocol_version: number }
+  | { type: 'Backend/info' }
   | { type: 'Project/open'; dir: string }
-  | { type: 'Project/close'; id: number };
+  | { type: 'Project/close'; project_id: number }
+  | { type: 'Project/get_meta'; project_id: number }
+  | { type: 'Project/list_tr_files'; project_id: number }
+  | { type: 'Project/list_virtual_game_files'; project_id: number };
 
 export type ResponseMessageType =
   | { type: 'ok' }
+  | { type: 'Backend/info'; implementation_name: string; implementation_version: string }
+  | { type: 'Project/open'; project_id: number }
   | {
-      type: 'handshake';
-      protocol_version: number;
-      implementation_name: string;
-      implementation_version: string;
+      type: 'Project/get_meta';
+      root_dir: string;
+      id: string;
+      creation_timestamp: number;
+      modification_timestamp: number;
+      game_version: string;
+      original_locale: string;
+      reference_locales: string[];
+      translation_locale: string;
+      translations_dir: string;
+      splitter: string;
     }
-  | { type: 'Project/open'; id: number };
+  | { type: 'Project/list_tr_files'; paths: string[] }
+  | { type: 'Project/list_virtual_game_files'; paths: string[] };
 
 type BackendSubprocess = subprocess.ChildProcessByStdio<
   stream.Writable, // stdin
@@ -49,7 +62,6 @@ type BackendSubprocess = subprocess.ChildProcessByStdio<
 
 export enum BackendState {
   DISCONNECTED,
-  HANDSHAKE,
   CONNECTED,
 }
 
@@ -73,8 +85,6 @@ export class Backend {
 
     this.state = BackendState.DISCONNECTED;
     await this.spawn_process();
-    this.state = BackendState.HANDSHAKE;
-    await this.handshake();
     this.state = BackendState.CONNECTED;
     this.events.connected.fire();
   }
@@ -89,14 +99,18 @@ export class Backend {
       throw new Error('Assertion failed: this.proc == null');
     }
 
-    this.proc = (await spawn_subprocess_safe('crosslocale', ['backend'], {
-      stdio: [
-        'pipe', // stdin
-        'pipe', // stdout
-        'pipe', // stderr
-      ],
-      windowsHide: true,
-    })) as BackendSubprocess;
+    this.proc = (await spawn_subprocess_safe(
+      'crosslocale',
+      ['backend', '--transport=stdio', `--protocol-version=${PROTOCOL_VERSION}`],
+      {
+        stdio: [
+          'pipe', // stdin
+          'pipe', // stdout
+          'pipe', // stderr
+        ],
+        windowsHide: true,
+      },
+    )) as BackendSubprocess;
 
     this.proc.on('close', (code) => {
       console.warn('Subprocess exited with code', code);
@@ -198,11 +212,15 @@ export class Backend {
       }
 
       case 'err': {
-        let callback = this.sent_request_error_callbacks.get(message.id);
-        if (callback == null) {
-          throw new Error('server has sent an error response to an unknown message');
+        let error = new Error(message.message);
+        this.events.error.fire(error);
+        if (message.id != null) {
+          let callback = this.sent_request_error_callbacks.get(message.id);
+          if (callback == null) {
+            throw new Error('server has sent an error response to an unknown message');
+          }
+          callback(error);
         }
-        callback(new Error(message.message));
         break;
       }
     }
@@ -223,23 +241,6 @@ export class Backend {
     });
     await this.send_message_internal({ type: 'req', id, data });
     return response_promise;
-  }
-
-  private async handshake(): Promise<void> {
-    if (!(this.state === BackendState.HANDSHAKE)) {
-      throw new Error('Assertion failed: this.state === BackendState.HANDSHAKE');
-    }
-
-    let response = await this.send_request({
-      type: 'handshake',
-      protocol_version: PROTOCOL_VERSION,
-    });
-    if (!(response.type === 'handshake')) {
-      throw new Error("Assertion failed: response.type === 'handshake'");
-    }
-    if (!(response.protocol_version === PROTOCOL_VERSION)) {
-      throw new Error('Assertion failed: response.protocol_version === PROTOCOL_VERSION');
-    }
   }
 
   public disconnect(): void {
