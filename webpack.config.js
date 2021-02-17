@@ -3,13 +3,10 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const transformInferno = require('ts-transform-inferno').default;
+const tsTransformInferno = require('ts-transform-inferno').default;
+const ts = require('typescript');
 
-// NOP the function which adds `import * as Inferno from 'inferno';` to the
-// source. That is annoying because it prevents me from importing inferno
-// myself without hacks.
-require('ts-transform-inferno/dist/updateSourceFile').default = (sourceFile, _context) =>
-  sourceFile;
+require('ts-transform-inferno/dist/updateSourceFile').default = tsTransformInfernoUpdateSourceFile;
 
 /**
  * @returns {webpack.Configuration}
@@ -45,7 +42,7 @@ module.exports = (_env, { mode }) => ({
             loader: 'ts-loader',
             options: {
               getCustomTransformers: () => ({
-                before: [transformInferno()],
+                before: [tsTransformInferno()],
               }),
             },
           },
@@ -95,3 +92,39 @@ module.exports = (_env, { mode }) => ({
     }),
   ].filter((p) => p != null),
 });
+
+/**
+ * @param {ts.SourceFile} sourceFile
+ * @param {ts.TransformationContext} context
+ * @returns {ts.SourceFile}
+ */
+function tsTransformInfernoUpdateSourceFile(sourceFile, context) {
+  /* eslint-disable no-undefined */
+  let imports = [];
+  for (let name of [
+    'createFragment',
+    'createVNode',
+    'createComponentVNode',
+    'createTextVNode',
+    'normalizeProps',
+  ]) {
+    if (context[name]) {
+      imports.push(ts.createImportSpecifier(undefined, ts.createIdentifier(name)));
+    }
+  }
+
+  if (imports.length > 0) {
+    sourceFile = ts.updateSourceFileNode(sourceFile, [
+      ...sourceFile.statements,
+      ts.createImportDeclaration(
+        undefined,
+        undefined,
+        ts.createImportClause(undefined, ts.createNamedImports(imports)),
+        ts.createLiteral('inferno'),
+      ),
+    ]);
+  }
+
+  return sourceFile;
+  /* eslint-enable no-undefined */
+}
