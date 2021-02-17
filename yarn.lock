@@ -1636,13 +1636,6 @@ indexes-of@^1.0.1:
   resolved "https://registry.yarnpkg.com/indexes-of/-/indexes-of-1.0.1.tgz#f30f716c8e2bd346c7b67d3df3915566a7c05607"
   integrity sha1-8w9xbI4r00bHtn0985FVZqfAVgc=
 
-inferno-create-element@^7.4.7:
-  version "7.4.7"
-  resolved "https://registry.yarnpkg.com/inferno-create-element/-/inferno-create-element-7.4.7.tgz#da90099c1df881dfcf9079b439bd4a9dcbe22b23"
-  integrity sha512-wiJxn27tipfFWZ7x2oPU6JAVztga3CXn6rsRKlMl+9Dbn5O0vJLgHTvxK5NNO9eN/ZYyeVQiu2KvWB4630wHUA==
-  dependencies:
-    inferno "7.4.7"
-
 inferno-shared@7.4.7:
   version "7.4.7"
   resolved "https://registry.yarnpkg.com/inferno-shared/-/inferno-shared-7.4.7.tgz#49b4a289f6b27dafc351189a5d6407abc63498fe"
@@ -1653,7 +1646,7 @@ inferno-vnode-flags@7.4.7:
   resolved "https://registry.yarnpkg.com/inferno-vnode-flags/-/inferno-vnode-flags-7.4.7.tgz#7621bdc9ce72824908e6340a35a03702c221086d"
   integrity sha512-4sP5XnAHbKEPB/cLuY462/15XPrT5/0KMprO6XamugEukhZYNFcAjzF5jqo+LOtR859RMoX3uh/KOXVT3vpvfw==
 
-inferno@7.4.7, inferno@^7.4.7:
+inferno@^7.4.7:
   version "7.4.7"
   resolved "https://registry.yarnpkg.com/inferno/-/inferno-7.4.7.tgz#6f390bf4dcbde4c60bc53b3fd913dd80d96c7e4a"
   integrity sha512-6CsXVyJi7K7tTO83MRMIR6+6yuhHuCqG5vVyrJKGpYquggPfdW4iTQKEarNkCNzlpQjPNsfvWXtyCSHFWodisw==
@@ -3100,6 +3093,11 @@ ts-loader@^8.0.16:
     loader-utils "^2.0.0"
     micromatch "^4.0.0"
     semver "^7.3.4"
+
+ts-transform-inferno@^4.0.3:
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/ts-transform-inferno/-/ts-transform-inferno-4.0.3.tgz#2cc0eb125abdaff24b8298106a618ab7c6319edc"
+  integrity sha512-Pcg0PVQwJ7Fpv4+3R9obFNsrNKQyLbmUqsjeG7T7r4/4UTgIl0MSwurexjtuGpCp2iv2X/i9ffKPAfAOyYJ9og==
 
 tslib@^1.8.1, tslib@^1.9.0:
   version "1.14.1"

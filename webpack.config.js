@@ -3,6 +3,13 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const transformInferno = require('ts-transform-inferno').default;
+
+// NOP the function which adds `import * as Inferno from 'inferno';` to the
+// source. That is annoying because it prevents me from importing inferno
+// myself without hacks.
+require('ts-transform-inferno/dist/updateSourceFile').default = (sourceFile, _context) =>
+  sourceFile;
 
 /**
  * @returns {webpack.Configuration}
@@ -24,9 +31,6 @@ module.exports = (_env, { mode }) => ({
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
     alias: {
       inferno: `inferno/${mode === 'production' ? 'index' : 'dist/index.dev'}.esm.js`,
-      'inferno-create-element': `inferno-create-element/dist/index${
-        mode === 'production' ? '' : '.dev'
-      }.esm.js`,
     },
   },
 
@@ -39,6 +43,11 @@ module.exports = (_env, { mode }) => ({
         use: [
           {
             loader: 'ts-loader',
+            options: {
+              getCustomTransformers: () => ({
+                before: [transformInferno()],
+              }),
+            },
           },
         ],
       },
@@ -72,10 +81,6 @@ module.exports = (_env, { mode }) => ({
     new webpack.ProgressPlugin(),
 
     new CleanWebpackPlugin(),
-
-    new webpack.ProvidePlugin({
-      jsx: [path.join(__dirname, 'src', 'jsx'), 'default'],
-    }),
 
     new MiniCssExtractPlugin({
       filename: '[name].css?[contenthash]',
