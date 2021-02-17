@@ -1,0 +1,21 @@
+.Box {
+  display: flex;
+
+  &.Box-orientation-horizontal {
+    flex-direction: row;
+    &.Box-reverseChildren {
+      flex-direction: row-reverse;
+    }
+  }
+
+  &.Box-orientation-vertical {
+    flex-direction: column;
+    &.Box-reverseChildren {
+      flex-direction: column-reverse;
+    }
+  }
+
+  & > .BoxItem-expand {
+    flex-grow: 1;
+  }
+}

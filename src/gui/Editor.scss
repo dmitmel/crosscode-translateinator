@@ -1,0 +1,21 @@
+@import '../theme.scss';
+
+.Editor {
+  background-color: $color-Editor;
+  width: 100%;
+}
+
+.EditorTabList {
+  background-color: $color-EditorTabList;
+}
+
+.EditorTab {
+  padding: $offset-normal * 2 $offset-normal * 3;
+  color: $color-EditorTab-inactive-text;
+  background-color: $color-EditorTab-inactive;
+
+  &.EditorTab-active {
+    color: $color-EditorTab-active-text;
+    background-color: $color-EditorTab-active;
+  }
+}

@@ -1,0 +1,7 @@
+@import '../theme.scss';
+
+.StatusBar {
+  padding: $offset-normal $offset-normal * 2;
+  background-color: $color-StatusBar;
+  color: $color-StatusBar-text;
+}

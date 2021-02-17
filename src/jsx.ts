@@ -1,7 +1,7 @@
 import { createElement } from 'inferno-create-element';
-import { createFragment } from 'inferno';
+import { Fragment } from 'inferno';
 
-export default { createElement, createFragment };
+export default { createElement, Fragment };
 
 declare global {
   // `const` is used here instead of a `namespace` so that our "namespace"
@@ -10,6 +10,6 @@ declare global {
   // variable.
   const jsx: {
     createElement: typeof createElement;
-    createFragment: typeof createFragment;
+    Fragment: typeof Fragment;
   };
 }
