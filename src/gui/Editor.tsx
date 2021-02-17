@@ -3,9 +3,11 @@ import * as Inferno from 'inferno';
 import { BoxGui } from './Box';
 import { IconGui } from './Icon';
 
-export function EditorGui(): JSX.Element {
+export function EditorGui(props: Inferno.Props<typeof EditorGui>): JSX.Element {
+  let clazz = 'Editor';
+  if (props.className != null) clazz += ` ${props.className}`;
   return (
-    <BoxGui orientation="vertical" className="Editor">
+    <BoxGui orientation="vertical" className={clazz}>
       <EditorTabListGui />
       <div className="FragmentList BoxItem-expand">Hi!</div>
     </BoxGui>
@@ -18,7 +20,7 @@ export function EditorTabListGui(props: EditorTabListProps): JSX.Element {
   let clazz = 'EditorTabList';
   if (props.className != null) clazz += props.className;
   return (
-    <BoxGui orientation="horizontal" className={clazz}>
+    <BoxGui orientation="horizontal" scroll className={clazz}>
       <EditorTabGui active={false} type="search" name={'Search'} />
       <EditorTabGui active={false} type="queue" name={'Queue'} />
       <EditorTabGui active={true} type="game_file" name={'database.json'} />

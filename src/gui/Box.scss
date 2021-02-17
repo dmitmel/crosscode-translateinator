@@ -6,12 +6,22 @@
     &.Box-reverseChildren {
       flex-direction: row-reverse;
     }
+
+    overflow-x: hidden;
+    &.Box-scroll {
+      overflow-x: auto;
+    }
   }
 
   &.Box-orientation-vertical {
     flex-direction: column;
     &.Box-reverseChildren {
       flex-direction: column-reverse;
+    }
+
+    overflow-y: hidden;
+    &.Box-scroll {
+      overflow-y: auto;
     }
   }
 

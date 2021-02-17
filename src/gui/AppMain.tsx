@@ -59,7 +59,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
       <BoxGui orientation="vertical" className="App">
         <BoxGui orientation="horizontal" className="BoxItem-expand">
           <FileTreePaneGui />
-          <EditorGui />
+          <EditorGui className="BoxItem-expand" />
         </BoxGui>
         <StatusBarGui />
       </BoxGui>
