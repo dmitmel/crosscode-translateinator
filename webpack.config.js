@@ -9,8 +9,8 @@ const ts = require('typescript');
 require('ts-transform-inferno/dist/updateSourceFile').default = tsTransformInfernoUpdateSourceFile;
 
 /**
- * @returns {webpack.Configuration}
- */
+  @returns {webpack.Configuration}
+*/
 module.exports = (_env, { mode }) => ({
   mode,
   devtool: 'source-map',
@@ -94,10 +94,10 @@ module.exports = (_env, { mode }) => ({
 });
 
 /**
- * @param {ts.SourceFile} sourceFile
- * @param {ts.TransformationContext} context
- * @returns {ts.SourceFile}
- */
+  @param {ts.SourceFile} sourceFile
+  @param {ts.TransformationContext} context
+  @returns {ts.SourceFile}
+*/
 function tsTransformInfernoUpdateSourceFile(sourceFile, context) {
   /* eslint-disable no-undefined */
   let imports = [];

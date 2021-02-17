@@ -1,7 +1,19 @@
+import * as Inferno from 'inferno';
+
 export function u32(num: number): number {
   return num | 0;
 }
 
 export function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function infernoForwardRef<P, R = Element>(
+  render: (
+    props: P & Inferno.Refs<P> & { children?: Inferno.InfernoNode },
+    context?: Inferno.Ref<R> | Inferno.Refs<R>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => any,
+): Inferno.SFC<P> & Inferno.ForwardRef {
+  return Inferno.forwardRef(render) as Inferno.SFC<P> & Inferno.ForwardRef;
 }

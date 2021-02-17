@@ -1,6 +1,7 @@
 import './Editor.scss';
 import * as Inferno from 'inferno';
 import { BoxGui } from './Box';
+import { IconGui } from './Icon';
 
 export function EditorGui(): JSX.Element {
   return (
@@ -18,24 +19,37 @@ export function EditorTabListGui(props: EditorTabListProps): JSX.Element {
   if (props.className != null) clazz += props.className;
   return (
     <BoxGui orientation="horizontal" className={clazz}>
-      <EditorTabGui active={false} special={true} name={'Search'} />
-      <EditorTabGui active={false} special={true} name={'Queue'} />
-      <EditorTabGui active={true} special={false} name={'database.json'} />
-      <EditorTabGui active={false} special={false} name={'bergen.json'} />
-      <EditorTabGui active={false} special={false} name={'gui.en_US.json'} />
+      <EditorTabGui active={false} type="search" name={'Search'} />
+      <EditorTabGui active={false} type="queue" name={'Queue'} />
+      <EditorTabGui active={true} type="game_file" name={'database.json'} />
+      <EditorTabGui active={false} type="tr_file" name={'bergen.json'} />
+      <EditorTabGui active={false} type="game_file" name={'gui.en_US.json'} />
     </BoxGui>
   );
 }
 
+type EditorTabType = 'search' | 'queue' | 'tr_file' | 'game_file';
+
+const EDITOR_TAB_ICONS = new Map<EditorTabType, string>([
+  ['search', 'search'],
+  ['queue', 'journal-bookmark-fill'],
+  ['tr_file', 'file-earmark-zip-fill'],
+  ['game_file', 'file-earmark-text-fill'],
+]);
+
 export interface EditorTabProps extends Inferno.Props<typeof EditorTabGui> {
-  special: boolean;
+  type: EditorTabType;
   name: string;
   active: boolean;
 }
 
 export function EditorTabGui(props: EditorTabProps): JSX.Element {
   let clazz = 'EditorTab';
-  if (props.special) clazz += ' EditorTab-special';
   if (props.active) clazz += ' EditorTab-active';
-  return <div className={clazz}>{props.name} [x]</div>;
+  let icon = EDITOR_TAB_ICONS.get(props.type)!;
+  return (
+    <div className={clazz}>
+      <IconGui name={icon} /> {props.name} <IconGui name="x" />
+    </div>
+  );
 }
