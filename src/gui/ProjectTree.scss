@@ -1,0 +1,42 @@
+@import '../theme.scss';
+
+.ProjectTree {
+  background-color: $color-ProjectTree;
+  min-width: 300px;
+}
+
+.ProjectTree-Header {
+  padding: $offset-normal * 2;
+  color: $color-EditorTab-active-text;
+}
+
+.ProjectTreeSection:not(:last-child) {
+  border-bottom: 1px solid rgba(#cccccc, 0.2);
+}
+
+.ProjectTreeSection-Name {
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: (15em / 16);
+}
+
+.ProjectTreeItem {
+  padding: $offset-normal;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #2a2d2e;
+  }
+
+  &:focus {
+    background-color: #094771;
+    outline: none;
+  }
+}
+
+// .ProjectTreeSection-Name {
+//   &:focus {
+//     background-color: inherit;
+//     outline-color: #007fd4;
+//   }
+// }

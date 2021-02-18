@@ -226,7 +226,9 @@ export class Backend {
     }
   }
 
-  public async send_request(data: RequestMessageType): Promise<ResponseMessageType> {
+  public async send_request<T extends string>(
+    data: RequestMessageType,
+  ): Promise<ResponseMessageType & { type: T }> {
     if (!(this.state !== BackendState.DISCONNECTED)) {
       throw new Error('Assertion failed: this.state !== BackendState.DISCONNECTED');
     }
@@ -240,7 +242,7 @@ export class Backend {
       this.sent_request_error_callbacks.set(id, reject);
     });
     await this.send_message_internal({ type: 'req', id, data });
-    return response_promise;
+    return (response_promise as unknown) as ResponseMessageType & { type: T };
   }
 
   public disconnect(): void {

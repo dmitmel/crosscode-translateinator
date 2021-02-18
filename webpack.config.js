@@ -63,6 +63,12 @@ module.exports = (_env, { mode }) => ({
           },
           {
             loader: 'sass-loader',
+            options: {
+              sassOptions: {
+                indentedSyntax: false,
+                outputStyle: 'expanded',
+              },
+            },
           },
         ],
       },

@@ -2,13 +2,13 @@ import * as utils from '../utils';
 import iconsAtlasUrl from 'bootstrap-icons/bootstrap-icons.svg';
 import './Icon.scss';
 
-interface IconProps extends SVGProps<SVGSVGElement> {
+interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
   name: string;
   color?: string;
   size?: number | string;
 }
 
-export const IconGui = utils.infernoForwardRef<IconProps, SVGSVGElement>(function IconGui(
+export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(function IconGui(
   { name, color, size, className, class: _class, ...rest },
   ref,
 ) {

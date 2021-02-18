@@ -3,7 +3,9 @@ import * as Inferno from 'inferno';
 import { BoxGui } from './Box';
 import { IconGui } from './Icon';
 
-export function EditorGui(props: Inferno.Props<typeof EditorGui>): JSX.Element {
+export interface EditorGuiProps extends Inferno.Props<typeof EditorGui> {}
+
+export function EditorGui(props: EditorGuiProps): JSX.Element {
   let clazz = 'Editor';
   if (props.className != null) clazz += ` ${props.className}`;
   return (
@@ -14,9 +16,9 @@ export function EditorGui(props: Inferno.Props<typeof EditorGui>): JSX.Element {
   );
 }
 
-export interface EditorTabListProps extends Inferno.Props<typeof EditorTabListGui> {}
+export interface EditorTabListGuiProps extends Inferno.Props<typeof EditorTabListGui> {}
 
-export function EditorTabListGui(props: EditorTabListProps): JSX.Element {
+export function EditorTabListGui(props: EditorTabListGuiProps): JSX.Element {
   let clazz = 'EditorTabList';
   if (props.className != null) clazz += props.className;
   return (
@@ -39,13 +41,13 @@ const EDITOR_TAB_ICONS = new Map<EditorTabType, string>([
   ['game_file', 'file-earmark-text-fill'],
 ]);
 
-export interface EditorTabProps extends Inferno.Props<typeof EditorTabGui> {
+export interface EditorTabGuiProps extends Inferno.Props<typeof EditorTabGui> {
   type: EditorTabType;
   name: string;
   active: boolean;
 }
 
-export function EditorTabGui(props: EditorTabProps): JSX.Element {
+export function EditorTabGui(props: EditorTabGuiProps): JSX.Element {
   let clazz = 'EditorTab';
   if (props.active) clazz += ' EditorTab-active';
   let icon = EDITOR_TAB_ICONS.get(props.type)!;

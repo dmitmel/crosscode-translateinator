@@ -1,26 +1,59 @@
 import './AppMain.scss';
 import * as Inferno from 'inferno';
 import * as backend from '../backend';
-import * as utils from '../utils';
-import { FileTreePaneGui } from './FileTreePane';
+import { ProjectTreeGui } from './ProjectTree';
 import { BoxGui } from './Box';
 import { EditorGui } from './Editor';
 import { StatusBarGui } from './StatusBar';
+import { Event2 } from '../events';
 
-declare global {
-  // eslint-disable-next-line no-var
-  var app: AppMainGui;
-}
-
-export interface AppMainCtx {
-  backend: backend.Backend;
+export interface AppMainGuiCtx {
+  app: AppMain;
 }
 
 export class AppMainGui extends Inferno.Component<unknown, unknown> {
-  public backend: backend.Backend;
+  public inner = new AppMain();
 
-  public constructor(props: unknown, context: unknown) {
-    super(props, context);
+  public getChildContext(): AppMainGuiCtx {
+    return { app: this.inner };
+  }
+
+  public componentDidMount(): void {
+    void this.inner.connect();
+  }
+
+  public componentWillUnmount(): void {
+    this.inner.disconnect();
+  }
+
+  public render(): JSX.Element {
+    return (
+      <BoxGui orientation="vertical" className="App">
+        <BoxGui orientation="horizontal" className="BoxItem-expand">
+          <ProjectTreeGui />
+          <EditorGui className="BoxItem-expand" />
+        </BoxGui>
+        <StatusBarGui />
+      </BoxGui>
+    );
+  }
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var app: AppMain;
+}
+
+export class AppMain {
+  public backend: backend.Backend;
+  public current_project_id: number | null = null;
+  public current_project_meta: { translation_locale: string } | null = null;
+  public events = {
+    project_opened: new Event2(),
+    project_closed: new Event2(),
+  };
+
+  public constructor() {
     if ('app' in window) {
       throw new Error("Assertion failed: !('app' in window)");
     }
@@ -32,37 +65,31 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
     this.backend = new backend.Backend();
   }
 
-  public getChildContext(): AppMainCtx {
-    return { backend: this.backend };
+  public async connect(): Promise<void> {
+    await this.backend.connect();
+
+    {
+      let response = await this.backend.send_request<'Project/open'>({
+        type: 'Project/open',
+        dir: '/home/dmitmel/Projects/Rust/crosscode-localization-engine/tmp',
+      });
+      this.current_project_id = response.project_id;
+    }
+
+    {
+      let response = await this.backend.send_request<'Project/get_meta'>({
+        type: 'Project/get_meta',
+        project_id: this.current_project_id,
+      });
+      this.current_project_meta = {
+        translation_locale: response.translation_locale,
+      };
+    }
+
+    this.events.project_opened.fire();
   }
 
-  public componentDidMount(): void {
-    (async () => {
-      await this.backend.connect();
-      while (true) {
-        let { project_id } = (await this.backend.send_request({
-          type: 'Project/open',
-          dir: '/home/dmitmel/Projects/Rust/crosscode-localization-engine/tmp',
-        })) as backend.ResponseMessageType & { type: 'Project/open' };
-        await this.backend.send_request({ type: 'Project/close', project_id });
-        await utils.wait(3000);
-      }
-    })();
-  }
-
-  public componentWillUnmount(): void {
+  public disconnect(): void {
     this.backend.disconnect();
-  }
-
-  public render(): JSX.Element {
-    return (
-      <BoxGui orientation="vertical" className="App">
-        <BoxGui orientation="horizontal" className="BoxItem-expand">
-          <FileTreePaneGui />
-          <EditorGui className="BoxItem-expand" />
-        </BoxGui>
-        <StatusBarGui />
-      </BoxGui>
-    );
   }
 }
