@@ -17,3 +17,5 @@ export function infernoForwardRef<P, R = Element>(
 ): Inferno.SFC<P> & Inferno.ForwardRef {
   return Inferno.forwardRef(render) as Inferno.SFC<P> & Inferno.ForwardRef;
 }
+
+export type ComponentProps<P> = P & { children?: Inferno.InfernoNode };

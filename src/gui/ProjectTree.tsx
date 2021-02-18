@@ -52,7 +52,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
   }
 }
 
-export interface ProjectTreeSectionGuiProps extends Inferno.Props<typeof ProjectTreeSectionGui> {
+export interface ProjectTreeSectionGuiProps {
   name: string;
 }
 

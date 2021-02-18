@@ -1,12 +1,14 @@
 import './Editor.scss';
-import * as Inferno from 'inferno';
 import { BoxGui } from './Box';
 import { IconGui } from './Icon';
 import cc from 'classcat';
+import * as utils from '../utils';
 
-export interface EditorGuiProps extends Inferno.Props<typeof EditorGui> {}
+export interface EditorGuiProps {
+  className?: string;
+}
 
-export function EditorGui(props: EditorGuiProps): JSX.Element {
+export function EditorGui(props: utils.ComponentProps<EditorGuiProps>): JSX.Element {
   return (
     <BoxGui
       orientation="vertical"
@@ -20,9 +22,11 @@ export function EditorGui(props: EditorGuiProps): JSX.Element {
   );
 }
 
-export interface EditorTabListGuiProps extends Inferno.Props<typeof EditorTabListGui> {}
+export interface EditorTabListGuiProps {
+  className?: string;
+}
 
-export function EditorTabListGui(props: EditorTabListGuiProps): JSX.Element {
+export function EditorTabListGui(props: utils.ComponentProps<EditorTabListGuiProps>): JSX.Element {
   return (
     <BoxGui
       orientation="horizontal"
@@ -49,13 +53,13 @@ const EDITOR_TAB_ICONS = new Map<EditorTabType, string>([
   ['game_file', 'file-earmark-text-fill'],
 ]);
 
-export interface EditorTabGuiProps extends Inferno.Props<typeof EditorTabGui> {
+export interface EditorTabGuiProps {
   type: EditorTabType;
   name: string;
   active: boolean;
 }
 
-export function EditorTabGui(props: EditorTabGuiProps): JSX.Element {
+export function EditorTabGui(props: utils.ComponentProps<EditorTabGuiProps>): JSX.Element {
   return (
     <div
       className={cc({
