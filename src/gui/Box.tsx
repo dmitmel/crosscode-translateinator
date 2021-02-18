@@ -1,4 +1,5 @@
 import './Box.scss';
+import cc from 'classcat';
 
 export interface BoxGuiProps extends HTMLAttributes<HTMLDivElement> {
   orientation: 'vertical' | 'horizontal';
@@ -15,12 +16,16 @@ export function BoxGui({
   children,
   ...rest
 }: BoxGuiProps): JSX.Element {
-  let clazz = `Box Box-orientation-${orientation}`;
-  if (reverse_children) clazz += ' Box-reverse_children';
-  if (scroll) clazz += ' Box-scroll';
-  if (className != null) clazz += ` ${className}`;
   return (
-    <div className={clazz} {...rest}>
+    <div
+      className={cc({
+        Box: true,
+        [`Box-orientation-${orientation}`]: true,
+        'Box-reverse_children': reverse_children,
+        'Box-scroll': scroll,
+        [String(className)]: className != null,
+      })}
+      {...rest}>
       {children}
     </div>
   );

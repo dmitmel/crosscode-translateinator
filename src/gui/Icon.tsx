@@ -1,6 +1,7 @@
 import * as utils from '../utils';
 import iconsAtlasUrl from 'bootstrap-icons/bootstrap-icons.svg';
 import './Icon.scss';
+import cc from 'classcat';
 
 interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
   name: string;
@@ -14,8 +15,6 @@ export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(func
 ) {
   color ??= 'currentColor';
   size ??= '1em';
-  let clazz = 'Icon';
-  if (className != null) clazz += ` ${className}`;
   return (
     <svg
       ref={ref}
@@ -24,7 +23,10 @@ export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(func
       width={size}
       height={size}
       fill={color}
-      className={clazz}
+      className={cc({
+        Icon: true,
+        [String(className)]: className != null,
+      })}
       {...rest}>
       <use xlinkHref={`${iconsAtlasUrl}#${encodeURIComponent(name)}`} />
     </svg>

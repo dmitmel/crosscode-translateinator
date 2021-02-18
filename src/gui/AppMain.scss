@@ -10,4 +10,8 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   color: $color-text-normal;
+
+  & *:focus {
+    outline-color: #007fd4;
+  }
 }

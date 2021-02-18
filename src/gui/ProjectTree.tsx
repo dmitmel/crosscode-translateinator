@@ -3,6 +3,7 @@ import './ProjectTree.scss';
 import { BoxGui } from './Box';
 import { AppMainGuiCtx } from './AppMain';
 import { IconGui } from './Icon';
+import cc from 'classcat';
 
 export interface ProjectTreeGuiState {
   translation_locale: string | null;
@@ -69,18 +70,22 @@ export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionG
   };
 
   public render(): JSX.Element {
-    let clazz = 'ProjectTreeSection';
-    if (this.state.is_opened) clazz += ' BoxItem-expand';
+    let { is_opened } = this.state;
     return (
-      <BoxGui orientation="vertical" className={clazz}>
+      <BoxGui
+        orientation="vertical"
+        className={cc({
+          ProjectTreeSection: true,
+          'ProjectTreeSection-opened': is_opened,
+          'BoxItem-expand': is_opened,
+        })}>
         <div
           className="ProjectTreeSection-Name ProjectTreeItem"
           tabIndex={0}
           onClick={this.on_name_click}>
-          <IconGui name={this.state.is_opened ? 'chevron-down' : 'chevron-right'} />{' '}
-          {this.props.name}
+          <IconGui name={is_opened ? 'chevron-down' : 'chevron-right'} /> {this.props.name}
         </div>
-        {this.state.is_opened ? this.props.children : null}
+        {is_opened ? this.props.children : null}
       </BoxGui>
     );
   }

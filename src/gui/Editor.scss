@@ -12,6 +12,7 @@
   padding: $offset-normal * 2;
   color: $color-EditorTab-inactive-text;
   background-color: $color-EditorTab-inactive;
+  cursor: pointer;
 
   &.EditorTab-active {
     color: $color-EditorTab-active-text;
