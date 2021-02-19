@@ -6,7 +6,7 @@
 }
 
 .ProjectTree-Header {
-  padding: $offset-normal * 2;
+  padding: ($offset-normal * 2) $offset-normal;
   color: $color-EditorTab-active-text;
 }
 

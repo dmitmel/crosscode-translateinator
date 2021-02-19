@@ -40,7 +40,9 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     let translation_locale = this.state.translation_locale ?? 'loading...';
     return (
       <BoxGui orientation="vertical" className="ProjectTree">
-        <div className="ProjectTree-Header">PROJECT [{translation_locale}]</div>
+        <div className="ProjectTree-Header">
+          <IconGui icon={null} /> PROJECT [{translation_locale}]
+        </div>
         <ProjectTreeSectionGui name="Translation files">
           <FileTreeGui />
         </ProjectTreeSectionGui>
@@ -83,7 +85,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionG
           className="ProjectTreeSection-Name ProjectTreeItem"
           tabIndex={0}
           onClick={this.on_name_click}>
-          <IconGui name={is_opened ? 'chevron-down' : 'chevron-right'} /> {this.props.name}
+          <IconGui icon={is_opened ? 'chevron-down' : 'chevron-right'} /> {this.props.name}
         </div>
         {is_opened ? this.props.children : null}
       </BoxGui>

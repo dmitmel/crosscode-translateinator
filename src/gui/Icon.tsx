@@ -4,16 +4,15 @@ import './Icon.scss';
 import cc from 'classcat';
 
 interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
-  name: string;
-  color?: string;
+  icon: string | null | undefined;
   size?: number | string;
 }
 
 export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(function IconGui(
-  { name, color, size, className, class: _class, ...rest },
+  { icon, fill, size, className, class: _class, ...rest },
   ref,
 ) {
-  color ??= 'currentColor';
+  fill ??= 'currentColor';
   size ??= '1em';
   return (
     <svg
@@ -22,13 +21,14 @@ export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(func
       xmlnsXlink="http://www.w3.org/1999/xlink"
       width={size}
       height={size}
-      fill={color}
+      fill={fill}
       className={cc({
         Icon: true,
+        [`Icon-${icon}`]: icon != null,
         [String(className)]: className != null,
       })}
       {...rest}>
-      <use xlinkHref={`${iconsAtlasUrl}#${encodeURIComponent(name)}`} />
+      {icon != null ? <use xlinkHref={`${iconsAtlasUrl}#${encodeURIComponent(icon)}`} /> : null}
     </svg>
   );
 });

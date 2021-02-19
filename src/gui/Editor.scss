@@ -18,4 +18,11 @@
     color: $color-EditorTab-active-text;
     background-color: $color-EditorTab-active;
   }
+
+  & > .Icon.Icon-x {
+    transform: scale(1.5);
+    &:hover {
+      color: #f48771;
+    }
+  }
 }

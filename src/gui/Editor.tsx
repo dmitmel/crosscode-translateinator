@@ -67,7 +67,7 @@ export function EditorTabGui(props: utils.ComponentProps<EditorTabGuiProps>): JS
         'EditorTab-active': props.active,
       })}
       tabIndex={0}>
-      <IconGui name={EDITOR_TAB_ICONS.get(props.type)!} /> {props.name} <IconGui name="x" />
+      <IconGui icon={EDITOR_TAB_ICONS.get(props.type)} /> {props.name} <IconGui icon="x" />
     </div>
   );
 }
