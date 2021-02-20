@@ -1,5 +1,5 @@
 const webpack = require('webpack');
-const path = require('path');
+const paths = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
@@ -7,6 +7,11 @@ const tsTransformInferno = require('ts-transform-inferno').default;
 const ts = require('typescript');
 
 require('ts-transform-inferno/dist/updateSourceFile').default = tsTransformInfernoUpdateSourceFile;
+
+const BOOTSTRAP_ICONS_DIR = paths.join(
+  paths.dirname(require.resolve('bootstrap-icons/package.json')),
+  'icons',
+);
 
 /**
   @returns {webpack.Configuration}
@@ -18,7 +23,7 @@ module.exports = (_env, { mode }) => ({
   entry: './src/main',
   target: 'nwjs0.35',
   output: {
-    path: path.join(__dirname, 'target', mode),
+    path: paths.join(__dirname, 'target', mode),
     filename: '[name].js?[contenthash]',
     chunkFilename: '[name].chunk.js?[contenthash]',
     assetModuleFilename: 'assets/[file]?[contenthash]',
@@ -35,7 +40,7 @@ module.exports = (_env, { mode }) => ({
     rules: [
       {
         test: /\.(?:js|ts)x?$/,
-        include: path.join(__dirname, 'src'),
+        include: paths.join(__dirname, 'src'),
         exclude: /node_modules/,
         use: [
           {
@@ -74,7 +79,18 @@ module.exports = (_env, { mode }) => ({
       },
 
       {
+        test: /\.svg$/,
+        include: [BOOTSTRAP_ICONS_DIR],
+        use: [
+          {
+            loader: './bootstrap-icons-loader',
+          },
+        ],
+      },
+
+      {
         test: /\.(?:png|jpe?g|gif|svg|eot|ttf|woff2?)$/i,
+        exclude: [BOOTSTRAP_ICONS_DIR],
         type: 'asset/resource',
       },
     ],
