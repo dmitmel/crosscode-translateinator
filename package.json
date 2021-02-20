@@ -8,7 +8,7 @@
     "build": "webpack --mode=development",
     "watch": "webpack --mode=development --watch",
     "build:prod": "webpack --mode=production",
-    "watch:prod": "webpack --mode=production",
+    "watch:prod": "webpack --mode=production --watch",
     "check": "tsc --noEmit",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --ignore-path .gitignore",
     "check-fmt": "prettier --check '**/*.{js,jsx,ts,tsx,json,css,scss,html}' --ignore-path .gitignore"
