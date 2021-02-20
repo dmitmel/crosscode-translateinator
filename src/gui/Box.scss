@@ -1,6 +1,10 @@
 .Box {
   display: flex;
 
+  & > .BoxItem-expand {
+    flex-grow: 1;
+  }
+
   &.Box-orientation-horizontal {
     flex-direction: row;
     &.Box-reverseChildren {
@@ -10,6 +14,10 @@
     overflow-x: hidden;
     &.Box-scroll {
       overflow-x: auto;
+    }
+
+    & > .BoxItem-expand {
+      width: 0;
     }
   }
 
@@ -23,9 +31,9 @@
     &.Box-scroll {
       overflow-y: auto;
     }
-  }
 
-  & > .BoxItem-expand {
-    flex-grow: 1;
+    & > .BoxItem-expand {
+      height: 0;
+    }
   }
 }
