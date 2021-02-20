@@ -66,7 +66,7 @@ module.exports = (_env, { mode }) => ({
             options: {
               sassOptions: {
                 indentedSyntax: false,
-                outputStyle: 'expanded',
+                outputStyle: mode === 'production' ? 'compressed' : 'expanded',
               },
             },
           },
