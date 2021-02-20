@@ -53,9 +53,11 @@ jobs:
           yarn link ultimate-crosscode-typedefs
           yarn install --frozen-lockfile
 
+      - name: Check
+        run: yarn run check
+
       - name: Build
-        run: |
-          yarn run build
+        run: yarn run build
 
       - name: Lint
         run: yarn run lint --cache
