@@ -19,3 +19,7 @@ export function infernoForwardRef<P, R = Element>(
 }
 
 export type ComponentProps<P> = P & { children?: Inferno.InfernoNode };
+
+export function hasKey(obj: unknown, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}

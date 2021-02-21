@@ -3,6 +3,7 @@
 .ProjectTree {
   background-color: $color-ProjectTree;
   min-width: 300px;
+  max-width: 300px;
 }
 
 .ProjectTree-Header {
@@ -22,6 +23,7 @@
 
 .ProjectTreeItem {
   padding: $offset-normal;
+  padding-left: calc(#{$offset-normal} + var(--ProjectTreeItem-depth, 0) * #{$offset-normal} * 2);
   cursor: pointer;
 
   &:hover {

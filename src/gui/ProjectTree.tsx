@@ -67,16 +67,26 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
         <div className="ProjectTree-Header">
           <IconGui icon={null} /> PROJECT [{translation_locale}]
         </div>
-        {this.state.translation_files != null ? (
-          <ProjectTreeSectionGui name="Translation files">
-            <FileTreeGui data={this.state.translation_files} />
-          </ProjectTreeSectionGui>
-        ) : null}
-        {this.state.virtual_game_files != null ? (
-          <ProjectTreeSectionGui name="Game files">
-            <FileTreeGui data={this.state.virtual_game_files} />
-          </ProjectTreeSectionGui>
-        ) : null}
+
+        <ProjectTreeSectionGui name="Translation files">
+          {this.state.translation_files != null
+            ? render_FileTreeGui({
+                path_prefix: '',
+                tree_data: this.state.translation_files,
+                depth: 0,
+              })
+            : null}
+        </ProjectTreeSectionGui>
+
+        <ProjectTreeSectionGui name="Game files">
+          {this.state.virtual_game_files != null
+            ? render_FileTreeGui({
+                path_prefix: '',
+                tree_data: this.state.virtual_game_files,
+                depth: 0,
+              })
+            : null}
+        </ProjectTreeSectionGui>
       </BoxGui>
     );
   }
@@ -113,7 +123,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionG
           className="ProjectTreeSection-Name ProjectTreeItem"
           tabIndex={0}
           onClick={this.on_name_click}>
-          <IconGui icon={is_opened ? 'chevron-down' : 'chevron-right'} /> {this.props.name}
+          <IconGui icon={`chevron-${is_opened ? 'down' : 'right'}`} /> {this.props.name}
         </div>
         {is_opened ? (
           // TODO: use a simple div with overflow: auto
@@ -127,39 +137,82 @@ export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionG
 }
 
 export interface FileTreeGuiProps {
-  data: PathTree;
+  path_prefix: string;
+  tree_data: PathTree;
+  depth: number;
 }
 
-export class FileTreeGui extends Inferno.Component<FileTreeGuiProps, unknown> {
-  public render(): JSX.Element {
-    let elements: JSX.Element[] = [];
-    this.render_tree(this.props.data, [], elements);
-    return <Inferno.Fragment $HasKeyedChildren>{elements}</Inferno.Fragment>;
+export function render_FileTreeGui(
+  props: FileTreeGuiProps,
+  elements: JSX.Element[] = [],
+): JSX.Element[] {
+  let dir_elements: JSX.Element[] = [];
+  let file_elements: JSX.Element[] = [];
+
+  for (let [subtree_name, subtree_data] of props.tree_data) {
+    let subtree_is_directory = subtree_data.size > 0;
+    (subtree_is_directory ? dir_elements : file_elements).push(
+      <FileTreeItemGui
+        key={`${props.path_prefix}${subtree_name}`}
+        path_prefix={props.path_prefix}
+        name={subtree_name}
+        tree_data={subtree_data}
+        depth={props.depth + 1}
+      />,
+    );
   }
 
-  private render_tree(tree: PathTree, stack: string[], dst: JSX.Element[]): void {
-    for (let [subtree_name, subtree] of tree) {
-      let depth = stack.length;
-      stack.push(subtree_name);
-      let full_path = stack.join('/');
-      let is_directory = subtree.size > 0;
+  elements.push(...dir_elements);
+  elements.push(...file_elements);
+  return elements;
+}
 
-      dst.push(
-        <div
-          key={full_path}
-          class="ProjectTreeItem"
-          style={{ 'padding-left': `${depth * 8 + 6}px` }}
-          title={full_path}
-          tabIndex={0}>
-          <IconGui icon={is_directory ? 'folder2-open' : 'file-earmark-text'} /> {subtree_name}
-        </div>,
-      );
+export interface FileTreeItemGuiProps extends FileTreeGuiProps {
+  name: string;
+  default_opened?: boolean;
+}
 
-      if (is_directory) {
-        this.render_tree(subtree, stack, dst);
-      }
-      stack.pop();
+export interface FileTreeItemGuiState {
+  is_opened: boolean;
+}
+
+export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, unknown> {
+  public state: FileTreeItemGuiState = {
+    is_opened: this.props.default_opened ?? false,
+  };
+
+  private on_click = (): void => {
+    this.setState({ is_opened: !this.state.is_opened });
+  };
+
+  public render(): JSX.Element[] {
+    let is_directory = this.props.tree_data.size > 0;
+    let { name } = this.props;
+    let full_path = `${this.props.path_prefix}${name}`;
+    if (is_directory) {
+      full_path += '/';
+      name += '/';
     }
+    let icon = is_directory
+      ? `chevron-${this.state.is_opened ? 'down' : 'right'}`
+      : 'file-earmark-text';
+
+    let elements = [
+      <div
+        key={full_path}
+        class="ProjectTreeItem"
+        style={{ '--ProjectTreeItem-depth': this.props.depth }}
+        title={full_path}
+        tabIndex={0}
+        onClick={this.on_click}>
+        <IconGui icon={icon} /> {name}
+      </div>,
+    ];
+
+    if (this.state.is_opened && is_directory) {
+      render_FileTreeGui({ ...this.props, path_prefix: full_path }, elements);
+    }
+    return elements;
   }
 }
 
