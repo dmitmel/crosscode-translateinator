@@ -74,6 +74,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
             ? render_FileTreeGui({
                 path_prefix: '',
                 tree_data: this.state.translation_files,
+                files_icon: 'file-earmark-zip',
                 depth: 0,
               })
             : null}
@@ -84,6 +85,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
             ? render_FileTreeGui({
                 path_prefix: '',
                 tree_data: this.state.virtual_game_files,
+                files_icon: 'file-earmark-text',
                 depth: 0,
               })
             : null}
@@ -140,6 +142,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionG
 export interface FileTreeGuiProps {
   path_prefix: string;
   tree_data: PathTree;
+  files_icon: string;
   depth: number;
 }
 
@@ -158,6 +161,7 @@ export function render_FileTreeGui(
         path_prefix={props.path_prefix}
         name={subtree_name}
         tree_data={subtree_data}
+        files_icon={props.files_icon}
         depth={props.depth + 1}
       />,
     );
@@ -196,7 +200,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, unk
     }
     let icon = is_directory
       ? `chevron-${this.state.is_opened ? 'down' : 'right'}`
-      : 'file-earmark-text';
+      : this.props.files_icon;
 
     let elements = [
       <div
