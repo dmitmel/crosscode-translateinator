@@ -1,3 +1,12 @@
+export const FONT_COLORS = new Map<string, string>([
+  // ['0', '#ffffff'], // white (default)
+  ['1', '#ff6969'], // red
+  ['2', '#65ff89'], // green
+  ['3', '#ffe430'], // yellow
+  ['4', '#808080'], // gray
+  ['5', '#ff8932'], // orange (only on the small font)
+]);
+
 /// Inspired by <https://github.com/L-Sherry/Localize-Me-Tools/blob/c117847bc15fe8b62a7bcd7f343310c9a4ce09da/checker.py#L130>.
 export interface Token {
   type: 'LITERAL_TEXT' | 'TYPING_DELAY' | 'ESCAPE' | 'COLOR' | 'TYPING_SPEED' | 'VARIABLE' | 'ICON';

@@ -2,14 +2,6 @@ import * as utils from '../utils';
 import * as Inferno from 'inferno';
 import * as crosscode_markup from '../crosscode_markup';
 
-const CROSSCODE_FONT_COLORS = new Map<string, string>([
-  ['1', '#ff6969'], // red
-  ['2', '#65ff89'], // green
-  ['3', '#ffe430'], // yellow
-  ['4', '#808080'], // gray
-  ['5', '#ff8932'], // orange (only on the small font)
-]);
-
 export interface FancyTextGuiProps {
   crosscode_markup?: boolean;
   children: string;
@@ -19,7 +11,7 @@ export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JS
   console.assert(props.crosscode_markup);
   let source_text = props.children;
 
-  let html = [];
+  let elements: JSX.Element[] = [];
 
   let current_color: string | null | undefined = null;
   let prev_token_end_index = 0;
@@ -31,14 +23,18 @@ export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JS
     }
 
     if (token.type === 'COLOR') {
-      current_color = CROSSCODE_FONT_COLORS.get(token.data);
+      current_color = crosscode_markup.FONT_COLORS.get(token.data);
     }
 
-    let token_color = token.type === 'LITERAL_TEXT' ? current_color : '#808080';
-    let style = token_color != null ? ` style="color: ${token_color};"` : '';
-    html.push(`<span${style}>`);
-    html.push(escape_html(source_text.slice(token.start_index, token.end_index)));
-    html.push('</span>');
+    let token_style: CSSProperties = {};
+    let token_color = token.type === 'LITERAL_TEXT' ? current_color : '#66ccdd';
+    if (token_color != null) token_style.color = token_color;
+
+    elements.push(
+      <span key={`token;${token.type};${token.start_index};${token.end_index}`} style={token_style}>
+        {source_text.slice(token.start_index, token.end_index)}
+      </span>,
+    );
 
     prev_token_end_index = token.end_index;
   }
@@ -48,7 +44,7 @@ export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JS
     );
   }
 
-  return <span className="FancyTextGui" dangerouslySetInnerHTML={{ __html: html.join('') }}></span>;
+  return <span className="FancyTextGui">{elements}</span>;
 }
 
 /// Taken from <https://stackoverflow.com/a/6234804/12005228>.
