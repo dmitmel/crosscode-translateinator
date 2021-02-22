@@ -3,6 +3,7 @@ import { BoxGui } from './Box';
 import { IconGui } from './Icon';
 import cc from 'classcat';
 import * as utils from '../utils';
+import { FancyTextGui } from './FancyText';
 
 export interface EditorGuiProps {
   className?: string;
@@ -166,10 +167,10 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
 
       <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
         <div className="Fragment-Original Fragment-TextBlock BoxItem-expand">
-          {fragment_data.original_text}
+          <FancyTextGui crosscode_markup>{fragment_data.original_text}</FancyTextGui>
         </div>
         <div className="Fragment-Translation Fragment-TextBlock BoxItem-expand">
-          {fragment_data.translation_text}
+          <FancyTextGui crosscode_markup>{fragment_data.translation_text}</FancyTextGui>
         </div>
       </BoxGui>
     </BoxGui>
