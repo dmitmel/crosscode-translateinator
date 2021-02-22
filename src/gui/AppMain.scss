@@ -12,7 +12,16 @@
   color: $color-text-normal;
   user-select: none;
 
-  & *:focus {
-    outline-color: #007fd4;
+  *:focus {
+    outline-color: $color-focus-outline;
+  }
+
+  a {
+    color: $color-text-link;
+    text-decoration: none;
+    &:hover {
+      color: $color-text-link-hover;
+      text-decoration: underline;
+    }
   }
 }

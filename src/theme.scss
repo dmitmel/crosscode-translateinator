@@ -1,9 +1,14 @@
 $offset-normal: 6px;
 
 $color-text-normal: #cccccc;
+$color-focus-outline: #007fd4;
+$color-text-link-hover: #3794ff;
+$color-text-link: mix($color-text-link-hover, $color-text-normal, 60%);
 $color-StatusBar: #007acc;
 $color-StatusBar-text: #ffffff;
 $color-ProjectTree: #252526;
+$color-ProjectTreeItem-hover: #2a2d2e;
+$color-ProjectTreeItem-focus: #094771;
 $color-Editor: #1e1e1e;
 $color-EditorTabList: $color-ProjectTree;
 $color-EditorTab-active: $color-Editor;

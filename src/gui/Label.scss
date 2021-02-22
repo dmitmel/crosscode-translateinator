@@ -2,3 +2,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.Label-selectable {
+  user-select: text;
+}

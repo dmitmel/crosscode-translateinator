@@ -1,39 +1,53 @@
+@import '../theme.scss';
+
 .Box {
   display: flex;
+  .Box-inline {
+    display: inline-flex;
+  }
 
-  & > .BoxItem-expand {
+  > .BoxItem-expand {
     flex-grow: 1;
   }
 
   &.Box-orientation-horizontal {
     flex-direction: row;
-    &.Box-reverseChildren {
+    &.Box-reverse-children {
       flex-direction: row-reverse;
     }
 
-    overflow-x: hidden;
+    &:not(.Box-allow-overflow) {
+      overflow-x: hidden;
+    }
     &.Box-scroll {
       overflow-x: auto;
     }
 
-    & > .BoxItem-expand {
+    > .BoxItem-expand {
       width: 0;
     }
   }
 
   &.Box-orientation-vertical {
     flex-direction: column;
-    &.Box-reverseChildren {
+    &.Box-reverse-children {
       flex-direction: column-reverse;
     }
 
-    overflow-y: hidden;
+    &:not(.Box-allow-overflow) {
+      overflow-y: hidden;
+    }
     &.Box-scroll {
       overflow-y: auto;
     }
 
-    & > .BoxItem-expand {
+    > .BoxItem-expand {
       height: 0;
     }
+  }
+
+  flex-wrap: nowrap;
+  &.Box-allow-wrapping {
+    flex-wrap: wrap;
   }
 }

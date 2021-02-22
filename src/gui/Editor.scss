@@ -19,10 +19,38 @@
     background-color: $color-EditorTab-active;
   }
 
-  & > .Icon.Icon-x {
+  > .Icon.Icon-x {
     transform: scale(1.5);
     &:hover {
       color: #f48771;
     }
+  }
+}
+
+.FragmentList {
+  padding: $offset-normal * 2;
+}
+
+.Fragment {
+  font-size: (18em / 16);
+
+  $offset-Fragment: $offset-normal * (4/3);
+
+  .Fragment-TextBlock {
+    white-space: pre-wrap;
+    background-color: #252526;
+    padding: $offset-Fragment;
+  }
+
+  > *:not(:last-child) {
+    margin-bottom: $offset-Fragment;
+  }
+
+  .Fragment-Columns > *:not(:last-child) {
+    margin-right: $offset-Fragment;
+  }
+
+  .Fragment-Location > *:not(:last-child) {
+    margin-right: 1em;
   }
 }

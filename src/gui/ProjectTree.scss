@@ -12,7 +12,7 @@
 }
 
 .ProjectTreeSection:not(:last-child) {
-  border-bottom: 1px solid rgba(#cccccc, 0.2);
+  border-bottom: 1px solid rgba($color-text-normal, 0.2);
 }
 
 .ProjectTreeSection-Name {
@@ -27,11 +27,11 @@
   cursor: pointer;
 
   &:hover {
-    background-color: #2a2d2e;
+    background-color: $color-ProjectTreeItem-hover;
   }
 
   &:focus {
-    background-color: #094771;
+    background-color: $color-ProjectTreeItem-focus;
     outline: none;
   }
 }
