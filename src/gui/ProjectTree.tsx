@@ -4,6 +4,7 @@ import { BoxGui } from './Box';
 import { AppMainGuiCtx } from './AppMain';
 import { IconGui } from './Icon';
 import cc from 'classcat';
+import './Label';
 
 export interface ProjectTreeGuiState {
   translation_locale: string | null;
@@ -200,12 +201,19 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, unk
     let elements = [
       <div
         key={full_path}
-        class="ProjectTreeItem"
+        className="ProjectTreeItem"
         style={{ '--ProjectTreeItem-depth': this.props.depth }}
         title={full_path}
         tabIndex={0}
         onClick={this.on_click}>
-        <IconGui icon={icon} /> {name}
+        {
+          // Note that a nested div for enabling ellipsis is necessary,
+          // otherwise the tree item shrinks when the enclosing list begins
+          // overflowing.
+        }
+        <div className="Label-ellipsis">
+          <IconGui icon={icon} /> {name}
+        </div>
       </div>,
     ];
 
