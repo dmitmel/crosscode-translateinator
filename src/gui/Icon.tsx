@@ -1,8 +1,16 @@
 import * as utils from '../utils';
 import './Icon.scss';
 import cc from 'classcat';
+import icons_obj from '../icons_list.json';
 
-let icons_require_context = require.context('bootstrap-icons/icons/', /* deep */ true, /\.svg$/);
+let icons_map = new Map();
+for (let k in icons_obj) {
+  if (utils.hasKey(icons_obj, k)) {
+    icons_map.set(k, icons_obj[k]);
+  }
+}
+
+console.log(icons_map);
 
 interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
   icon: string | null | undefined;
@@ -14,17 +22,7 @@ export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(func
   ref,
 ) {
   size ??= '1em';
-
-  let icon_file_path = icon != null ? `./${icon}.svg` : null;
-  let icon_xml = '';
-  if (icon_file_path != null) {
-    try {
-      icon_xml = icons_require_context<string>(icon_file_path);
-    } catch (error) {
-      if (error.code !== 'MODULE_NOT_FOUND') throw error;
-    }
-  }
-
+  let icon_xml = icons_map.get(icon) ?? '';
   return (
     <svg
       ref={ref}

@@ -8,11 +8,6 @@ const ts = require('typescript');
 
 require('ts-transform-inferno/dist/updateSourceFile').default = tsTransformInfernoUpdateSourceFile;
 
-const BOOTSTRAP_ICONS_DIR = paths.join(
-  paths.dirname(require.resolve('bootstrap-icons/package.json')),
-  'icons',
-);
-
 /**
   @returns {webpack.Configuration}
 */
@@ -79,8 +74,8 @@ module.exports = (_env, { mode }) => ({
       },
 
       {
-        test: /\.svg$/,
-        include: [BOOTSTRAP_ICONS_DIR],
+        test: /\.json$/,
+        include: [require.resolve('./src/icons_list.json')],
         use: [
           {
             loader: './bootstrap-icons-loader',
@@ -90,7 +85,6 @@ module.exports = (_env, { mode }) => ({
 
       {
         test: /\.(?:png|jpe?g|gif|svg|eot|ttf|woff2?)$/i,
-        exclude: [BOOTSTRAP_ICONS_DIR],
         type: 'asset/resource',
       },
     ],
