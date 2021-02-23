@@ -10,8 +10,6 @@ for (let k in icons_obj) {
   }
 }
 
-console.log(icons_map);
-
 interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
   icon: string | null | undefined;
   size?: number | string;

@@ -167,10 +167,14 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
 
       <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
         <div className="Fragment-Original Fragment-TextBlock BoxItem-expand">
-          <FancyTextGui crosscode_markup>{fragment_data.original_text}</FancyTextGui>
+          <FancyTextGui highlight_crosscode_markup highlight_newlines>
+            {fragment_data.original_text}
+          </FancyTextGui>
         </div>
         <div className="Fragment-Translation Fragment-TextBlock BoxItem-expand">
-          <FancyTextGui crosscode_markup>{fragment_data.translation_text}</FancyTextGui>
+          <FancyTextGui highlight_crosscode_markup highlight_newlines>
+            {fragment_data.translation_text}
+          </FancyTextGui>
         </div>
       </BoxGui>
     </BoxGui>
