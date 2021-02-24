@@ -10,7 +10,7 @@ for (let k in icons_obj) {
   }
 }
 
-interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
+export interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
   icon: string | null | undefined;
   size?: number | string;
 }
@@ -29,6 +29,7 @@ export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(func
       width={size}
       height={size}
       fill="currentColor"
+      viewBox="0 0 16 16"
       className={cc([
         className,
         {

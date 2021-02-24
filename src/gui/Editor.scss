@@ -10,19 +10,24 @@
 
 .EditorTab {
   padding: $spacing * 2;
-  color: $color-EditorTab-inactive-text;
+  color: $color-EditorTab-inactive-fg;
   background-color: $color-EditorTab-inactive;
   cursor: pointer;
 
   &.EditorTab-active {
-    color: $color-EditorTab-active-text;
+    color: $color-EditorTab-active-fg;
     background-color: $color-EditorTab-active;
   }
 
   > .Icon.Icon-x {
     transform: scale(1.5);
+
     &:hover {
       color: #f48771;
+    }
+
+    &:active {
+      transform: scale(1.5 * 1.2);
     }
   }
 }
@@ -52,5 +57,18 @@
 
   .Fragment-Location > *:not(:last-child) {
     margin-right: 1em;
+  }
+
+  .Fragment-Translations > *:not(:last-child) {
+    margin-bottom: $spacing-Fragment;
+  }
+
+  .Fragment-Translation {
+    > .Fragment-Buttons {
+      align-items: baseline;
+      > .Label:not(:last-child) {
+        margin-right: 1em;
+      }
+    }
   }
 }

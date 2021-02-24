@@ -1,4 +1,12 @@
+@import '../theme.scss';
+
 .Icon {
   display: inline-block;
   vertical-align: text-bottom;
+}
+
+.Icon,
+.IconlikeText {
+  color: $color-Icon-fg;
+  user-select: none;
 }

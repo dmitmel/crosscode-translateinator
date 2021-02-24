@@ -9,18 +9,21 @@
   font-size: 16px;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: $color-text-normal;
+  color: $color-fg;
   user-select: none;
 
   *:focus {
     outline-color: $color-focus-outline;
+    outline-width: 1px;
+    outline-style: solid;
+    outline-offset: -1px;
   }
 
   a {
-    color: $color-text-link;
+    color: $color-Link-fg;
     text-decoration: none;
     &:hover {
-      color: $color-text-link-hover;
+      color: $color-Link-fg-hover;
       text-decoration: underline;
     }
   }

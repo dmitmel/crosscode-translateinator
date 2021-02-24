@@ -4,6 +4,7 @@ import { IconGui } from './Icon';
 import cc from 'classcat';
 import * as utils from '../utils';
 import { FancyTextGui } from './FancyText';
+import { IconButtonGui } from './Button';
 
 export interface EditorGuiProps {
   className?: string;
@@ -106,12 +107,23 @@ export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps
             '\n',
             'However, if those challenges end up making the game less enjoyable or even inaccessible for you, we provide options to tweak the difficulty through the \\c[3]assists\\c[0] tab in the \\c[3]options\\c[0] menu.',
           ].join(''),
-          translation_text: [
-            '\n',
-            '\\s[1]CrossCode разрабатывался с учётом \\c[3]вызова для игрока\\c[0], как в \\c[3]сражениях\\c[0], так и в \\c[3]головоломках\\c[0], и мы призываем всех игроков попробовать игру на предустановленной сложности. \n',
-            '\n',
-            'Однако, если это делает игру слишком сложной или даже непроходимой для вас, в меню \\c[3]настроек\\c[0] имеется \\c[3]вкладка\\c[0] c детальными настройками сложности.',
-          ].join(''),
+          translations: [
+            {
+              author: 'Packy',
+              timestamp: new Date(1614005617 * 1000),
+              text: [
+                '\n',
+                '\\s[1]CrossCode разрабатывался с учётом \\c[3]вызова для игрока\\c[0], как в \\c[3]сражениях\\c[0], так и в \\c[3]головоломках\\c[0], и мы призываем всех игроков попробовать игру на предустановленной сложности. \n',
+                '\n',
+                '\n',
+                '\n',
+                '\n',
+                '\n',
+                '\n',
+                'Однако, если это делает игру слишком сложной или даже непроходимой для вас, в меню \\c[3]настроек\\c[0] имеется \\c[3]вкладка\\c[0] c детальными настройками сложности.',
+              ].join(''),
+            },
+          ],
         }}
       />
     </BoxGui>
@@ -126,7 +138,11 @@ export interface FragmentGuiProps {
     lang_uid: number;
     description_lines: string[];
     original_text: string;
-    translation_text: string;
+    translations: Array<{
+      author: string;
+      timestamp: Date;
+      text: string;
+    }>;
   };
 }
 
@@ -155,7 +171,7 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
         </div>
         {fragment_data.lang_uid !== 0 ? (
           <div title="Lang UID">
-            {'# '}
+            <span className="IconlikeText">#</span>{' '}
             <span className="Label-selectable">{fragment_data.lang_uid}</span>
           </div>
         ) : null}
@@ -166,17 +182,69 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
       </div>
 
       <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
-        <div className="Fragment-Original Fragment-TextBlock BoxItem-expand">
-          <FancyTextGui highlight_crosscode_markup highlight_newlines>
-            {fragment_data.original_text}
-          </FancyTextGui>
-        </div>
-        <div className="Fragment-Translation Fragment-TextBlock BoxItem-expand">
-          <FancyTextGui highlight_crosscode_markup highlight_newlines>
-            {fragment_data.translation_text}
-          </FancyTextGui>
-        </div>
+        <BoxGui orientation="vertical" allow_overflow className="Fragment-Original BoxItem-expand">
+          <div className="Fragment-TextBlock">
+            <FancyTextGui
+              highlight_crosscode_markup
+              highlight_newlines
+              className="Label-selectable">
+              {fragment_data.original_text}
+            </FancyTextGui>
+          </div>
+          <BoxGui orientation="horizontal" className="Fragment-Buttons">
+            <div className="BoxItem-expand" />
+            <IconButtonGui icon="clipboard" title="Copy the original text" />
+            <IconButtonGui icon="search" title="Search other fragments with this original text" />
+          </BoxGui>
+        </BoxGui>
+
+        <BoxGui orientation="vertical" className="BoxItem-expand Fragment-Translations">
+          {fragment_data.translations.flatMap((translation_data) => (
+            <BoxGui orientation="vertical" allow_overflow className="Fragment-Translation">
+              <div className="Fragment-TextBlock">
+                <FancyTextGui
+                  highlight_crosscode_markup
+                  highlight_newlines
+                  className="Label-selectable">
+                  {translation_data.text}
+                </FancyTextGui>
+              </div>
+              <BoxGui orientation="horizontal" className="Fragment-Buttons">
+                <div className="Label Label-ellipsis Label-selectable">
+                  {translation_data.author}
+                </div>
+                <div className="Label Label-ellipsis Label-selectable">
+                  at {format_timestamp(translation_data.timestamp)}
+                </div>
+                <div className="BoxItem-expand" />
+                <IconButtonGui icon="clipboard" title="Copy the translation text" />
+                <IconButtonGui icon="pencil-square" title="Edit this translation" />
+                <IconButtonGui
+                  icon="chat-left-quote"
+                  title="Add a comment about this translation"
+                />
+                <IconButtonGui icon="trash-fill" title="Delete this translation" />
+              </BoxGui>
+            </BoxGui>
+          ))}
+        </BoxGui>
       </BoxGui>
     </BoxGui>
   );
+}
+
+export function format_timestamp(timestamp: Date): string {
+  let str = '';
+  str += timestamp.getFullYear().toString(10).padStart(4, '0');
+  str += '-';
+  str += timestamp.getMonth().toString(10).padStart(2, '0');
+  str += '-';
+  str += timestamp.getDate().toString(10).padStart(2, '0');
+  str += ' ';
+  str += timestamp.getHours().toString(10).padStart(2, '0');
+  str += ':';
+  str += timestamp.getMinutes().toString(10).padStart(2, '0');
+  str += ':';
+  str += timestamp.getSeconds().toString(10).padStart(2, '0');
+  return str;
 }

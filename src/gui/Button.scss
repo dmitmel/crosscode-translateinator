@@ -1,0 +1,26 @@
+@import '../theme.scss';
+
+$IconButton-font-size: 18px;
+// $Button-bg-color: #3a3d41;
+// $Button-bg-color-hover: scale-color($Button-bg-color, $lightness: 20%);
+$Button-bg-color-hover: #3a3d41;
+// $Button-bg-color: scale-color($Button-bg-color-hover, $lightness: -20%);
+
+.IconButton {
+  padding: $spacing;
+  cursor: pointer;
+  font-size: 18px;
+  color: $color-Icon-fg;
+
+  // &.IconButton-disabled {
+  //   color: /* TODO */;
+  // }
+
+  &:hover {
+    background-color: $color-ProjectTreeItem-hover;
+  }
+
+  &:active > .Icon {
+    transform: scale(1.2);
+  }
+}

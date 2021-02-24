@@ -1,5 +1,6 @@
 import * as utils from '../utils';
 import * as crosscode_markup from '../crosscode_markup';
+import cc from 'classcat';
 
 export const WHITESPACE_COLOR = '#666666';
 export const SPECIAL_ESCAPES_COLOR = '#66ccdd';
@@ -9,6 +10,7 @@ export interface FancyTextGuiProps {
   highlight_crosscode_markup?: boolean;
   highlight_newlines?: boolean;
   // TODO: highlight leading/trailing whitespace
+  className?: string;
   children: string;
 }
 
@@ -58,6 +60,7 @@ export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JS
         text_slice.slice(line_start_index, newline_index),
         <span
           key={`${token_key};whitespace;${newline_index}`}
+          className="IconlikeText"
           style={{ ...token_style, border: '1px solid currentColor', color: WHITESPACE_COLOR }}>
           {NEWLINE_ICON_CHAR}
         </span>,
@@ -81,7 +84,7 @@ export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JS
     );
   }
 
-  return <span className="FancyTextGui">{token_elements}</span>;
+  return <span className={cc([props.className, 'FancyTextGui'])}>{token_elements}</span>;
 }
 
 /// Taken from <https://stackoverflow.com/a/6234804/12005228>.

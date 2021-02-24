@@ -195,7 +195,7 @@ export class Backend {
     }
 
     let text = text_bytes.toString('utf8');
-    console.log('recv', text);
+    // console.log('recv', text);
     let message: Message = JSON.parse(text);
     switch (message.type) {
       case 'req': {
