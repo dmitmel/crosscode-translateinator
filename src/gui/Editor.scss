@@ -9,7 +9,7 @@
 }
 
 .EditorTab {
-  padding: $offset-normal * 2;
+  padding: $spacing * 2;
   color: $color-EditorTab-inactive-text;
   background-color: $color-EditorTab-inactive;
   cursor: pointer;
@@ -28,26 +28,26 @@
 }
 
 .FragmentList {
-  padding: $offset-normal * 2;
+  padding: $spacing * 2;
 }
 
 .Fragment {
   font-size: (18em / 16);
 
-  $offset-Fragment: $offset-normal * (4/3);
+  $spacing-Fragment: $spacing * (4/3);
 
   .Fragment-TextBlock {
     white-space: pre-wrap;
     background-color: #252526;
-    padding: $offset-Fragment;
+    padding: $spacing-Fragment;
   }
 
   > *:not(:last-child) {
-    margin-bottom: $offset-Fragment;
+    margin-bottom: $spacing-Fragment;
   }
 
   .Fragment-Columns > *:not(:last-child) {
-    margin-right: $offset-Fragment;
+    margin-right: $spacing-Fragment;
   }
 
   .Fragment-Location > *:not(:last-child) {

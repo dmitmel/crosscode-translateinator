@@ -7,7 +7,7 @@
 }
 
 .ProjectTree-Header {
-  padding: ($offset-normal * 2) $offset-normal;
+  padding: ($spacing * 2) $spacing;
   color: $color-EditorTab-active-text;
 }
 
@@ -22,8 +22,8 @@
 }
 
 .ProjectTreeItem {
-  padding: $offset-normal;
-  padding-left: calc(#{$offset-normal} + var(--ProjectTreeItem-depth, 0) * #{$offset-normal} * 2);
+  padding: $spacing;
+  padding-left: calc(#{$spacing} + var(--ProjectTreeItem-depth, 0) * #{$spacing} * 2);
   cursor: pointer;
 
   &:hover {
