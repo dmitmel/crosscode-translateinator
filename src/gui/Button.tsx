@@ -18,16 +18,7 @@ export function IconButtonGui({
   ...div_props
 }: utils.ComponentProps<IconButtonGuiProps>): JSX.Element {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      className={cc([
-        className,
-        {
-          IconButton: true,
-        },
-      ])}
-      {...div_props}>
+    <div role="button" tabIndex={0} className={cc([className, 'IconButton'])} {...div_props}>
       <IconGui icon={icon} size={size} {...icon_props} />
     </div>
   );

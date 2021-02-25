@@ -117,11 +117,10 @@ export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionG
     return (
       <BoxGui
         orientation="vertical"
-        className={cc({
-          ProjectTreeSection: true,
-          'ProjectTreeSection-opened': is_opened,
-          'BoxItem-expand': is_opened,
-        })}>
+        className={cc([
+          'ProjectTreeSection',
+          { 'ProjectTreeSection-opened': is_opened, 'BoxItem-expand': is_opened },
+        ])}>
         <div
           className="ProjectTreeSection-Name ProjectTreeItem"
           tabIndex={0}

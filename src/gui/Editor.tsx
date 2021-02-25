@@ -12,14 +12,7 @@ export interface EditorGuiProps {
 
 export function EditorGui(props: utils.ComponentProps<EditorGuiProps>): JSX.Element {
   return (
-    <BoxGui
-      orientation="vertical"
-      className={cc([
-        props.className,
-        {
-          Editor: true,
-        },
-      ])}>
+    <BoxGui orientation="vertical" className={cc([props.className, 'Editor'])}>
       <EditorTabListGui />
       <BoxGui orientation="vertical" scroll className="BoxItem-expand">
         <FragmentListGui />
@@ -34,15 +27,7 @@ export interface EditorTabListGuiProps {
 
 export function EditorTabListGui(props: utils.ComponentProps<EditorTabListGuiProps>): JSX.Element {
   return (
-    <BoxGui
-      orientation="horizontal"
-      scroll
-      className={cc([
-        props.className,
-        {
-          EditorTabList: true,
-        },
-      ])}>
+    <BoxGui orientation="horizontal" scroll className={cc([props.className, 'EditorTabList'])}>
       <EditorTabGui active={false} type="search" name={'Search'} />
       <EditorTabGui active={false} type="queue" name={'Queue'} />
       <EditorTabGui active={true} type="game_file" name={'database.json'} />
@@ -69,12 +54,7 @@ export interface EditorTabGuiProps {
 
 export function EditorTabGui(props: utils.ComponentProps<EditorTabGuiProps>): JSX.Element {
   return (
-    <div
-      className={cc({
-        EditorTab: true,
-        'EditorTab-active': props.active,
-      })}
-      tabIndex={0}>
+    <div className={cc(['EditorTab', { 'EditorTab-active': props.active }])} tabIndex={0}>
       <IconGui icon={EDITOR_TAB_ICONS.get(props.type)} /> {props.name} <IconGui icon="x" />
     </div>
   );
@@ -86,13 +66,7 @@ export interface FragmentListGuiProps {
 
 export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps>): JSX.Element {
   return (
-    <div
-      className={cc([
-        props.className,
-        {
-          FragmentList: true,
-        },
-      ])}>
+    <div className={cc([props.className, 'FragmentList'])}>
       <FragmentGui
         fragment_data={{
           file_path: 'data/maps/hideout/entrance.json',
@@ -147,15 +121,7 @@ export interface FragmentGuiProps {
 export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.Element {
   let { fragment_data } = props;
   return (
-    <BoxGui
-      orientation="vertical"
-      allow_overflow
-      className={cc([
-        props.className,
-        {
-          Fragment: true,
-        },
-      ])}>
+    <BoxGui orientation="vertical" allow_overflow className={cc([props.className, 'Fragment'])}>
       <BoxGui orientation="horizontal" allow_wrapping allow_overflow className="Fragment-Location">
         <div title="File path">
           <IconGui icon="file-earmark-text" />{' '}

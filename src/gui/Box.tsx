@@ -26,9 +26,9 @@ export function BoxGui({
     <div
       className={cc([
         className,
+        'Box',
+        `Box-orientation-${orientation}`,
         {
-          Box: true,
-          [`Box-orientation-${orientation}`]: true,
           'Box-inline': inline,
           'Box-reverse-children': reverse_children,
           'Box-scroll': scroll,

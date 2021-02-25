@@ -30,13 +30,7 @@ export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(func
       height={size}
       fill="currentColor"
       viewBox="0 0 16 16"
-      className={cc([
-        className,
-        {
-          Icon: true,
-          [`Icon-${icon}`]: icon != null,
-        },
-      ])}
+      className={cc([className, 'Icon', icon != null ? `Icon-${icon}` : null])}
       {...rest}
       dangerouslySetInnerHTML={{ __html: icon_xml }}
     />
