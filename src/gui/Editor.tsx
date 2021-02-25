@@ -86,9 +86,7 @@ export interface FragmentListGuiProps {
 
 export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps>): JSX.Element {
   return (
-    <BoxGui
-      orientation="vertical"
-      allow_overflow
+    <div
       className={cc([
         props.className,
         {
@@ -126,7 +124,7 @@ export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps
           ],
         }}
       />
-    </BoxGui>
+    </div>
   );
 }
 
@@ -198,7 +196,10 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
           </BoxGui>
         </BoxGui>
 
-        <BoxGui orientation="vertical" className="BoxItem-expand Fragment-Translations">
+        <BoxGui
+          orientation="vertical"
+          allow_overflow
+          className="BoxItem-expand Fragment-Translations">
           {fragment_data.translations.flatMap((translation_data) => (
             <BoxGui orientation="vertical" allow_overflow className="Fragment-Translation">
               <div className="Fragment-TextBlock">
