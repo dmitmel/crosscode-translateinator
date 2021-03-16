@@ -1,5 +1,3 @@
-import * as subprocess from 'child_process';
-import * as stream from 'stream';
 import { Event2 } from './events';
 import * as utils from './utils';
 import * as crosslocale_bridge from './backend/ffi_bridge';
@@ -74,7 +72,8 @@ export class Backend {
     disconnected: new Event2(),
   };
 
-  public connect(): void {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async connect(): Promise<void> {
     if (!(this.state === BackendState.DISCONNECTED)) {
       throw new Error('Assertion failed: this.state === BackendState.DISCONNECTED');
     }
