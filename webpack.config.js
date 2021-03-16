@@ -15,7 +15,19 @@ module.exports = (_env, { mode }) => ({
   mode,
   devtool: 'source-map',
 
-  entry: './src/main',
+  entry: {
+    main: [
+      './src/main',
+      'crosscode-localization-engine/build/Release/crosslocale.node',
+      `crosscode-localization-engine/build/Release/${
+        {
+          linux: 'libcrosslocale.so',
+          darwin: 'libcrosslocale.dylib',
+          win32: 'crosslocale.dll',
+        }[process.platform]
+      }`,
+    ],
+  },
   target: 'nwjs0.35',
   output: {
     path: paths.join(__dirname, 'target', mode),
@@ -84,8 +96,14 @@ module.exports = (_env, { mode }) => ({
       },
 
       {
-        test: /\.(?:png|jpe?g|gif|svg|eot|ttf|woff2?)$/i,
+        test: /\.(?:png|jpe?g|gif|svg|eot|ttf|woff2?)$/,
         type: 'asset/resource',
+      },
+
+      {
+        test: /\.(node|so|dylib|dll)$/,
+        type: 'asset/resource',
+        generator: { filename: '[base]' },
       },
     ],
   },

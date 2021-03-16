@@ -3,6 +3,9 @@ import * as subprocess from 'child_process';
 import * as stream from 'stream';
 import { Event2 } from './events';
 import * as utils from './utils';
+import * as crosslocale_bridge from './backend/ffi_bridge';
+
+crosslocale_bridge.init_logging();
 
 export const PROTOCOL_VERSION = 0;
 

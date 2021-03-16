@@ -8,6 +8,9 @@ parserOptions:
 settings:
   node:
     tryExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json']
+    allowModules:
+      - ultimate-crosscode-typedefs
+      - crosscode-localization-engine
 
 rules:
   func-names: off
