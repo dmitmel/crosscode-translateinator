@@ -19,12 +19,18 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
   }
 
   public componentDidMount(): void {
+    window.addEventListener('beforeunload', this.on_page_unload);
     void this.inner.connect();
   }
 
   public componentWillUnmount(): void {
+    window.removeEventListener('beforeunload', this.on_page_unload);
     this.inner.disconnect();
   }
+
+  private on_page_unload = (): void => {
+    this.inner.disconnect();
+  };
 
   public render(): JSX.Element {
     return (
