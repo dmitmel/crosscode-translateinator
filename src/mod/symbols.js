@@ -6,6 +6,5 @@
 // P.S. Additionally they are invisble to the for-in loop.
 // See also <https://developer.mozilla.org/en-US/docs/Glossary/Symbol>.
 
-/* eslint-disable camelcase */
 export const LangLabel_filePath = Symbol('LangLabel_filePath');
 export const LangLabel_jsonPath = Symbol('LangLabel_jsonPath');

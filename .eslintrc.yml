@@ -24,14 +24,15 @@ rules:
 
 overrides:
   - files: '**/*.{ts,tsx}'
-    extends: eslint-config-dmitmel/presets/typescript-with-type-checking-addon
+    extends: eslint-config-dmitmel/presets/typescript-addon
+
+  - files: 'src/**/*.{ts,tsx}'
+    extends: eslint-config-dmitmel/rules/typescript/with-type-checking
+    parserOptions:
+      project: 'tsconfig.json'
     rules:
       '@typescript-eslint/no-use-before-define': off
       '@typescript-eslint/naming-convention': off
-
-  - files: 'src/**/*.{ts,tsx}'
-    parserOptions:
-      project: 'tsconfig.json'
 
   - files: 'src/mod/**/*.js'
     globals:

@@ -1,6 +1,8 @@
 node_modules/
 build/
 target/
-ultimate-crosscode-typedefs/
 .eslintcache
 yarn*.log
+
+ultimate-crosscode-typedefs/
+crosscode-localization-engine/
