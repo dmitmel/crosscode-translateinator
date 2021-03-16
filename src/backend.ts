@@ -1,4 +1,3 @@
-import stream_binary_split from 'binary-split';
 import * as subprocess from 'child_process';
 import * as stream from 'stream';
 import { Event2 } from './events';
@@ -57,19 +56,13 @@ export type ResponseMessageType =
   | { type: 'Project/list_tr_files'; paths: string[] }
   | { type: 'Project/list_virtual_game_files'; paths: string[] };
 
-type BackendSubprocess = subprocess.ChildProcessByStdio<
-  stream.Writable, // stdin
-  stream.Readable, // stdout
-  stream.Readable // stderr
->;
-
 export enum BackendState {
   DISCONNECTED,
   CONNECTED,
 }
 
 export class Backend {
-  private proc: BackendSubprocess = null!;
+  private transport: crosslocale_bridge.Backend = null!;
   private state = BackendState.DISCONNECTED;
   private current_request_id = 1;
   private sent_request_success_callbacks = new Map<number, (data: ResponseMessageType) => void>();
@@ -81,124 +74,55 @@ export class Backend {
     disconnected: new Event2(),
   };
 
-  public async connect(): Promise<void> {
+  public connect(): void {
     if (!(this.state === BackendState.DISCONNECTED)) {
       throw new Error('Assertion failed: this.state === BackendState.DISCONNECTED');
     }
 
     this.state = BackendState.DISCONNECTED;
-    await this.spawn_process();
+
+    this.transport = new crosslocale_bridge.Backend();
+    void this.run_message_receiver_loop();
+
     this.state = BackendState.CONNECTED;
     this.events.connected.fire();
   }
 
-  // The root of insanity. Please, contain calls to the retarded node.js stream
-  // APIs in this method.
-  private async spawn_process(): Promise<void> {
-    if (!(this.state === BackendState.DISCONNECTED)) {
-      throw new Error('Assertion failed: this.state === BackendState.DISCONNECTED');
-    }
-    if (!(this.proc == null)) {
-      throw new Error('Assertion failed: this.proc == null');
-    }
-
-    this.proc = (await spawn_subprocess_safe(
-      'crosslocale',
-      ['backend', '--transport=stdio', `--protocol-version=${PROTOCOL_VERSION}`],
-      {
-        stdio: [
-          'pipe', // stdin
-          'pipe', // stdout
-          'pipe', // stderr
-        ],
-        windowsHide: true,
-      },
-    )) as BackendSubprocess;
-
-    this.proc.on('close', (code) => {
-      console.warn('Subprocess exited with code', code);
-      this.disconnect();
-    });
-
-    this.proc.stdin
-      .on('error', (error) => {
-        console.error('this.proc.stdin', error);
-        this.events.error.fire(error);
-        this.disconnect();
-      })
-      .on('close', () => {
-        console.warn('this.proc.stdin closed');
-        this.disconnect();
-      });
-
-    this.proc.stderr
-      .on('error', (error) => {
-        console.error('this.proc.stderr', error);
-        this.events.error.fire(error);
-        this.disconnect();
-      })
-      .on('data', (chunk: Buffer) => {
-        console.warn(chunk.toString('utf8'));
-      })
-      .on('close', () => {
-        console.warn('this.proc.stderr closed');
-        this.disconnect();
-      });
-
-    // Why are those stupid streams so damn hard to use correctly?
-    this.proc.stdout
-      .on('error', (error) => {
-        console.error('this.proc.stdout', error);
-        this.events.error.fire(error);
-        this.disconnect();
-      })
-      .on('close', () => {
-        console.warn('this.proc.stdout closed');
-        this.disconnect();
-      })
-      .pipe(stream_binary_split('\n'))
-      .on('error', (error) => {
-        console.error('this.proc.stdout.pipe(stream_binary_split)', error);
-        this.events.error.fire(error);
-        this.disconnect();
-      })
-      .on('data', (line: Buffer) => {
-        try {
-          this.recv_message_internal(line);
-        } catch (error) {
-          console.error('recvMessageInternal', error);
-          this.events.error.fire(error);
-          this.disconnect();
+  private async run_message_receiver_loop(): Promise<void> {
+    while (true) {
+      let message: string;
+      try {
+        message = await new Promise((resolve, reject) => {
+          this.transport.recv_message((err, message) => {
+            if (err != null) reject(err);
+            else resolve(message);
+          });
+        });
+      } catch (e) {
+        if (e.code === 'CROSSLOCALE_ERR_BACKEND_DISCONNECTED') {
+          break;
         }
-      })
-      .on('close', () => {
-        console.warn('this.proc.stdout.pipe(stream_binary_split) closed');
-        this.disconnect();
-      });
+        throw e;
+      }
+      this.recv_message_internal(message);
+    }
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   private async send_message_internal(message: Message): Promise<void> {
     if (!(this.state !== BackendState.DISCONNECTED)) {
       throw new Error('Assertion failed: this.state !== BackendState.DISCONNECTED');
     }
 
     let text = JSON.stringify(message);
-    console.log('send', text);
-    // TODO: lock the stdin, so that only one write happens at a time
-    if (!this.proc.stdin.write(`${text}\n`)) {
-      await new Promise<void>((resolve) => {
-        this.proc.stdin.once('drain', resolve);
-      });
-    }
+    this.transport.send_message(text);
   }
 
-  private recv_message_internal(text_bytes: Buffer): void {
+  private recv_message_internal(text: string): void {
     if (!(this.state !== BackendState.DISCONNECTED)) {
       throw new Error('Assertion failed: this.state !== BackendState.DISCONNECTED');
     }
 
-    let text = text_bytes.toString('utf8');
-    // console.log('recv', text);
     let message: Message = JSON.parse(text);
     switch (message.type) {
       case 'req': {
@@ -251,40 +175,9 @@ export class Backend {
   public disconnect(): void {
     if (this.state === BackendState.DISCONNECTED) return;
 
-    this.proc.stdin.destroy();
-    this.proc.stdout.destroy();
-    this.proc.stderr.destroy();
-
-    this.proc.stdin.removeAllListeners();
-    this.proc.stdout.removeAllListeners();
-    this.proc.stderr.removeAllListeners();
-    this.proc.removeAllListeners();
-
-    this.state = BackendState.DISCONNECTED;
-    this.proc = null!;
+    this.transport.close();
+    this.transport = null!;
 
     this.events.disconnected.fire();
   }
-}
-
-function spawn_subprocess_safe(
-  command: string,
-  args: readonly string[],
-  options: subprocess.SpawnOptions,
-): Promise<subprocess.ChildProcess> {
-  return new Promise((resolve, reject) => {
-    let proc = subprocess.spawn(command, args, options);
-
-    let caught_error = false;
-    let error_listener = (err: Error): void => {
-      caught_error = true;
-      reject(Object.assign(err, { proc }));
-    };
-    proc.once('error', error_listener);
-
-    process.nextTick(() => {
-      proc.off('error', error_listener);
-      if (!caught_error) resolve(proc);
-    });
-  });
 }
