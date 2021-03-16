@@ -60,6 +60,8 @@ jobs:
         run: |
           npm ci --ignore-scripts
           yarn link
+          mkdir -p build/Release/
+          touch build/Release/{crosslocale.node,libcrosslocale.so}
 
       - name: Install dependencies
         run: |
