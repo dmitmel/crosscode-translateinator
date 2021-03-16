@@ -5,6 +5,9 @@ import * as crosslocale_bridge from './backend/ffi_bridge';
 crosslocale_bridge.init_logging();
 
 export const PROTOCOL_VERSION = 0;
+if (crosslocale_bridge.PROTOCOL_VERSION !== PROTOCOL_VERSION) {
+  throw new Error('Unsupported protocol version!');
+}
 
 export type Message = RequestMessage | ResponseMessage | ErrorResponseMessage;
 
