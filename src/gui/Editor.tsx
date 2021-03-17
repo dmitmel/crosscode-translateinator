@@ -1,5 +1,5 @@
 import './Editor.scss';
-import { BoxGui } from './Box';
+import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import cc from 'classcat';
 import * as utils from '../utils';
@@ -54,9 +54,13 @@ export interface EditorTabGuiProps {
 
 export function EditorTabGui(props: utils.ComponentProps<EditorTabGuiProps>): JSX.Element {
   return (
-    <div className={cc(['EditorTab', { 'EditorTab-active': props.active }])} tabIndex={0}>
+    <button
+      type="button"
+      className={cc(['EditorTab', { 'EditorTab-active': props.active }, 'ButtonReset'])}
+      tabIndex={0}
+      onClick={() => console.log('open', props.name)}>
       <IconGui icon={EDITOR_TAB_ICONS.get(props.type)} /> {props.name} <IconGui icon="x" />
-    </div>
+    </button>
   );
 }
 
@@ -66,7 +70,7 @@ export interface FragmentListGuiProps {
 
 export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps>): JSX.Element {
   return (
-    <div className={cc([props.className, 'FragmentList'])}>
+    <WrapperGui className={cc([props.className, 'FragmentList'])} scroll>
       <FragmentGui
         fragment_data={{
           file_path: 'data/maps/hideout/entrance.json',
@@ -98,7 +102,7 @@ export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps
           ],
         }}
       />
-    </div>
+    </WrapperGui>
   );
 }
 

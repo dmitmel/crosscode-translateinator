@@ -51,3 +51,16 @@
     flex-wrap: wrap;
   }
 }
+
+.Wrapper {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+
+  &:not(.Wrapper-allow-overflow) {
+    overflow-y: hidden;
+  }
+  &.Wrapper-scroll {
+    overflow-y: auto;
+  }
+}

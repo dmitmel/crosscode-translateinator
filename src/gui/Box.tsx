@@ -41,3 +41,32 @@ export function BoxGui({
     </div>
   );
 }
+
+export interface WrapperGuiProps extends HTMLAttributes<HTMLDivElement> {
+  scroll?: boolean;
+  allow_overflow?: boolean;
+}
+
+export function WrapperGui({
+  scroll,
+  allow_overflow,
+  className,
+  class: _class,
+  children,
+  ...rest
+}: WrapperGuiProps): JSX.Element {
+  return (
+    <div
+      className={cc([
+        className,
+        'Wrapper',
+        {
+          'Wrapper-scroll': scroll,
+          'Wrapper-allow-overflow': allow_overflow,
+        },
+      ])}
+      {...rest}>
+      {children}
+    </div>
+  );
+}

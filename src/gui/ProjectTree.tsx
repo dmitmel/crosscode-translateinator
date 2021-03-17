@@ -1,10 +1,11 @@
 import * as Inferno from 'inferno';
 import './ProjectTree.scss';
-import { BoxGui } from './Box';
+import { BoxGui, WrapperGui } from './Box';
 import { AppMainGuiCtx } from './AppMain';
 import { IconGui } from './Icon';
 import cc from 'classcat';
 import './Label';
+import './Button';
 
 export interface ProjectTreeGuiState {
   translation_locale: string | null;
@@ -121,18 +122,16 @@ export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionG
           'ProjectTreeSection',
           { 'ProjectTreeSection-opened': is_opened, 'BoxItem-expand': is_opened },
         ])}>
-        <div
-          className="ProjectTreeSection-Name ProjectTreeItem"
-          tabIndex={0}
-          onClick={this.on_name_click}>
-          <IconGui icon={`chevron-${is_opened ? 'down' : 'right'}`} /> {this.props.name}
+        <div>
+          <button
+            type="button"
+            className="ProjectTreeSection-Name ProjectTreeItem ButtonReset ButtonReset-block"
+            tabIndex={0}
+            onClick={this.on_name_click}>
+            <IconGui icon={`chevron-${is_opened ? 'down' : 'right'}`} /> {this.props.name}
+          </button>
         </div>
-        {is_opened ? (
-          // TODO: use a simple div with overflow: auto
-          <BoxGui orientation="vertical" scroll>
-            {this.props.children}
-          </BoxGui>
-        ) : null}
+        {is_opened ? <WrapperGui scroll>{this.props.children}</WrapperGui> : null}
       </BoxGui>
     );
   }
@@ -202,9 +201,10 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, unk
       : this.props.files_icon;
 
     let elements = [
-      <div
+      <button
         key={full_path}
-        className="ProjectTreeItem"
+        type="button"
+        className="ProjectTreeItem ButtonReset ButtonReset-block"
         style={{ '--ProjectTreeItem-depth': this.props.depth }}
         title={full_path}
         tabIndex={0}
@@ -217,7 +217,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, unk
         <div className="Label-ellipsis">
           <IconGui icon={icon} /> {name}
         </div>
-      </div>,
+      </button>,
     ];
 
     if (this.state.is_opened && is_directory) {
