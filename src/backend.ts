@@ -35,7 +35,14 @@ export type RequestMessageType =
   | { type: 'Project/close'; project_id: number }
   | { type: 'Project/get_meta'; project_id: number }
   | { type: 'Project/list_tr_files'; project_id: number }
-  | { type: 'Project/list_virtual_game_files'; project_id: number };
+  | { type: 'Project/list_virtual_game_files'; project_id: number }
+  | {
+      type: 'VirtualGameFile/list_fragments';
+      project_id: number;
+      file_path: string;
+      start?: number | null;
+      end?: number | null;
+    };
 
 export type ResponseMessageType =
   | { type: 'ok' }
@@ -55,7 +62,38 @@ export type ResponseMessageType =
       splitter: string;
     }
   | { type: 'Project/list_tr_files'; paths: string[] }
-  | { type: 'Project/list_virtual_game_files'; paths: string[] };
+  | { type: 'Project/list_virtual_game_files'; paths: string[] }
+  | { type: 'VirtualGameFile/list_fragments'; fragments: ListedFragment[] };
+
+export interface ListedFragment {
+  id: string;
+  json: string;
+  luid?: number | null;
+  desc?: string[] | null;
+  orig: string;
+  flags?: string[] | null;
+  tr?: ListedTranslation[] | null;
+  cm?: ListedComment[] | null;
+}
+
+export interface ListedTranslation {
+  id: string;
+  author: string;
+  editor: string;
+  ctime: number;
+  mtime: number;
+  text: string;
+  flags?: string[] | null;
+}
+
+export interface ListedComment {
+  id: string;
+  author: string;
+  editor: string;
+  ctime: number;
+  mtime: number;
+  text: string;
+}
 
 export enum BackendState {
   DISCONNECTED,
@@ -155,8 +193,8 @@ export class Backend {
     }
   }
 
-  public async send_request<T extends string>(
-    data: RequestMessageType,
+  public async send_request<T extends RequestMessageType['type'] & ResponseMessageType['type']>(
+    data: RequestMessageType & { type: T },
   ): Promise<ResponseMessageType & { type: T }> {
     if (!(this.state !== BackendState.DISCONNECTED)) {
       throw new Error('Assertion failed: this.state !== BackendState.DISCONNECTED');

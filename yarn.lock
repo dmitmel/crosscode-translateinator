@@ -1647,6 +1647,11 @@ inferno-vnode-flags@7.4.7:
   resolved "https://registry.yarnpkg.com/inferno-vnode-flags/-/inferno-vnode-flags-7.4.7.tgz#7621bdc9ce72824908e6340a35a03702c221086d"
   integrity sha512-4sP5XnAHbKEPB/cLuY462/15XPrT5/0KMprO6XamugEukhZYNFcAjzF5jqo+LOtR859RMoX3uh/KOXVT3vpvfw==
 
+inferno-vnode-flags@^7.4.8:
+  version "7.4.8"
+  resolved "https://registry.yarnpkg.com/inferno-vnode-flags/-/inferno-vnode-flags-7.4.8.tgz#275d70e3c8b2b3f4eb56041cc9b8c832ce1fb26d"
+  integrity sha512-wOUeO7Aho8VH+s2V2K/53KwS0DtQFgT7TdzPE/s6P26ZIxQj+vt7oTJqzXn+xjRIjnfkTLm2eQ8qfInOWCu1rw==
+
 inferno@^7.4.7:
   version "7.4.7"
   resolved "https://registry.yarnpkg.com/inferno/-/inferno-7.4.7.tgz#6f390bf4dcbde4c60bc53b3fd913dd80d96c7e4a"

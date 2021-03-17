@@ -13,7 +13,7 @@ export interface ProjectTreeGuiState {
   virtual_game_files: PathTree | null;
 }
 
-export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
+export class ProjectTreeGui extends Inferno.Component {
   public context!: AppMainGuiCtx;
   public state: ProjectTreeGuiState = {
     translation_locale: null,
@@ -38,7 +38,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     this.setState({ translation_locale: app.current_project_meta!.translation_locale });
 
     {
-      let response = await app.backend.send_request<'Project/list_tr_files'>({
+      let response = await app.backend.send_request({
         type: 'Project/list_tr_files',
         project_id: app.current_project_id!,
       });
@@ -46,7 +46,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     }
 
     {
-      let response = await app.backend.send_request<'Project/list_virtual_game_files'>({
+      let response = await app.backend.send_request({
         type: 'Project/list_virtual_game_files',
         project_id: app.current_project_id!,
       });
@@ -104,7 +104,7 @@ export interface ProjectTreeSectionGuiState {
   is_opened: boolean;
 }
 
-export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionGuiProps, unknown> {
+export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionGuiProps> {
   public state: ProjectTreeSectionGuiState = {
     is_opened: false,
   };
@@ -179,7 +179,7 @@ export interface FileTreeItemGuiState {
   is_opened: boolean;
 }
 
-export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, unknown> {
+export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps> {
   public state: FileTreeItemGuiState = {
     is_opened: this.props.default_opened ?? false,
   };

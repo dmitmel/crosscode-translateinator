@@ -11,7 +11,7 @@ export interface AppMainGuiCtx {
   app: AppMain;
 }
 
-export class AppMainGui extends Inferno.Component<unknown, unknown> {
+export class AppMainGui extends Inferno.Component {
   public inner = new AppMain();
 
   public getChildContext(): AppMainGuiCtx {

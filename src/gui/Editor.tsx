@@ -1,3 +1,5 @@
+import * as Inferno from 'inferno';
+import { ChildFlags } from 'inferno-vnode-flags';
 import './Editor.scss';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
@@ -5,20 +7,62 @@ import cc from 'classcat';
 import * as utils from '../utils';
 import { FancyTextGui } from './FancyText';
 import { IconButtonGui } from './Button';
+import { ListedFragment } from '../backend';
+import { AppMainGuiCtx } from './AppMain';
 
 export interface EditorGuiProps {
   className?: string;
 }
 
-export function EditorGui(props: utils.ComponentProps<EditorGuiProps>): JSX.Element {
-  return (
-    <BoxGui orientation="vertical" className={cc([props.className, 'Editor'])}>
-      <EditorTabListGui />
-      <BoxGui orientation="vertical" scroll className="BoxItem-expand">
-        <FragmentListGui />
+export interface EditorGuiState {
+  fragments: Array<ListedFragment & { file: string }>;
+}
+
+export class EditorGui extends Inferno.Component<EditorGuiProps> {
+  public context!: AppMainGuiCtx;
+  public state: EditorGuiState = {
+    fragments: [],
+  };
+
+  public componentDidMount(): void {
+    let { app } = this.context;
+    app.events.project_opened.on(this.on_project_opened);
+    app.events.project_closed.on(this.on_project_closed);
+  }
+
+  public componentWillUnmount(): void {
+    let { app } = this.context;
+    app.events.project_opened.off(this.on_project_opened);
+    app.events.project_closed.off(this.on_project_closed);
+  }
+
+  private on_project_opened = async (): Promise<void> => {
+    let { app } = this.context;
+    this.setState({ translation_locale: app.current_project_meta!.translation_locale });
+
+    let file_path = 'data/maps/hideout/entrance.json';
+    let response = await app.backend.send_request({
+      type: 'VirtualGameFile/list_fragments',
+      project_id: app.current_project_id!,
+      file_path,
+    });
+    this.setState({ fragments: response.fragments.map((f) => ({ ...f, file: file_path })) });
+  };
+
+  private on_project_closed = (): void => {
+    this.setState({ fragments: [] });
+  };
+
+  public render(): JSX.Element {
+    return (
+      <BoxGui orientation="vertical" className={cc([this.props.className, 'Editor'])}>
+        <EditorTabListGui />
+        <BoxGui orientation="vertical" scroll className="BoxItem-expand">
+          {<FragmentListGui fragments={this.state.fragments} />}
+        </BoxGui>
       </BoxGui>
-    </BoxGui>
-  );
+    );
+  }
 }
 
 export interface EditorTabListGuiProps {
@@ -66,88 +110,54 @@ export function EditorTabGui(props: utils.ComponentProps<EditorTabGuiProps>): JS
 
 export interface FragmentListGuiProps {
   className?: string;
+  fragments: Array<ListedFragment & { file: string }>;
 }
 
 export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps>): JSX.Element {
   return (
     <WrapperGui className={cc([props.className, 'FragmentList'])} scroll>
-      <FragmentGui
-        fragment_data={{
-          file_path: 'data/maps/hideout/entrance.json',
-          json_path: 'entities/20/settings/event/6/text',
-          lang_uid: 49,
-          description_lines: ['EventTrigger intro', 'SHOW_CENTER_MSG'],
-          original_text: [
-            '\n',
-            '\\s[1]CrossCode is designed with \\c[3]challenge\\c[0] in mind for both \\c[3]combat\\c[0] and \\c[3]puzzles\\c[0], and we encourage every player to try the game with its intended difficulty.\n',
-            '\n',
-            'However, if those challenges end up making the game less enjoyable or even inaccessible for you, we provide options to tweak the difficulty through the \\c[3]assists\\c[0] tab in the \\c[3]options\\c[0] menu.',
-          ].join(''),
-          translations: [
-            {
-              author: 'Packy',
-              timestamp: new Date(1614005617 * 1000),
-              text: [
-                '\n',
-                '\\s[1]CrossCode разрабатывался с учётом \\c[3]вызова для игрока\\c[0], как в \\c[3]сражениях\\c[0], так и в \\c[3]головоломках\\c[0], и мы призываем всех игроков попробовать игру на предустановленной сложности. \n',
-                '\n',
-                '\n',
-                '\n',
-                '\n',
-                '\n',
-                '\n',
-                'Однако, если это делает игру слишком сложной или даже непроходимой для вас, в меню \\c[3]настроек\\c[0] имеется \\c[3]вкладка\\c[0] c детальными настройками сложности.',
-              ].join(''),
-            },
-          ],
-        }}
-      />
+      {props.fragments.map((f) => (
+        <FragmentGui key={f.id} fragment={f} />
+      ))}
     </WrapperGui>
   );
 }
 
 export interface FragmentGuiProps {
   className?: string;
-  fragment_data: {
-    file_path: string;
-    json_path: string;
-    lang_uid: number;
-    description_lines: string[];
-    original_text: string;
-    translations: Array<{
-      author: string;
-      timestamp: Date;
-      text: string;
-    }>;
-  };
+  fragment: ListedFragment & { file: string };
 }
 
 export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.Element {
-  let { fragment_data } = props;
+  let { fragment } = props;
+  let lang_uid = fragment.luid ?? 0;
+  let description = fragment.desc ?? [];
+  let translations = fragment.tr ?? [];
+
   return (
     <BoxGui orientation="vertical" allow_overflow className={cc([props.className, 'Fragment'])}>
       <BoxGui orientation="horizontal" allow_wrapping allow_overflow className="Fragment-Location">
         <div title="File path">
           <IconGui icon="file-earmark-text" />{' '}
           <a href="#" tabIndex={0} onClick={(e) => e.preventDefault()}>
-            <span className="Label-selectable">{fragment_data.file_path}</span>
+            <span className="Label-selectable">{fragment.file}</span>
           </a>
         </div>
-        <div title="JSON path">
-          <IconGui icon="code" />{' '}
-          <span className="Label-selectable">{fragment_data.json_path}</span>
+        <div
+          title="JSON path"
+          $ChildFlag={ChildFlags.UnknownChildren} // for some reason the parser can't figure this node out
+        >
+          <IconGui icon="code" /> <span className="Label-selectable">{fragment.json}</span>
         </div>
-        {fragment_data.lang_uid !== 0 ? (
+        {lang_uid !== 0 ? (
           <div title="Lang UID">
             <span className="IconlikeText">#</span>{' '}
-            <span className="Label-selectable">{fragment_data.lang_uid}</span>
+            <span className="Label-selectable">{lang_uid}</span>
           </div>
         ) : null}
       </BoxGui>
 
-      <div className="Fragment-Description Fragment-TextBlock">
-        {fragment_data.description_lines.join('\n')}
-      </div>
+      <div className="Fragment-Description Fragment-TextBlock">{description.join('\n')}</div>
 
       <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
         <BoxGui orientation="vertical" allow_overflow className="Fragment-Original BoxItem-expand">
@@ -156,7 +166,7 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
               highlight_crosscode_markup
               highlight_newlines
               className="Label-selectable">
-              {fragment_data.original_text}
+              {fragment.orig}
             </FancyTextGui>
           </div>
           <BoxGui orientation="horizontal" className="Fragment-Buttons">
@@ -170,7 +180,7 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
           orientation="vertical"
           allow_overflow
           className="BoxItem-expand Fragment-Translations">
-          {fragment_data.translations.flatMap((translation_data) => (
+          {translations.flatMap((translation_data) => (
             <BoxGui orientation="vertical" allow_overflow className="Fragment-Translation">
               <div className="Fragment-TextBlock">
                 <FancyTextGui
@@ -185,7 +195,7 @@ export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.
                   {translation_data.author}
                 </div>
                 <div className="Label Label-ellipsis Label-selectable">
-                  at {format_timestamp(translation_data.timestamp)}
+                  at {format_timestamp(new Date(translation_data.ctime * 1000))}
                 </div>
                 <div className="BoxItem-expand" />
                 <IconButtonGui icon="clipboard" title="Copy the translation text" />
