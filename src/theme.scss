@@ -1,8 +1,15 @@
 $spacing: 6px;
 
+$scrollbar-size: 16px;
+$scrollbar-border: 1px;
+
 $color-fg: #cccccc;
-$color-Icon-fg: #c5c5c5;
+$color-scrollbar-slider-bg: rgba(#797979, 0.4);
+$color-scrollbar-slider-bg-hover: rgba(#646464, 0.7);
+$color-scrollbar-slider-bg-active: rgba(#bfbfbf, 0.4);
+$color-scrollbar-border: rgba(#7f7f7f, 0.3);
 $color-focus-outline: #007fd4;
+$color-Icon-fg: #c5c5c5;
 $color-Link-fg-hover: #3794ff;
 $color-Link-fg: mix($color-Link-fg-hover, $color-fg, 60%);
 $color-StatusBar: #007acc;

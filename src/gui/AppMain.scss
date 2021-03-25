@@ -27,4 +27,50 @@
       text-decoration: underline;
     }
   }
+
+  // See:
+  // <https://webkit.org/blog/363/styling-scrollbars/>
+  // <https://davidwalsh.name/custom-scrollbars>
+  // <https://gist.github.com/IceCreamYou/cd517596e5847a88e2bb0a091da43fb4>
+  // <https://stackoverflow.com/q/8632410/12005228>
+  // <https://css-tricks.com/scrollbars-on-hover/>
+  // <https://css-tricks.com/custom-scrollbars-in-webkit/>
+  // <https://css-tricks.com/almanac/properties/s/scrollbar/>
+  ::-webkit-scrollbar {
+    width: $scrollbar-size;
+    height: $scrollbar-size;
+    border-style: solid;
+    border-color: $color-scrollbar-border;
+  }
+
+  // Neither margin nor padding can be used on the scrollbar thumb, let's abuse
+  // border width instead.
+  ::-webkit-scrollbar,
+  ::-webkit-scrollbar-thumb {
+    &:vertical {
+      border-width: 0 $scrollbar-border;
+    }
+    &:horizontal {
+      border-width: $scrollbar-border 0;
+    }
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-style: solid;
+    border-color: transparent;
+    // This is also necessary to make the emulated margin hack work:
+    background-clip: padding-box;
+
+    background-color: $color-scrollbar-slider-bg;
+    &:hover {
+      background-color: $color-scrollbar-slider-bg-hover;
+    }
+    &:active {
+      background-color: $color-scrollbar-slider-bg-active;
+    }
+  }
+
+  ::-webkit-scrollbar-corner {
+    background-color: $color-scrollbar-border;
+  }
 }
