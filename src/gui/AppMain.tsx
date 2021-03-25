@@ -19,17 +19,27 @@ export class AppMainGui extends Inferno.Component {
   }
 
   public componentDidMount(): void {
-    window.addEventListener('beforeunload', this.on_page_unload);
+    nw.Window.get(window).on('closed', this.on_nw_window_closing);
+    window.addEventListener('beforeunload', this.on_before_page_unload);
     void this.inner.connect();
   }
 
   public componentWillUnmount(): void {
-    window.removeEventListener('beforeunload', this.on_page_unload);
-    this.inner.disconnect();
+    nw.Window.get(window).removeListener('closed', this.on_nw_window_closing);
+    window.removeEventListener('beforeunload', this.on_before_page_unload);
+    void this.inner.disconnect();
   }
 
-  private on_page_unload = (): void => {
+  private on_before_page_unload = (): void => {
     this.inner.disconnect();
+  };
+
+  private on_nw_window_closing = (): void => {
+    // TODO: Warn the user on unsaved changes, etc.
+    this.inner.disconnect();
+    // TODO: The actual window closing can be delayed, we should probably wait
+    // for the backend thread to really stop before finally exiting.
+    nw.Window.get(window).close(true);
   };
 
   public render(): JSX.Element {
