@@ -48,27 +48,31 @@ export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JS
 
     let token_key = `token;${token.type};${token.start_index};${token.end_index}`;
 
+    let text_slice = source_text.slice(token.start_index, token.end_index);
     let text_elements: Array<JSX.Element | string> = [];
 
-    let text_slice = source_text.slice(token.start_index, token.end_index);
-    let line_start_index = 0;
-    while (true) {
-      let newline_index = text_slice.indexOf('\n', line_start_index);
-      if (newline_index < 0) break;
+    if (props.highlight_newlines) {
+      let line_start_index = 0;
+      while (true) {
+        let newline_index = text_slice.indexOf('\n', line_start_index);
+        if (newline_index < 0) break;
 
-      text_elements.push(
-        text_slice.slice(line_start_index, newline_index),
-        <span
-          key={`${token_key};whitespace;${newline_index}`}
-          className="IconlikeText"
-          style={{ ...token_style, border: '1px solid currentColor', color: WHITESPACE_COLOR }}>
-          {NEWLINE_ICON_CHAR}
-        </span>,
-        '\n',
-      );
-      line_start_index = newline_index + 1;
+        text_elements.push(
+          text_slice.slice(line_start_index, newline_index),
+          <span
+            key={`${token_key};whitespace;${newline_index}`}
+            className="IconlikeText"
+            style={{ ...token_style, border: '1px solid currentColor', color: WHITESPACE_COLOR }}>
+            {NEWLINE_ICON_CHAR}
+          </span>,
+          '\n',
+        );
+        line_start_index = newline_index + 1;
+      }
+      text_elements.push(text_slice.slice(line_start_index));
+    } else {
+      text_elements.push(text_slice);
     }
-    text_elements.push(text_slice.slice(line_start_index));
 
     token_elements.push(
       <span key={token_key} style={token_style}>
@@ -85,14 +89,4 @@ export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JS
   }
 
   return <span className={cc([props.className, 'FancyTextGui'])}>{token_elements}</span>;
-}
-
-/// Taken from <https://stackoverflow.com/a/6234804/12005228>.
-export function escape_html(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }

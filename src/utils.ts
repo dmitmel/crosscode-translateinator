@@ -23,3 +23,13 @@ export type ComponentProps<P> = P & { children?: Inferno.InfernoNode };
 export function hasKey(obj: unknown, key: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
+
+/// Taken from <https://stackoverflow.com/a/6234804/12005228>.
+export function escape_html(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
