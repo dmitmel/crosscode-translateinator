@@ -7,7 +7,7 @@ import cc from 'classcat';
 import * as utils from '../utils';
 import { FancyTextGui } from './FancyText';
 import { IconButtonGui } from './Button';
-import { ListedFragment } from '../backend';
+import { ListedFragment, ListedTranslation } from '../backend';
 import { AppMainGuiCtx } from './AppMain';
 
 export interface EditorGuiProps {
@@ -16,12 +16,14 @@ export interface EditorGuiProps {
 
 export interface EditorGuiState {
   fragments: Array<ListedFragment & { file: string }>;
+  translation_locale: string;
 }
 
-export class EditorGui extends Inferno.Component<EditorGuiProps> {
+export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState> {
   public context!: AppMainGuiCtx;
   public state: EditorGuiState = {
     fragments: [],
+    translation_locale: '',
   };
 
   public componentDidMount(): void {

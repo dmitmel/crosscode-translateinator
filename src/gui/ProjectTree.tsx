@@ -13,7 +13,7 @@ export interface ProjectTreeGuiState {
   virtual_game_files: PathTree | null;
 }
 
-export class ProjectTreeGui extends Inferno.Component {
+export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiState> {
   public context!: AppMainGuiCtx;
   public state: ProjectTreeGuiState = {
     translation_locale: null,
@@ -104,7 +104,10 @@ export interface ProjectTreeSectionGuiState {
   is_opened: boolean;
 }
 
-export class ProjectTreeSectionGui extends Inferno.Component<ProjectTreeSectionGuiProps> {
+export class ProjectTreeSectionGui extends Inferno.Component<
+  ProjectTreeSectionGuiProps,
+  ProjectTreeSectionGuiState
+> {
   public state: ProjectTreeSectionGuiState = {
     is_opened: false,
   };
@@ -179,7 +182,7 @@ export interface FileTreeItemGuiState {
   is_opened: boolean;
 }
 
-export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps> {
+export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, FileTreeItemGuiState> {
   public state: FileTreeItemGuiState = {
     is_opened: this.props.default_opened ?? false,
   };
