@@ -1,37 +1,39 @@
-@import '../theme.scss';
+@import '../common.scss';
 
-.ProjectTree {
-  background-color: $color-ProjectTree;
-  min-width: 300px;
-  max-width: 300px;
-}
-
-.ProjectTree-Header {
-  padding: ($spacing * 2) $spacing;
-  color: $color-EditorTab-active-fg;
-}
-
-.ProjectTreeSection:not(:last-child) {
-  border-bottom: 1px solid rgba(#ffffff, 0.2);
-}
-
-.ProjectTreeSection-Name {
-  text-transform: uppercase;
-  font-weight: bold;
-  font-size: (15em / 16);
-}
-
-.ProjectTreeItem {
-  padding: $spacing;
-  padding-left: calc(#{$spacing} + var(--ProjectTreeItem-depth, 0) * #{$spacing} * 2);
-  cursor: pointer;
-
-  &:hover {
-    background-color: $color-ProjectTreeItem-hover;
+@include app-styles {
+  .ProjectTree {
+    background-color: $color-ProjectTree;
+    min-width: 300px;
+    max-width: 300px;
   }
 
-  &:focus {
-    background-color: $color-ProjectTreeItem-focus;
-    outline: none;
+  .ProjectTree-Header {
+    padding: ($spacing * 2) $spacing;
+    color: $color-EditorTab-active-fg;
+  }
+
+  .ProjectTreeSection:not(:last-child) {
+    border-bottom: 1px solid rgba(#ffffff, 0.2);
+  }
+
+  .ProjectTreeSection-Name {
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: (15em / 16);
+  }
+
+  .ProjectTreeItem {
+    padding: $spacing;
+    padding-left: calc(#{$spacing} + var(--ProjectTreeItem-depth, 0) * #{$spacing} * 2);
+    cursor: pointer;
+
+    &:hover {
+      background-color: $color-ProjectTreeItem-hover;
+    }
+
+    &:focus {
+      background-color: $color-ProjectTreeItem-focus;
+      outline: none;
+    }
   }
 }

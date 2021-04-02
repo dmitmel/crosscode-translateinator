@@ -128,7 +128,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<
         <div>
           <button
             type="button"
-            className="ProjectTreeSection-Name ProjectTreeItem ButtonReset ButtonReset-block"
+            className="block ProjectTreeSection-Name ProjectTreeItem"
             tabIndex={0}
             onClick={this.on_name_click}>
             <IconGui icon={`chevron-${is_opened ? 'down' : 'right'}`} /> {this.props.name}
@@ -207,7 +207,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
       <button
         key={full_path}
         type="button"
-        className="ProjectTreeItem ButtonReset ButtonReset-block"
+        className="block ProjectTreeItem"
         style={{ '--ProjectTreeItem-depth': this.props.depth }}
         title={full_path}
         tabIndex={0}

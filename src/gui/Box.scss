@@ -1,66 +1,68 @@
-@import '../theme.scss';
+@import '../common.scss';
 
-.Box {
-  display: flex;
-  .Box-inline {
-    display: inline-flex;
-  }
-
-  > .BoxItem-expand {
-    flex-grow: 1;
-  }
-
-  &.Box-orientation-horizontal {
-    flex-direction: row;
-    &.Box-reverse-children {
-      flex-direction: row-reverse;
-    }
-
-    &:not(.Box-allow-overflow) {
-      overflow-x: hidden;
-    }
-    &.Box-scroll {
-      overflow-x: auto;
+@include app-styles {
+  .Box {
+    display: flex;
+    .Box-inline {
+      display: inline-flex;
     }
 
     > .BoxItem-expand {
-      width: 0;
+      flex-grow: 1;
+    }
+
+    &.Box-orientation-horizontal {
+      flex-direction: row;
+      &.Box-reverse-children {
+        flex-direction: row-reverse;
+      }
+
+      &:not(.Box-allow-overflow) {
+        overflow-x: hidden;
+      }
+      &.Box-scroll {
+        overflow-x: auto;
+      }
+
+      > .BoxItem-expand {
+        width: 0;
+      }
+    }
+
+    &.Box-orientation-vertical {
+      flex-direction: column;
+      &.Box-reverse-children {
+        flex-direction: column-reverse;
+      }
+
+      &:not(.Box-allow-overflow) {
+        overflow-y: hidden;
+      }
+      &.Box-scroll {
+        overflow-y: auto;
+      }
+
+      > .BoxItem-expand {
+        height: 0;
+      }
+    }
+
+    flex-wrap: nowrap;
+    &.Box-allow-wrapping {
+      flex-wrap: wrap;
     }
   }
 
-  &.Box-orientation-vertical {
-    flex-direction: column;
-    &.Box-reverse-children {
-      flex-direction: column-reverse;
-    }
+  .Wrapper {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
 
-    &:not(.Box-allow-overflow) {
+    &:not(.Wrapper-allow-overflow) {
       overflow-y: hidden;
     }
-    &.Box-scroll {
+    &.Wrapper-scroll {
       overflow-y: auto;
     }
-
-    > .BoxItem-expand {
-      height: 0;
-    }
-  }
-
-  flex-wrap: nowrap;
-  &.Box-allow-wrapping {
-    flex-wrap: wrap;
-  }
-}
-
-.Wrapper {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-
-  &:not(.Wrapper-allow-overflow) {
-    overflow-y: hidden;
-  }
-  &.Wrapper-scroll {
-    overflow-y: auto;
   }
 }

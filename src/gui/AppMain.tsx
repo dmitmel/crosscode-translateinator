@@ -44,13 +44,15 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
 
   public render(): JSX.Element {
     return (
-      <BoxGui orientation="vertical" className="App">
-        <BoxGui orientation="horizontal" className="BoxItem-expand">
-          <ProjectTreeGui />
-          <EditorGui className="BoxItem-expand" />
+      <div className="App">
+        <BoxGui className="App-MainLayout" orientation="vertical">
+          <BoxGui orientation="horizontal" className="BoxItem-expand">
+            <ProjectTreeGui />
+            <EditorGui className="BoxItem-expand" />
+          </BoxGui>
+          <StatusBarGui />
         </BoxGui>
-        <StatusBarGui />
-      </BoxGui>
+      </div>
     );
   }
 }

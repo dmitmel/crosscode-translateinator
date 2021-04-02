@@ -102,7 +102,7 @@ export function EditorTabGui(props: utils.ComponentProps<EditorTabGuiProps>): JS
   return (
     <button
       type="button"
-      className={cc(['EditorTab', { 'EditorTab-active': props.active }, 'ButtonReset'])}
+      className={cc(['EditorTab', { 'EditorTab-active': props.active }])}
       tabIndex={0}
       onClick={() => console.log('open', props.name)}>
       <IconGui icon={EDITOR_TAB_ICONS.get(props.type)} /> {props.name} <IconGui icon="x" />

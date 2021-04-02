@@ -1,43 +1,45 @@
-@import '../theme.scss';
+@import '../common.scss';
 
-$IconButton-font-size: 18px;
-// $Button-bg-color: #3a3d41;
-// $Button-bg-color-hover: scale-color($Button-bg-color, $lightness: 20%);
-$Button-bg-color-hover: #3a3d41;
-// $Button-bg-color: scale-color($Button-bg-color-hover, $lightness: -20%);
+@include app-styles {
+  $IconButton-font-size: 18px;
+  // $Button-bg-color: #3a3d41;
+  // $Button-bg-color-hover: scale-color($Button-bg-color, $lightness: 20%);
+  $Button-bg-color-hover: #3a3d41;
+  // $Button-bg-color: scale-color($Button-bg-color-hover, $lightness: -20%);
 
-.ButtonReset {
-  font-family: unset;
-  font-size: unset;
-  line-height: unset;
-  border: unset;
-  margin: unset;
-  padding: unset;
-  background-color: unset;
-  color: unset;
-  text-align: unset;
-}
+  button {
+    font-family: unset;
+    font-size: unset;
+    line-height: unset;
+    border: unset;
+    margin: unset;
+    padding: unset;
+    background-color: unset;
+    color: unset;
+    text-align: unset;
 
-.ButtonReset-block {
-  display: block;
-  width: 100%;
-}
-
-.IconButton {
-  padding: $spacing;
-  cursor: pointer;
-  font-size: 18px;
-  color: $color-Icon-fg;
-
-  // &.IconButton-disabled {
-  //   color: /* TODO */;
-  // }
-
-  &:hover {
-    background-color: $color-ProjectTreeItem-hover;
+    &.block {
+      display: block;
+      width: 100%;
+    }
   }
 
-  &:active > .Icon {
-    transform: scale(1.2);
+  .IconButton {
+    padding: $spacing;
+    cursor: pointer;
+    font-size: 18px;
+    color: $color-Icon-fg;
+
+    // &.IconButton-disabled {
+    //   color: /* TODO */;
+    // }
+
+    &:hover {
+      background-color: $color-ProjectTreeItem-hover;
+    }
+
+    &:active > .Icon {
+      transform: scale(1.2);
+    }
   }
 }

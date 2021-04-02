@@ -1,0 +1,7 @@
+@import './theme.scss';
+
+@mixin app-styles {
+  .App {
+    @content;
+  }
+}
