@@ -12,6 +12,12 @@
   color: $color-fg;
   user-select: none;
 
+  ::selection {
+    // <https://stackoverflow.com/a/22751702/12005228>
+    // <https://stackoverflow.com/a/14970961/12005228>
+    background-color: rgba($color-selection-bg, 0.99);
+  }
+
   .App-MainLayout {
     width: 100%;
     height: 100%;
