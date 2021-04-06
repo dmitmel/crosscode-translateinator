@@ -6,6 +6,7 @@ import { BoxGui } from './Box';
 import { EditorGui } from './Editor';
 import { StatusBarGui } from './StatusBar';
 import { Event2 } from '../events';
+import * as gui from '../gui';
 
 export interface AppMainGuiCtx {
   app: AppMain;
@@ -21,12 +22,14 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
   public componentDidMount(): void {
     nw.Window.get(window).on('closed', this.on_nw_window_closing);
     window.addEventListener('beforeunload', this.on_before_page_unload);
+    window.addEventListener('keyup', this.on_global_key_up);
     void this.inner.connect();
   }
 
   public componentWillUnmount(): void {
     nw.Window.get(window).removeListener('closed', this.on_nw_window_closing);
     window.removeEventListener('beforeunload', this.on_before_page_unload);
+    window.removeEventListener('keyup', this.on_global_key_up);
     void this.inner.disconnect();
   }
 
@@ -40,6 +43,21 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
     // TODO: The actual window closing can be delayed, we should probably wait
     // for the backend thread to really stop before finally exiting.
     nw.Window.get(window).close(true);
+  };
+
+  private on_global_key_up = (event: KeyboardEvent): void => {
+    let key = event.code;
+    let kmod = gui.getKeyboardEventModifiers(event);
+    if (key === 'F5' && kmod === gui.KeyMod.None) {
+      // Soft reload, caught by on_before_page_unload, although the callback is
+      // purposefully not invoked manually here for me to be able to test if
+      // even it works correctly, though I might change this in the future.
+      window.location.reload();
+    } else if (key === 'F5' && kmod === gui.KeyMod.Alt) {
+      // Hard reload, triggers a restart of all of nwjs' processes, also the OS
+      // unloads the dynamic library without a way to intercept this.
+      chrome.runtime.reload();
+    }
   };
 
   public render(): JSX.Element {

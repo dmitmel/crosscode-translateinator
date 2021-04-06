@@ -1,4 +1,4 @@
-import * as utils from '../utils';
+import * as gui from '../gui';
 import { IconGui, IconGuiProps } from './Icon';
 import cc from 'classcat';
 import './Button.scss';
@@ -16,7 +16,7 @@ export function IconButtonGui({
   className,
   class: _class,
   ...element_props
-}: utils.ComponentProps<IconButtonGuiProps>): JSX.Element {
+}: gui.ComponentProps<IconButtonGuiProps>): JSX.Element {
   return (
     <button type="button" tabIndex={0} className={cc([className, 'IconButton'])} {...element_props}>
       <IconGui icon={icon} size={size} {...icon_props} />

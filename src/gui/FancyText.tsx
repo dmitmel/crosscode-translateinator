@@ -1,4 +1,4 @@
-import * as utils from '../utils';
+import * as gui from '../gui';
 import * as crosscode_markup from '../crosscode_markup';
 import cc from 'classcat';
 
@@ -14,7 +14,7 @@ export interface FancyTextGuiProps {
   children: string;
 }
 
-export function FancyTextGui(props: utils.ComponentProps<FancyTextGuiProps>): JSX.Element {
+export function FancyTextGui(props: gui.ComponentProps<FancyTextGuiProps>): JSX.Element {
   let source_text = props.children;
   let token_elements: JSX.Element[] = [];
 

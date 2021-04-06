@@ -4,7 +4,7 @@ import './Editor.scss';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import cc from 'classcat';
-import * as utils from '../utils';
+import * as gui from '../gui';
 import { FancyTextGui } from './FancyText';
 import { IconButtonGui } from './Button';
 import { ListedFragment, ListedTranslation } from '../backend';
@@ -71,7 +71,7 @@ export interface EditorTabListGuiProps {
   className?: string;
 }
 
-export function EditorTabListGui(props: utils.ComponentProps<EditorTabListGuiProps>): JSX.Element {
+export function EditorTabListGui(props: gui.ComponentProps<EditorTabListGuiProps>): JSX.Element {
   return (
     <BoxGui orientation="horizontal" scroll className={cc([props.className, 'EditorTabList'])}>
       <EditorTabGui active={false} type="search" name={'Search'} />
@@ -98,7 +98,7 @@ export interface EditorTabGuiProps {
   active: boolean;
 }
 
-export function EditorTabGui(props: utils.ComponentProps<EditorTabGuiProps>): JSX.Element {
+export function EditorTabGui(props: gui.ComponentProps<EditorTabGuiProps>): JSX.Element {
   return (
     <button
       type="button"
@@ -115,7 +115,7 @@ export interface FragmentListGuiProps {
   fragments: Array<ListedFragment & { file: string }>;
 }
 
-export function FragmentListGui(props: utils.ComponentProps<FragmentListGuiProps>): JSX.Element {
+export function FragmentListGui(props: gui.ComponentProps<FragmentListGuiProps>): JSX.Element {
   return (
     <WrapperGui className={cc([props.className, 'FragmentList'])} scroll>
       {props.fragments.map((f) => (
@@ -130,7 +130,7 @@ export interface FragmentGuiProps {
   fragment: ListedFragment & { file: string };
 }
 
-export function FragmentGui(props: utils.ComponentProps<FragmentGuiProps>): JSX.Element {
+export function FragmentGui(props: gui.ComponentProps<FragmentGuiProps>): JSX.Element {
   let { fragment } = props;
   let lang_uid = fragment.luid ?? 0;
   let description = fragment.desc ?? [];

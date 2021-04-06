@@ -2,10 +2,11 @@ import * as utils from '../utils';
 import './Icon.scss';
 import cc from 'classcat';
 import icons_obj from '../icons_list.json';
+import * as gui from '../gui';
 
 let icons_map = new Map();
 for (let k in icons_obj) {
-  if (utils.hasKey(icons_obj, k)) {
+  if (utils.has_key(icons_obj, k)) {
     icons_map.set(k, icons_obj[k]);
   }
 }
@@ -15,7 +16,7 @@ export interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
   size?: number | string;
 }
 
-export const IconGui = utils.infernoForwardRef<IconGuiProps, SVGSVGElement>(function IconGui(
+export const IconGui = gui.infernoForwardRef<IconGuiProps, SVGSVGElement>(function IconGui(
   { icon, size, className, class: _class, ...rest },
   ref,
 ) {
