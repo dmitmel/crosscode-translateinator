@@ -125,92 +125,120 @@ export interface FragmentGuiProps {
   fragment: ListedFragment & { file: string };
 }
 
-export function FragmentGui(props: gui.ComponentProps<FragmentGuiProps>): JSX.Element {
-  let { fragment } = props;
-  let lang_uid = fragment.luid ?? 0;
-  let description = fragment.desc ?? [];
-  let translations = fragment.tr ?? [];
+export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
+  public on_copy_original_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+    nw.Clipboard.get().set(this.props.fragment.orig);
+  };
 
-  return (
-    <WrapperGui allow_overflow className={cc([props.className, 'Fragment'])}>
-      <BoxGui orientation="horizontal" allow_wrapping allow_overflow className="Fragment-Location">
-        <span title="File path">
-          <IconGui icon="file-earmark-text" />{' '}
-          <a
-            href="#"
-            tabIndex={0}
-            onClick={(e) => e.preventDefault()}
-            className={'Label-selectable'}>
-            {fragment.file}
-          </a>
-        </span>
-        <span
-          title="JSON path"
-          $ChildFlag={ChildFlags.UnknownChildren} // for some reason the parser can't figure this node out
-        >
-          <IconGui icon="code" /> <span className="Label-selectable">{fragment.json}</span>
-        </span>
-        {lang_uid !== 0 ? (
-          <span title="Lang UID">
-            <span className="IconlikeText">#</span>{' '}
-            <span className="Label-selectable">{lang_uid}</span>
+  public render(): JSX.Element {
+    let { fragment } = this.props;
+    let lang_uid = fragment.luid ?? 0;
+    let description = fragment.desc ?? [];
+    let translations = fragment.tr ?? [];
+
+    return (
+      <WrapperGui allow_overflow className={cc([this.props.className, 'Fragment'])}>
+        <BoxGui
+          orientation="horizontal"
+          allow_wrapping
+          allow_overflow
+          className="Fragment-Location">
+          <span title="File path">
+            <IconGui icon="file-earmark-text" />{' '}
+            <a
+              href="#"
+              tabIndex={0}
+              onClick={(e) => e.preventDefault()}
+              className={'Label-selectable'}>
+              {fragment.file}
+            </a>
           </span>
-        ) : null}
-      </BoxGui>
+          <span
+            title="JSON path"
+            $ChildFlag={ChildFlags.UnknownChildren} // for some reason the parser can't figure this node out
+          >
+            <IconGui icon="code" /> <span className="Label-selectable">{fragment.json}</span>
+          </span>
+          {lang_uid !== 0 ? (
+            <span title="Lang UID">
+              <span className="IconlikeText">#</span>{' '}
+              <span className="Label-selectable">{lang_uid}</span>
+            </span>
+          ) : null}
+        </BoxGui>
 
-      <div className="Fragment-Description Fragment-TextBlock">{description.join('\n')}</div>
+        <div className="Fragment-Description Fragment-TextBlock Label-selectable">
+          {description.join('\n')}
+        </div>
 
-      <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
-        <WrapperGui allow_overflow className="Fragment-Original BoxItem-expand">
-          <div className="Fragment-TextBlock Label-selectable">
-            <FancyTextGui highlight_crosscode_markup highlight_newlines>
-              {fragment.orig}
-            </FancyTextGui>
-          </div>
-          <BoxGui orientation="horizontal" className="Fragment-Buttons">
-            <div className="BoxItem-expand" />
-            <IconButtonGui icon="clipboard" title="Copy the original text" />
-            <IconButtonGui icon="search" title="Search other fragments with this original text" />
-          </BoxGui>
-        </WrapperGui>
+        <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
+          <WrapperGui allow_overflow className="Fragment-Original BoxItem-expand">
+            <div className="Fragment-TextBlock Label-selectable">
+              <FancyTextGui highlight_crosscode_markup highlight_newlines>
+                {fragment.orig}
+              </FancyTextGui>
+            </div>
+            <BoxGui orientation="horizontal" className="Fragment-Buttons">
+              <div className="BoxItem-expand" />
+              <IconButtonGui
+                icon="clipboard"
+                title="Copy the original text"
+                onClick={this.on_copy_original_text}
+              />
+              <IconButtonGui icon="search" title="Search other fragments with this original text" />
+            </BoxGui>
+          </WrapperGui>
 
-        <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
-          {translations.flatMap((translation) => (
-            <TranslationGui key={translation.id} translation={translation} fragment={fragment} />
-          ))}
-          <NewTranslationGui fragment={fragment} />
-        </WrapperGui>
-      </BoxGui>
-    </WrapperGui>
-  );
+          <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
+            {translations.flatMap((translation) => (
+              <TranslationGui key={translation.id} translation={translation} fragment={fragment} />
+            ))}
+            <NewTranslationGui fragment={fragment} />
+          </WrapperGui>
+        </BoxGui>
+      </WrapperGui>
+    );
+  }
 }
 
-interface TranslationGuiProps {
+export interface TranslationGuiProps {
   fragment: ListedFragment & { file: string };
   translation: ListedTranslation;
 }
 
-export function TranslationGui(props: TranslationGuiProps): JSX.Element {
-  return (
-    <WrapperGui allow_overflow className="Fragment-Translation">
-      <div className="Fragment-TextBlock Label-selectable">
-        <FancyTextGui highlight_crosscode_markup highlight_newlines>
-          {props.translation.text}
-        </FancyTextGui>
-      </div>
-      <BoxGui orientation="horizontal" className="Fragment-Buttons">
-        <span className="Label Label-ellipsis Label-selectable">{props.translation.author}</span>
-        <span className="Label Label-ellipsis Label-selectable">
-          at {format_timestamp(new Date(props.translation.ctime * 1000))}
-        </span>
-        <div className="BoxItem-expand" />
-        <IconButtonGui icon="clipboard" title="Copy the translation text" />
-        <IconButtonGui icon="pencil-square" title="Edit this translation" />
-        <IconButtonGui icon="chat-left-quote" title="Add a comment about this translation" />
-        <IconButtonGui icon="trash-fill" title="Delete this translation" />
-      </BoxGui>
-    </WrapperGui>
-  );
+export class TranslationGui extends Inferno.Component<TranslationGuiProps, unknown> {
+  public on_copy_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+    nw.Clipboard.get().set(this.props.translation.text);
+  };
+
+  public render(): JSX.Element {
+    let { translation } = this.props;
+
+    return (
+      <WrapperGui allow_overflow className="Fragment-Translation">
+        <div className="Fragment-TextBlock Label-selectable">
+          <FancyTextGui highlight_crosscode_markup highlight_newlines>
+            {this.props.translation.text}
+          </FancyTextGui>
+        </div>
+        <BoxGui orientation="horizontal" className="Fragment-Buttons">
+          <span className="Label Label-ellipsis Label-selectable">{translation.author}</span>
+          <span className="Label Label-ellipsis Label-selectable">
+            at {format_timestamp(new Date(translation.ctime * 1000))}
+          </span>
+          <div className="BoxItem-expand" />
+          <IconButtonGui
+            icon="clipboard"
+            title="Copy the translation text"
+            onClick={this.on_copy_text}
+          />
+          <IconButtonGui icon="pencil-square" title="Edit this translation" />
+          <IconButtonGui icon="chat-left-quote" title="Add a comment about this translation" />
+          <IconButtonGui icon="trash-fill" title="Delete this translation" />
+        </BoxGui>
+      </WrapperGui>
+    );
+  }
 }
 
 export interface NewTranslationGuiProps {
@@ -233,11 +261,11 @@ export class NewTranslationGui extends Inferno.Component<
 
   public textarea: HTMLTextAreaElement | null = null;
 
-  private onInput = (event: Inferno.FormEvent<HTMLTextAreaElement>): void => {
-    let textArea = event.currentTarget;
+  private on_input = (event: Inferno.FormEvent<HTMLTextAreaElement>): void => {
+    let text_area = event.currentTarget;
     // textArea.style.height = 'auto';
     // textArea.style.height = `${textArea.scrollHeight}px`;
-    this.setState({ text: textArea.value });
+    this.setState({ text: text_area.value });
   };
 
   public componentDidMount(): void {
@@ -270,7 +298,7 @@ export class NewTranslationGui extends Inferno.Component<
         <textarea
           ref={textareaRef}
           value={this.state.text}
-          onInput={this.onInput}
+          onInput={this.on_input}
           placeholder="Add new translation..."
           autoComplete="off"
           spellCheck={false}
