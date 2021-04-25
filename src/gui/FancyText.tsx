@@ -1,6 +1,5 @@
 import * as gui from '../gui';
 import * as crosscode_markup from '../crosscode_markup';
-import cc from 'classcat';
 
 export const WHITESPACE_COLOR = '#666666';
 export const SPECIAL_ESCAPES_COLOR = '#66ccdd';
@@ -10,7 +9,6 @@ export interface FancyTextGuiProps {
   highlight_crosscode_markup?: boolean;
   highlight_newlines?: boolean;
   // TODO: highlight leading/trailing whitespace
-  className?: string;
   children: string;
 }
 
@@ -88,5 +86,5 @@ export function FancyTextGui(props: gui.ComponentProps<FancyTextGuiProps>): JSX.
     );
   }
 
-  return <span className={cc([props.className, 'FancyTextGui'])}>{token_elements}</span>;
+  return <>{token_elements}</>;
 }

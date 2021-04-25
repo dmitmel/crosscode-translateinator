@@ -59,9 +59,11 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     return (
       <BoxGui orientation="vertical" className={cc([this.props.className, 'Editor'])}>
         <EditorTabListGui />
-        <BoxGui orientation="vertical" scroll className="BoxItem-expand">
-          {<FragmentListGui fragments={this.state.fragments} />}
-        </BoxGui>
+        <WrapperGui scroll className="BoxItem-expand FragmentList">
+          {this.state.fragments.map((f) => (
+            <FragmentGui key={f.id} fragment={f} />
+          ))}
+        </WrapperGui>
       </BoxGui>
     );
   }
@@ -115,16 +117,6 @@ export interface FragmentListGuiProps {
   fragments: Array<ListedFragment & { file: string }>;
 }
 
-export function FragmentListGui(props: gui.ComponentProps<FragmentListGuiProps>): JSX.Element {
-  return (
-    <WrapperGui className={cc([props.className, 'FragmentList'])} scroll>
-      {props.fragments.map((f) => (
-        <FragmentGui key={f.id} fragment={f} />
-      ))}
-    </WrapperGui>
-  );
-}
-
 export interface FragmentGuiProps {
   className?: string;
   fragment: ListedFragment & { file: string };
@@ -137,37 +129,38 @@ export function FragmentGui(props: gui.ComponentProps<FragmentGuiProps>): JSX.El
   let translations = fragment.tr ?? [];
 
   return (
-    <BoxGui orientation="vertical" allow_overflow className={cc([props.className, 'Fragment'])}>
+    <WrapperGui allow_overflow className={cc([props.className, 'Fragment'])}>
       <BoxGui orientation="horizontal" allow_wrapping allow_overflow className="Fragment-Location">
-        <div title="File path">
+        <span title="File path">
           <IconGui icon="file-earmark-text" />{' '}
-          <a href="#" tabIndex={0} onClick={(e) => e.preventDefault()}>
-            <span className="Label-selectable">{fragment.file}</span>
+          <a
+            href="#"
+            tabIndex={0}
+            onClick={(e) => e.preventDefault()}
+            className={'Label-selectable'}>
+            {fragment.file}
           </a>
-        </div>
-        <div
+        </span>
+        <span
           title="JSON path"
           $ChildFlag={ChildFlags.UnknownChildren} // for some reason the parser can't figure this node out
         >
           <IconGui icon="code" /> <span className="Label-selectable">{fragment.json}</span>
-        </div>
+        </span>
         {lang_uid !== 0 ? (
-          <div title="Lang UID">
+          <span title="Lang UID">
             <span className="IconlikeText">#</span>{' '}
             <span className="Label-selectable">{lang_uid}</span>
-          </div>
+          </span>
         ) : null}
       </BoxGui>
 
       <div className="Fragment-Description Fragment-TextBlock">{description.join('\n')}</div>
 
       <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
-        <BoxGui orientation="vertical" allow_overflow className="Fragment-Original BoxItem-expand">
-          <div className="Fragment-TextBlock">
-            <FancyTextGui
-              highlight_crosscode_markup
-              highlight_newlines
-              className="Label-selectable">
+        <WrapperGui allow_overflow className="Fragment-Original BoxItem-expand">
+          <div className="Fragment-TextBlock Label-selectable">
+            <FancyTextGui highlight_crosscode_markup highlight_newlines>
               {fragment.orig}
             </FancyTextGui>
           </div>
@@ -176,29 +169,23 @@ export function FragmentGui(props: gui.ComponentProps<FragmentGuiProps>): JSX.El
             <IconButtonGui icon="clipboard" title="Copy the original text" />
             <IconButtonGui icon="search" title="Search other fragments with this original text" />
           </BoxGui>
-        </BoxGui>
+        </WrapperGui>
 
-        <BoxGui
-          orientation="vertical"
-          allow_overflow
-          className="BoxItem-expand Fragment-Translations">
+        <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
           {translations.flatMap((translation_data) => (
-            <BoxGui orientation="vertical" allow_overflow className="Fragment-Translation">
-              <div className="Fragment-TextBlock">
-                <FancyTextGui
-                  highlight_crosscode_markup
-                  highlight_newlines
-                  className="Label-selectable">
+            <WrapperGui allow_overflow className="Fragment-Translation">
+              <div className="Fragment-TextBlock Label-selectable">
+                <FancyTextGui highlight_crosscode_markup highlight_newlines>
                   {translation_data.text}
                 </FancyTextGui>
               </div>
               <BoxGui orientation="horizontal" className="Fragment-Buttons">
-                <div className="Label Label-ellipsis Label-selectable">
+                <span className="Label Label-ellipsis Label-selectable">
                   {translation_data.author}
-                </div>
-                <div className="Label Label-ellipsis Label-selectable">
+                </span>
+                <span className="Label Label-ellipsis Label-selectable">
                   at {format_timestamp(new Date(translation_data.ctime * 1000))}
-                </div>
+                </span>
                 <div className="BoxItem-expand" />
                 <IconButtonGui icon="clipboard" title="Copy the translation text" />
                 <IconButtonGui icon="pencil-square" title="Edit this translation" />
@@ -208,11 +195,11 @@ export function FragmentGui(props: gui.ComponentProps<FragmentGuiProps>): JSX.El
                 />
                 <IconButtonGui icon="trash-fill" title="Delete this translation" />
               </BoxGui>
-            </BoxGui>
+            </WrapperGui>
           ))}
-        </BoxGui>
+        </WrapperGui>
       </BoxGui>
-    </BoxGui>
+    </WrapperGui>
   );
 }
 
