@@ -9,6 +9,9 @@ import { FancyTextGui } from './FancyText';
 import { IconButtonGui } from './Button';
 import { ListedFragment, ListedTranslation } from '../backend';
 import { AppMainGuiCtx } from './AppMain';
+import './Label.scss';
+import './TextArea.scss';
+import autosize from 'autosize';
 
 export interface EditorGuiProps {
   className?: string;
@@ -172,35 +175,114 @@ export function FragmentGui(props: gui.ComponentProps<FragmentGuiProps>): JSX.El
         </WrapperGui>
 
         <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
-          {translations.flatMap((translation_data) => (
-            <WrapperGui allow_overflow className="Fragment-Translation">
-              <div className="Fragment-TextBlock Label-selectable">
-                <FancyTextGui highlight_crosscode_markup highlight_newlines>
-                  {translation_data.text}
-                </FancyTextGui>
-              </div>
-              <BoxGui orientation="horizontal" className="Fragment-Buttons">
-                <span className="Label Label-ellipsis Label-selectable">
-                  {translation_data.author}
-                </span>
-                <span className="Label Label-ellipsis Label-selectable">
-                  at {format_timestamp(new Date(translation_data.ctime * 1000))}
-                </span>
-                <div className="BoxItem-expand" />
-                <IconButtonGui icon="clipboard" title="Copy the translation text" />
-                <IconButtonGui icon="pencil-square" title="Edit this translation" />
-                <IconButtonGui
-                  icon="chat-left-quote"
-                  title="Add a comment about this translation"
-                />
-                <IconButtonGui icon="trash-fill" title="Delete this translation" />
-              </BoxGui>
-            </WrapperGui>
+          {translations.flatMap((translation) => (
+            <TranslationGui key={translation.id} translation={translation} fragment={fragment} />
           ))}
+          <NewTranslationGui fragment={fragment} />
         </WrapperGui>
       </BoxGui>
     </WrapperGui>
   );
+}
+
+interface TranslationGuiProps {
+  fragment: ListedFragment & { file: string };
+  translation: ListedTranslation;
+}
+
+export function TranslationGui(props: TranslationGuiProps): JSX.Element {
+  return (
+    <WrapperGui allow_overflow className="Fragment-Translation">
+      <div className="Fragment-TextBlock Label-selectable">
+        <FancyTextGui highlight_crosscode_markup highlight_newlines>
+          {props.translation.text}
+        </FancyTextGui>
+      </div>
+      <BoxGui orientation="horizontal" className="Fragment-Buttons">
+        <span className="Label Label-ellipsis Label-selectable">{props.translation.author}</span>
+        <span className="Label Label-ellipsis Label-selectable">
+          at {format_timestamp(new Date(props.translation.ctime * 1000))}
+        </span>
+        <div className="BoxItem-expand" />
+        <IconButtonGui icon="clipboard" title="Copy the translation text" />
+        <IconButtonGui icon="pencil-square" title="Edit this translation" />
+        <IconButtonGui icon="chat-left-quote" title="Add a comment about this translation" />
+        <IconButtonGui icon="trash-fill" title="Delete this translation" />
+      </BoxGui>
+    </WrapperGui>
+  );
+}
+
+export interface NewTranslationGuiProps {
+  fragment: ListedFragment & { file: string };
+}
+
+export interface NewTranslationGuiState {
+  text: string;
+}
+
+// Autosized textarea implementation is based on
+// <https://github.com/buildo/react-autosize-textarea/blob/56225f8d8d2f1e5b3163442a0e2bccb2a7530931/src/TextareaAutosize.tsx>
+export class NewTranslationGui extends Inferno.Component<
+  NewTranslationGuiProps,
+  NewTranslationGuiState
+> {
+  public state: NewTranslationGuiState = {
+    text: '',
+  };
+
+  public textarea: HTMLTextAreaElement | null = null;
+
+  private onInput = (event: Inferno.FormEvent<HTMLTextAreaElement>): void => {
+    let textArea = event.currentTarget;
+    // textArea.style.height = 'auto';
+    // textArea.style.height = `${textArea.scrollHeight}px`;
+    this.setState({ text: textArea.value });
+  };
+
+  public componentDidMount(): void {
+    if (!(this.textarea != null)) {
+      throw new Error('Assertion failed: this.textarea != null');
+    }
+    autosize(this.textarea);
+  }
+
+  public componentWillUnmount(): void {
+    if (!(this.textarea != null)) {
+      throw new Error('Assertion failed: this.textarea != null');
+    }
+    autosize.destroy(this.textarea);
+  }
+
+  public componentDidUpdate(): void {
+    if (!(this.textarea != null)) {
+      throw new Error('Assertion failed: this.textarea != null');
+    }
+    // autosize.update(this.textarea);
+  }
+
+  public render(): JSX.Element {
+    let textareaRef = (textarea: HTMLTextAreaElement): void => {
+      this.textarea = textarea;
+    };
+    return (
+      <WrapperGui allow_overflow className="Fragment-NewTranslation">
+        <textarea
+          ref={textareaRef}
+          value={this.state.text}
+          onInput={this.onInput}
+          placeholder="Add new translation..."
+          autoComplete="off"
+          spellCheck={false}
+          rows={2}
+        />
+        <BoxGui orientation="horizontal" className="Fragment-Buttons">
+          <div className="BoxItem-expand" />
+          <IconButtonGui icon="check2" title="Submit" />
+        </BoxGui>
+      </WrapperGui>
+    );
+  }
 }
 
 export function format_timestamp(timestamp: Date): string {
