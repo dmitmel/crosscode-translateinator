@@ -21,7 +21,7 @@ export enum KeyMod {
   Shift = 1 << 0,
 }
 
-export function getKeyboardEventModifiers(event: KeyboardEvent | MouseEvent): KeyMod {
+export function get_keyboard_event_modifiers(event: KeyboardEvent | MouseEvent): KeyMod {
   let result = KeyMod.None;
   if (event.altKey) result |= KeyMod.Alt;
   if (event.ctrlKey) result |= KeyMod.Ctrl;

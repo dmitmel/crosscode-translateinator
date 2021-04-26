@@ -1,6 +1,6 @@
 import * as gui from '../gui';
 import { IconGui, IconGuiProps } from './Icon';
-import cc from 'classcat';
+import cc from 'clsx';
 import './Button.scss';
 
 interface IconButtonGuiProps extends HTMLAttributes<HTMLButtonElement> {
@@ -18,7 +18,7 @@ export function IconButtonGui({
   ...element_props
 }: gui.ComponentProps<IconButtonGuiProps>): JSX.Element {
   return (
-    <button type="button" tabIndex={0} className={cc([className, 'IconButton'])} {...element_props}>
+    <button type="button" tabIndex={0} className={cc(className, 'IconButton')} {...element_props}>
       <IconGui icon={icon} size={size} {...icon_props} />
     </button>
   );

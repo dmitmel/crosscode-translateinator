@@ -1,6 +1,6 @@
 import * as utils from '../utils';
 import './Icon.scss';
-import cc from 'classcat';
+import cc from 'clsx';
 import icons_obj from '../icons_list.json';
 import * as gui from '../gui';
 
@@ -31,7 +31,7 @@ export const IconGui = gui.infernoForwardRef<IconGuiProps, SVGSVGElement>(functi
       height={size}
       fill="currentColor"
       viewBox="0 0 16 16"
-      className={cc([className, 'Icon', icon != null ? `Icon-${icon}` : null])}
+      className={cc(className, 'Icon', icon != null ? `Icon-${icon}` : null)}
       {...rest}
       dangerouslySetInnerHTML={{ __html: icon_xml }}
     />

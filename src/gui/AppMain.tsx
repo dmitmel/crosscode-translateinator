@@ -48,13 +48,13 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
   };
 
   private on_global_key_down = (event: KeyboardEvent): void => {
-    let kmod = gui.getKeyboardEventModifiers(event);
+    let kmod = gui.get_keyboard_event_modifiers(event);
     this.inner.set_global_key_modifiers(kmod);
   };
 
   private on_global_key_up = (event: KeyboardEvent): void => {
     let key = event.code;
-    let kmod = gui.getKeyboardEventModifiers(event);
+    let kmod = gui.get_keyboard_event_modifiers(event);
     this.inner.set_global_key_modifiers(kmod);
 
     if (key === 'F5' && kmod === gui.KeyMod.None) {

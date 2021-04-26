@@ -3,7 +3,7 @@ import './ProjectTree.scss';
 import { BoxGui, WrapperGui } from './Box';
 import { AppMainGuiCtx } from './AppMain';
 import { IconGui } from './Icon';
-import cc from 'classcat';
+import cc from 'clsx';
 import './Label';
 import './Button';
 
@@ -121,10 +121,10 @@ export class ProjectTreeSectionGui extends Inferno.Component<
     return (
       <BoxGui
         orientation="vertical"
-        className={cc([
-          'ProjectTreeSection',
-          { 'ProjectTreeSection-opened': is_opened, 'BoxItem-expand': is_opened },
-        ])}>
+        className={cc('ProjectTreeSection', {
+          'ProjectTreeSection-opened': is_opened,
+          'BoxItem-expand': is_opened,
+        })}>
         <div>
           <button
             type="button"

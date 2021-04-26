@@ -1,5 +1,5 @@
 import './Box.scss';
-import cc from 'classcat';
+import cc from 'clsx';
 
 export interface BoxGuiProps extends HTMLAttributes<HTMLDivElement> {
   orientation: 'vertical' | 'horizontal';
@@ -24,18 +24,13 @@ export function BoxGui({
 }: BoxGuiProps): JSX.Element {
   return (
     <div
-      className={cc([
-        className,
-        'Box',
-        `Box-orientation-${orientation}`,
-        {
-          'Box-inline': inline,
-          'Box-reverse-children': reverse_children,
-          'Box-scroll': scroll,
-          'Box-allow-overflow': allow_overflow,
-          'Box-allow-wrapping': allow_wrapping,
-        },
-      ])}
+      className={cc(className, 'Box', `Box-orientation-${orientation}`, {
+        'Box-inline': inline,
+        'Box-reverse-children': reverse_children,
+        'Box-scroll': scroll,
+        'Box-allow-overflow': allow_overflow,
+        'Box-allow-wrapping': allow_wrapping,
+      })}
       {...rest}>
       {children}
     </div>
@@ -57,14 +52,10 @@ export function WrapperGui({
 }: WrapperGuiProps): JSX.Element {
   return (
     <div
-      className={cc([
-        className,
-        'Wrapper',
-        {
-          'Wrapper-scroll': scroll,
-          'Wrapper-allow-overflow': allow_overflow,
-        },
-      ])}
+      className={cc(className, 'Wrapper', {
+        'Wrapper-scroll': scroll,
+        'Wrapper-allow-overflow': allow_overflow,
+      })}
       {...rest}>
       {children}
     </div>

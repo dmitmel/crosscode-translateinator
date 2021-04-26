@@ -1,9 +1,8 @@
 import * as Inferno from 'inferno';
-import { ChildFlags } from 'inferno-vnode-flags';
 import './Editor.scss';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
-import cc from 'classcat';
+import cc from 'clsx';
 import * as gui from '../gui';
 import { FancyTextGui } from './FancyText';
 import { IconButtonGui } from './Button';
@@ -60,7 +59,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
 
   public render(): JSX.Element {
     return (
-      <BoxGui orientation="vertical" className={cc([this.props.className, 'Editor'])}>
+      <BoxGui orientation="vertical" className={cc(this.props.className, 'Editor')}>
         <EditorTabListGui />
         <WrapperGui scroll className="BoxItem-expand FragmentList">
           {this.state.fragments.map((f) => (
@@ -78,7 +77,7 @@ export interface EditorTabListGuiProps {
 
 export function EditorTabListGui(props: gui.ComponentProps<EditorTabListGuiProps>): JSX.Element {
   return (
-    <BoxGui orientation="horizontal" scroll className={cc([props.className, 'EditorTabList'])}>
+    <BoxGui orientation="horizontal" scroll className={cc(props.className, 'EditorTabList')}>
       <EditorTabGui active={false} type="search" name={'Search'} />
       <EditorTabGui active={false} type="queue" name={'Queue'} />
       <EditorTabGui active={true} type="game_file" name={'database.json'} />
@@ -107,7 +106,7 @@ export function EditorTabGui(props: gui.ComponentProps<EditorTabGuiProps>): JSX.
   return (
     <button
       type="button"
-      className={cc(['EditorTab', { 'EditorTab-active': props.active }])}
+      className={cc('EditorTab', { 'EditorTab-active': props.active })}
       tabIndex={0}
       onClick={() => console.log('open', props.name)}>
       <IconGui icon={EDITOR_TAB_ICONS.get(props.type)} /> {props.name} <IconGui icon="x" />
@@ -145,7 +144,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     let translations = fragment.tr ?? [];
 
     return (
-      <WrapperGui allow_overflow className={cc([this.props.className, 'Fragment'])}>
+      <WrapperGui allow_overflow className={cc(this.props.className, 'Fragment')}>
         <BoxGui
           orientation="horizontal"
           allow_wrapping
