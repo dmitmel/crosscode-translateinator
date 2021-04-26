@@ -126,7 +126,15 @@ export interface FragmentGuiProps {
 }
 
 export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
-  public on_copy_original_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+  private on_file_path_component_click = (component_path: string): void => {
+    console.log('search', component_path);
+  };
+
+  private on_json_path_component_click = (component_path: string): void => {
+    console.log('search', this.props.fragment.file, component_path);
+  };
+
+  private on_copy_original_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
     nw.Clipboard.get().set(this.props.fragment.orig);
   };
 
@@ -145,19 +153,11 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
           className="Fragment-Location">
           <span title="File path">
             <IconGui icon="file-earmark-text" />{' '}
-            <a
-              href="#"
-              tabIndex={0}
-              onClick={(e) => e.preventDefault()}
-              className={'Label-selectable'}>
-              {fragment.file}
-            </a>
+            <FragmentPathGui path={fragment.file} on_click={this.on_file_path_component_click} />
           </span>
-          <span
-            title="JSON path"
-            $ChildFlag={ChildFlags.UnknownChildren} // for some reason the parser can't figure this node out
-          >
-            <IconGui icon="code" /> <span className="Label-selectable">{fragment.json}</span>
+          <span title="JSON path">
+            <IconGui icon="code" />{' '}
+            <FragmentPathGui path={fragment.json} on_click={this.on_json_path_component_click} />
           </span>
           {lang_uid !== 0 ? (
             <span title="Lang UID">
@@ -201,13 +201,116 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
   }
 }
 
+export interface FragmentPathGuiProps {
+  path: string;
+  on_click?: (component_path: string) => void;
+}
+
+export interface FragmentPathGuiState {
+  clickable: boolean;
+}
+
+export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, FragmentPathGuiState> {
+  public context!: AppMainGuiCtx;
+  public state: FragmentPathGuiState = {
+    clickable: false,
+  };
+  private is_mouse_over = false;
+  private is_ctrl_pressed = false;
+
+  public componentDidMount(): void {
+    let { app } = this.context;
+    app.events.global_key_modifiers_change.on(this.on_keymod_event);
+  }
+
+  public componentWillUnmount(): void {
+    let { app } = this.context;
+    app.events.global_key_modifiers_change.off(this.on_keymod_event);
+  }
+
+  private on_mouse_hover = (_event: Inferno.InfernoMouseEvent<HTMLElement>): void => {
+    this.is_mouse_over = true;
+    this.update_clickable_state();
+  };
+
+  private on_mouse_hover_end = (_event: Inferno.InfernoMouseEvent<HTMLElement>): void => {
+    this.is_mouse_over = false;
+    this.update_clickable_state();
+  };
+
+  private on_keymod_event = (state: gui.KeyMod): void => {
+    this.is_ctrl_pressed = state === gui.KeyMod.Ctrl;
+    this.update_clickable_state();
+  };
+
+  private update_clickable_state(): void {
+    this.setState({ clickable: this.is_mouse_over && this.is_ctrl_pressed });
+  }
+
+  private on_link_click = (event: Inferno.InfernoMouseEvent<HTMLAnchorElement>): void => {
+    event.preventDefault();
+    let component_path = event.currentTarget.dataset.path;
+    if (!(component_path != null)) {
+      throw new Error('Assertion failed: component_path != null');
+    }
+    this.props.on_click?.(component_path);
+  };
+
+  public render(): JSX.Element {
+    let full_path = this.props.path;
+    let children: Inferno.InfernoNode = full_path;
+
+    if (this.state.clickable) {
+      let links: JSX.Element[] = [];
+      // An empty href is required for focus to work on the links.
+
+      let component_start_index = 0;
+      while (true) {
+        let separator_index = full_path.indexOf('/', component_start_index);
+        if (separator_index < 0) break;
+        let component = full_path.slice(component_start_index, separator_index + 1);
+        let component_path = full_path.slice(0, separator_index + 1);
+
+        links.push(
+          <a key={component_path} href="" data-path={component_path} onClick={this.on_link_click}>
+            {component}
+          </a>,
+        );
+
+        component_start_index = separator_index + 1;
+      }
+
+      let last_component = full_path.slice(component_start_index);
+      links.push(
+        <a key={full_path} href="" data-path={full_path} onClick={this.on_link_click}>
+          {last_component}
+        </a>,
+      );
+      children = links;
+    }
+
+    // Without a wrapper element, when moving the cursor between path component
+    // links, hovering is lost for a moment, so a common element to catch all
+    // mouse events is needed.
+    return (
+      <span
+        className="Label-selectable"
+        onMouseEnter={this.on_mouse_hover}
+        onMouseMove={this.on_mouse_hover}
+        onMouseLeave={this.on_mouse_hover_end}>
+        {children}
+      </span>
+    );
+  }
+}
+
 export interface TranslationGuiProps {
   fragment: ListedFragment & { file: string };
   translation: ListedTranslation;
 }
 
 export class TranslationGui extends Inferno.Component<TranslationGuiProps, unknown> {
-  public on_copy_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+  private on_copy_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
     nw.Clipboard.get().set(this.props.translation.text);
   };
 

@@ -22,6 +22,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
   public componentDidMount(): void {
     nw.Window.get(window).on('closed', this.on_nw_window_closing);
     window.addEventListener('beforeunload', this.on_before_page_unload);
+    window.addEventListener('keydown', this.on_global_key_down);
     window.addEventListener('keyup', this.on_global_key_up);
     void this.inner.connect();
   }
@@ -29,6 +30,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
   public componentWillUnmount(): void {
     nw.Window.get(window).removeListener('closed', this.on_nw_window_closing);
     window.removeEventListener('beforeunload', this.on_before_page_unload);
+    window.removeEventListener('keydown', this.on_global_key_down);
     window.removeEventListener('keyup', this.on_global_key_up);
     void this.inner.disconnect();
   }
@@ -45,9 +47,16 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
     nw.Window.get(window).close(true);
   };
 
+  private on_global_key_down = (event: KeyboardEvent): void => {
+    let kmod = gui.getKeyboardEventModifiers(event);
+    this.inner.set_global_key_modifiers(kmod);
+  };
+
   private on_global_key_up = (event: KeyboardEvent): void => {
     let key = event.code;
     let kmod = gui.getKeyboardEventModifiers(event);
+    this.inner.set_global_key_modifiers(kmod);
+
     if (key === 'F5' && kmod === gui.KeyMod.None) {
       // Soft reload, caught by on_before_page_unload, although the callback is
       // purposefully not invoked manually here for me to be able to test if
@@ -84,10 +93,19 @@ export class AppMain {
   public backend: backend.Backend;
   public current_project_id: number | null = null;
   public current_project_meta: { translation_locale: string } | null = null;
+  public global_key_modifiers = gui.KeyMod.None;
   public events = {
     project_opened: new Event2(),
     project_closed: new Event2(),
+    global_key_modifiers_change: new Event2<[state: gui.KeyMod]>(),
   };
+
+  public set_global_key_modifiers(state: gui.KeyMod): void {
+    if (this.global_key_modifiers !== state) {
+      this.global_key_modifiers = state;
+      this.events.global_key_modifiers_change.fire(state);
+    }
+  }
 
   public constructor() {
     if ('app' in window) {
