@@ -19,3 +19,9 @@ export function escape_html(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+export function assert(condition: boolean): asserts condition {
+  if (!condition) {
+    throw new Error('Assertion failed');
+  }
+}

@@ -11,6 +11,7 @@ import { AppMainGuiCtx } from './AppMain';
 import './Label.scss';
 import './TextArea.scss';
 import autosize from 'autosize';
+import * as utils from '../utils';
 
 export interface EditorGuiProps {
   className?: string;
@@ -249,9 +250,7 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
   private on_link_click = (event: Inferno.InfernoMouseEvent<HTMLAnchorElement>): void => {
     event.preventDefault();
     let component_path = event.currentTarget.dataset.path;
-    if (!(component_path != null)) {
-      throw new Error('Assertion failed: component_path != null');
-    }
+    utils.assert(component_path != null);
     this.props.on_click?.(component_path);
   };
 
@@ -371,23 +370,17 @@ export class NewTranslationGui extends Inferno.Component<
   };
 
   public componentDidMount(): void {
-    if (!(this.textarea != null)) {
-      throw new Error('Assertion failed: this.textarea != null');
-    }
+    utils.assert(this.textarea != null);
     autosize(this.textarea);
   }
 
   public componentWillUnmount(): void {
-    if (!(this.textarea != null)) {
-      throw new Error('Assertion failed: this.textarea != null');
-    }
+    utils.assert(this.textarea != null);
     autosize.destroy(this.textarea);
   }
 
   public componentDidUpdate(): void {
-    if (!(this.textarea != null)) {
-      throw new Error('Assertion failed: this.textarea != null');
-    }
+    utils.assert(this.textarea == null);
     // autosize.update(this.textarea);
   }
 

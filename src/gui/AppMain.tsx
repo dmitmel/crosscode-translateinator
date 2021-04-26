@@ -7,6 +7,7 @@ import { EditorGui } from './Editor';
 import { StatusBarGui } from './StatusBar';
 import { Event2 } from '../events';
 import * as gui from '../gui';
+import * as utils from '../utils';
 
 export interface AppMainGuiCtx {
   app: AppMain;
@@ -108,9 +109,7 @@ export class AppMain {
   }
 
   public constructor() {
-    if ('app' in window) {
-      throw new Error("Assertion failed: !('app' in window)");
-    }
+    utils.assert(!('app' in window));
     window.app = this;
     // Proper initialization happens after the global reference has been
     // installed, so that if there is an exception thrown somewhere in the

@@ -115,10 +115,7 @@ export class Backend {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   public async connect(): Promise<void> {
-    if (!(this.state === BackendState.DISCONNECTED)) {
-      throw new Error('Assertion failed: this.state === BackendState.DISCONNECTED');
-    }
-
+    utils.assert(this.state === BackendState.DISCONNECTED);
     this.state = BackendState.DISCONNECTED;
 
     this.transport = new crosslocale_bridge.Backend();
@@ -150,19 +147,13 @@ export class Backend {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   private async send_message_internal(message: Message): Promise<void> {
-    if (!(this.state !== BackendState.DISCONNECTED)) {
-      throw new Error('Assertion failed: this.state !== BackendState.DISCONNECTED');
-    }
-
+    utils.assert(this.state !== BackendState.DISCONNECTED);
     let text = JSON.stringify(message);
     this.transport.send_message(text);
   }
 
   private recv_message_internal(text: string): void {
-    if (!(this.state !== BackendState.DISCONNECTED)) {
-      throw new Error('Assertion failed: this.state !== BackendState.DISCONNECTED');
-    }
-
+    utils.assert(this.state !== BackendState.DISCONNECTED);
     let message: Message = JSON.parse(text);
     switch (message.type) {
       case 'req': {
@@ -196,9 +187,7 @@ export class Backend {
   public async send_request<T extends RequestMessageType['type'] & ResponseMessageType['type']>(
     data: RequestMessageType & { type: T },
   ): Promise<ResponseMessageType & { type: T }> {
-    if (!(this.state !== BackendState.DISCONNECTED)) {
-      throw new Error('Assertion failed: this.state !== BackendState.DISCONNECTED');
-    }
+    utils.assert(this.state !== BackendState.DISCONNECTED);
 
     this.current_request_id = Math.max(this.current_request_id, 1);
     let id = this.current_request_id;
