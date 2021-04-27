@@ -3,10 +3,6 @@ const paths = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const tsTransformInferno = require('ts-transform-inferno').default;
-const ts = require('typescript');
-
-require('ts-transform-inferno/dist/updateSourceFile').default = tsTransformInfernoUpdateSourceFile;
 
 /**
   @returns {webpack.Configuration}
@@ -48,15 +44,22 @@ module.exports = (_env, { mode }) => ({
       {
         test: /\.(?:js|ts)x?$/,
         include: paths.join(__dirname, 'src'),
-        exclude: /node_modules/,
         use: [
           {
-            loader: 'ts-loader',
+            loader: 'babel-loader',
             options: {
-              getCustomTransformers: () => ({
-                before: [tsTransformInferno()],
-              }),
+              plugins: [
+                // I wish ts-transform-inferno was stable enough, but alas, it
+                // requires monkey-patches to fix the issue with duplicate
+                // imports (see commit history) and for some reason prevents
+                // type annotations written inside the JSX from being removed
+                // by the compiler, so instead we rely on Babel.
+                ['babel-plugin-inferno', { imports: true }],
+              ],
             },
+          },
+          {
+            loader: 'ts-loader',
           },
         ],
       },
@@ -126,39 +129,3 @@ module.exports = (_env, { mode }) => ({
     }),
   ].filter((p) => p != null),
 });
-
-/**
-  @param {ts.SourceFile} sourceFile
-  @param {ts.TransformationContext} context
-  @returns {ts.SourceFile}
-*/
-function tsTransformInfernoUpdateSourceFile(sourceFile, context) {
-  /* eslint-disable no-undefined */
-  let imports = [];
-  for (let name of [
-    'createFragment',
-    'createVNode',
-    'createComponentVNode',
-    'createTextVNode',
-    'normalizeProps',
-  ]) {
-    if (context[name]) {
-      imports.push(ts.createImportSpecifier(undefined, ts.createIdentifier(name)));
-    }
-  }
-
-  if (imports.length > 0) {
-    sourceFile = ts.updateSourceFileNode(sourceFile, [
-      ...sourceFile.statements,
-      ts.createImportDeclaration(
-        undefined,
-        undefined,
-        ts.createImportClause(undefined, ts.createNamedImports(imports)),
-        ts.createLiteral('inferno'),
-      ),
-    ]);
-  }
-
-  return sourceFile;
-  /* eslint-enable no-undefined */
-}
