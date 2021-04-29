@@ -127,7 +127,7 @@ export class Backend {
 
   private async run_message_receiver_loop(): Promise<void> {
     while (true) {
-      let message: string;
+      let message: Buffer;
       try {
         message = await new Promise((resolve, reject) => {
           this.transport.recv_message((err, message) => {
@@ -143,18 +143,19 @@ export class Backend {
       }
       this.recv_message_internal(message);
     }
+    this.disconnect();
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  private async send_message_internal(message: Message): Promise<void> {
+  private send_message_internal(message: Message): void {
     utils.assert(this.state !== BackendState.DISCONNECTED);
     let text = JSON.stringify(message);
+    // this.transport.send_message(Buffer.from(text, 'utf8'));
     this.transport.send_message(text);
   }
 
-  private recv_message_internal(text: string): void {
+  private recv_message_internal(text: Buffer): void {
     utils.assert(this.state !== BackendState.DISCONNECTED);
-    let message: Message = JSON.parse(text);
+    let message: Message = JSON.parse(text.toString('utf8'));
     switch (message.type) {
       case 'req': {
         throw new Error('unexpected request from the backend');
@@ -181,6 +182,10 @@ export class Backend {
         }
         break;
       }
+
+      default: {
+        throw new Error('unexpected message type from the backend');
+      }
     }
   }
 
@@ -197,8 +202,8 @@ export class Backend {
       this.sent_request_success_callbacks.set(id, resolve);
       this.sent_request_error_callbacks.set(id, reject);
     });
-    await this.send_message_internal({ type: 'req', id, data });
-    return (response_promise as unknown) as ResponseMessageType & { type: T };
+    this.send_message_internal({ type: 'req', id, data });
+    return response_promise as Promise<ResponseMessageType & { type: T }>;
   }
 
   public disconnect(): void {
