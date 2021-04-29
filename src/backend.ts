@@ -198,12 +198,17 @@ export class Backend {
     let id = this.current_request_id;
     this.current_request_id = utils.u32(this.current_request_id + 1);
 
-    let response_promise = new Promise<ResponseMessageType>((resolve, reject) => {
-      this.sent_request_success_callbacks.set(id, resolve);
-      this.sent_request_error_callbacks.set(id, reject);
-    });
-    this.send_message_internal({ type: 'req', id, data });
-    return response_promise as Promise<ResponseMessageType & { type: T }>;
+    try {
+      let response_promise = new Promise<ResponseMessageType>((resolve, reject) => {
+        this.sent_request_success_callbacks.set(id, resolve);
+        this.sent_request_error_callbacks.set(id, reject);
+      });
+      this.send_message_internal({ type: 'req', id, data });
+      return (await response_promise) as ResponseMessageType & { type: T };
+    } finally {
+      this.sent_request_success_callbacks.delete(id);
+      this.sent_request_error_callbacks.delete(id);
+    }
   }
 
   public disconnect(): void {
