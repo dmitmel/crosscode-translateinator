@@ -83,7 +83,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
             : null}
         </ProjectTreeSectionGui>
 
-        <ProjectTreeSectionGui name="Game files">
+        <ProjectTreeSectionGui name="Game files" default_opened>
           {this.state.virtual_game_files != null
             ? render_FileTreeGui({
                 path_prefix: '',
@@ -100,6 +100,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
 
 export interface ProjectTreeSectionGuiProps {
   name: string;
+  default_opened?: boolean;
 }
 
 export interface ProjectTreeSectionGuiState {
@@ -111,7 +112,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<
   ProjectTreeSectionGuiState
 > {
   public state: ProjectTreeSectionGuiState = {
-    is_opened: false,
+    is_opened: this.props.default_opened ?? false,
   };
 
   private on_name_click = (): void => {
