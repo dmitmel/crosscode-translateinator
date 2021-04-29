@@ -1,13 +1,15 @@
 import './AppMain.scss';
+
 import * as Inferno from 'inferno';
+
 import * as backend from '../backend';
-import { ProjectTreeGui } from './ProjectTree';
-import { BoxGui } from './Box';
-import { EditorGui } from './Editor';
-import { StatusBarGui } from './StatusBar';
 import { Event2 } from '../events';
 import * as gui from '../gui';
 import * as utils from '../utils';
+import { BoxGui } from './Box';
+import { EditorGui } from './Editor';
+import { ProjectTreeGui } from './ProjectTree';
+import { StatusBarGui } from './StatusBar';
 
 export interface AppMainGuiCtx {
   app: AppMain;

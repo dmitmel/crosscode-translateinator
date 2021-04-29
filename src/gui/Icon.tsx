@@ -1,8 +1,10 @@
-import * as utils from '../utils';
 import './Icon.scss';
+
 import cc from 'clsx';
-import icons_obj from '../icons_list.json';
+
 import * as gui from '../gui';
+import icons_obj from '../icons_list.json';
+import * as utils from '../utils';
 
 let icons_map = new Map();
 for (let k in icons_obj) {

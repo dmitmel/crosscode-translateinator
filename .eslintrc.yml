@@ -4,6 +4,8 @@ env:
   browser: true
 parserOptions:
   sourceType: module
+plugins:
+  - simple-import-sort
 
 settings:
   node:
@@ -21,6 +23,10 @@ rules:
         - modules
         - dynamicImport
   node/no-unpublished-require: off
+
+  sort-imports: off
+  simple-import-sort/imports: warn
+  simple-import-sort/exports: warn
 
 overrides:
   - files: '**/*.{ts,tsx}'

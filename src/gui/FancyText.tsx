@@ -1,5 +1,5 @@
-import * as gui from '../gui';
 import * as crosscode_markup from '../crosscode_markup';
+import * as gui from '../gui';
 
 export const WHITESPACE_COLOR = '#666666';
 export const SPECIAL_ESCAPES_COLOR = '#66ccdd';

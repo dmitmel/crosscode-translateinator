@@ -1,4 +1,5 @@
 import './StatusBar.scss';
+
 import * as Inferno from 'inferno';
 
 export function StatusBarGui(): JSX.Element {

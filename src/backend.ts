@@ -1,6 +1,6 @@
+import * as crosslocale_bridge from './backend/ffi_bridge';
 import { Event2 } from './events';
 import * as utils from './utils';
-import * as crosslocale_bridge from './backend/ffi_bridge';
 
 crosslocale_bridge.init_logging();
 

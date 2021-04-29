@@ -1,11 +1,13 @@
-import * as Inferno from 'inferno';
 import './ProjectTree.scss';
-import { BoxGui, WrapperGui } from './Box';
-import { AppMainGuiCtx } from './AppMain';
-import { IconGui } from './Icon';
-import cc from 'clsx';
 import './Label';
 import './Button';
+
+import cc from 'clsx';
+import * as Inferno from 'inferno';
+
+import { AppMainGuiCtx } from './AppMain';
+import { BoxGui, WrapperGui } from './Box';
+import { IconGui } from './Icon';
 
 export interface ProjectTreeGuiState {
   translation_locale: string | null;

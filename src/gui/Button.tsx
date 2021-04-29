@@ -1,7 +1,9 @@
+import './Button.scss';
+
+import cc from 'clsx';
+
 import * as gui from '../gui';
 import { IconGui, IconGuiProps } from './Icon';
-import cc from 'clsx';
-import './Button.scss';
 
 interface IconButtonGuiProps extends HTMLAttributes<HTMLButtonElement> {
   icon: string | null | undefined;

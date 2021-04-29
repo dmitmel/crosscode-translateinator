@@ -1,17 +1,19 @@
-import * as Inferno from 'inferno';
 import './Editor.scss';
-import { BoxGui, WrapperGui } from './Box';
-import { IconGui } from './Icon';
-import cc from 'clsx';
-import * as gui from '../gui';
-import { FancyTextGui } from './FancyText';
-import { IconButtonGui } from './Button';
-import { ListedFragment, ListedTranslation } from '../backend';
-import { AppMainGuiCtx } from './AppMain';
 import './Label.scss';
 import './TextArea.scss';
+
 import autosize from 'autosize';
+import cc from 'clsx';
+import * as Inferno from 'inferno';
+
+import { ListedFragment, ListedTranslation } from '../backend';
+import * as gui from '../gui';
 import * as utils from '../utils';
+import { AppMainGuiCtx } from './AppMain';
+import { BoxGui, WrapperGui } from './Box';
+import { IconButtonGui } from './Button';
+import { FancyTextGui } from './FancyText';
+import { IconGui } from './Icon';
 
 export interface EditorGuiProps {
   className?: string;
