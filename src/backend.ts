@@ -141,9 +141,14 @@ export class Backend {
         }
         throw e;
       }
-      this.recv_message_internal(message);
+      try {
+        this.recv_message_internal(message);
+      } catch (e) {
+        console.error(e);
+      }
     }
-    this.disconnect();
+    // NOTE: Explicit disconnection at this point **is not needed** because
+    // recv_message has already thrown an exception due to a disconnection!
   }
 
   private send_message_internal(message: Message): void {
