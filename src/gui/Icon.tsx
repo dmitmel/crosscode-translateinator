@@ -1,8 +1,8 @@
 import './Icon.scss';
 
 import cc from 'clsx';
+import * as Inferno from 'inferno';
 
-import * as gui from '../gui';
 import icons_obj from '../icons_list.json';
 import * as utils from '../utils';
 
@@ -14,19 +14,24 @@ for (let k in icons_obj) {
 }
 
 export interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
+  inner_ref?: Inferno.Ref<SVGSVGElement> | Inferno.Refs<SVGSVGElement>;
   icon: string | null | undefined;
   size?: number | string;
 }
 
-export const IconGui = gui.infernoForwardRef<IconGuiProps, SVGSVGElement>(function IconGui(
-  { icon, size, className, class: _class, ...rest },
-  ref,
-) {
+export function IconGui({
+  inner_ref,
+  icon,
+  size,
+  className,
+  class: _class,
+  ...rest
+}: IconGuiProps): JSX.Element {
   size ??= '1em';
   let icon_xml = icons_map.get(icon) ?? '';
   return (
     <svg
-      ref={ref}
+      ref={inner_ref}
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
       width={size}
@@ -38,4 +43,4 @@ export const IconGui = gui.infernoForwardRef<IconGuiProps, SVGSVGElement>(functi
       dangerouslySetInnerHTML={{ __html: icon_xml }}
     />
   );
-});
+}

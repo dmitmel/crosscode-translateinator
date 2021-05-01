@@ -1,8 +1,10 @@
 import './Box.scss';
 
 import cc from 'clsx';
+import * as Inferno from 'inferno';
 
 export interface BoxGuiProps extends HTMLAttributes<HTMLDivElement> {
+  inner_ref?: Inferno.Ref<HTMLDivElement> | Inferno.Refs<HTMLDivElement>;
   orientation: 'vertical' | 'horizontal';
   inline?: boolean;
   reverse_children?: boolean;
@@ -12,6 +14,7 @@ export interface BoxGuiProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function BoxGui({
+  inner_ref,
   orientation,
   inline,
   reverse_children,
@@ -25,6 +28,7 @@ export function BoxGui({
 }: BoxGuiProps): JSX.Element {
   return (
     <div
+      ref={inner_ref}
       className={cc(className, 'Box', `Box-orientation-${orientation}`, {
         'Box-inline': inline,
         'Box-reverse-children': reverse_children,
@@ -39,11 +43,13 @@ export function BoxGui({
 }
 
 export interface WrapperGuiProps extends HTMLAttributes<HTMLDivElement> {
+  inner_ref?: Inferno.Ref<HTMLDivElement> | Inferno.Refs<HTMLDivElement>;
   scroll?: boolean;
   allow_overflow?: boolean;
 }
 
 export function WrapperGui({
+  inner_ref,
   scroll,
   allow_overflow,
   className,
@@ -53,6 +59,7 @@ export function WrapperGui({
 }: WrapperGuiProps): JSX.Element {
   return (
     <div
+      ref={inner_ref}
       className={cc(className, 'Wrapper', {
         'Wrapper-scroll': scroll,
         'Wrapper-allow-overflow': allow_overflow,
