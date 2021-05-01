@@ -1,7 +1,8 @@
 @import '../common.scss';
 
 @include app-styles {
-  textarea {
+  textarea,
+  input {
     // reset the browser styles
     font-family: unset;
     font-size: unset;

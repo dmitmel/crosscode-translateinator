@@ -1,8 +1,6 @@
 import './Editor.scss';
 import './Label.scss';
-import './TextArea.scss';
 
-import autosize from 'autosize';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
@@ -14,6 +12,7 @@ import { BoxGui, WrapperGui } from './Box';
 import { IconButtonGui } from './Button';
 import { FancyTextGui } from './FancyText';
 import { IconGui } from './Icon';
+import { TextAreaGui } from './TextInput';
 
 export interface EditorGuiProps {
   className?: string;
@@ -352,8 +351,6 @@ export interface NewTranslationGuiState {
   text: string;
 }
 
-// Autosized textarea implementation is based on
-// <https://github.com/buildo/react-autosize-textarea/blob/56225f8d8d2f1e5b3163442a0e2bccb2a7530931/src/TextareaAutosize.tsx>
 export class NewTranslationGui extends Inferno.Component<
   NewTranslationGuiProps,
   NewTranslationGuiState
@@ -362,38 +359,14 @@ export class NewTranslationGui extends Inferno.Component<
     text: '',
   };
 
-  public textarea: HTMLTextAreaElement | null = null;
-
   private on_input = (event: Inferno.FormEvent<HTMLTextAreaElement>): void => {
-    let text_area = event.currentTarget;
-    // textArea.style.height = 'auto';
-    // textArea.style.height = `${textArea.scrollHeight}px`;
-    this.setState({ text: text_area.value });
+    this.setState({ text: event.currentTarget.value });
   };
 
-  public componentDidMount(): void {
-    utils.assert(this.textarea != null);
-    autosize(this.textarea);
-  }
-
-  public componentWillUnmount(): void {
-    utils.assert(this.textarea != null);
-    autosize.destroy(this.textarea);
-  }
-
-  public componentDidUpdate(): void {
-    utils.assert(this.textarea == null);
-    // autosize.update(this.textarea);
-  }
-
   public render(): JSX.Element {
-    let textareaRef = (textarea: HTMLTextAreaElement): void => {
-      this.textarea = textarea;
-    };
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
-        <textarea
-          ref={textareaRef}
+        <TextAreaGui
           value={this.state.text}
           onInput={this.on_input}
           placeholder="Add new translation..."
