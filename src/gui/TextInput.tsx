@@ -97,14 +97,6 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
     // Here's a constant to prevent typos.
     const IMPORTANT = 'important';
 
-    // This idea was taken from
-    // <https://github.com/jackmoore/autosize/blob/d32047a7c06d81fedb12e0e9bfdd108e3a0a68f1/src/autosize.js#L50-L54>
-    if (real_style.getPropertyValue('resize') === 'both') {
-      hidden.style.setProperty('resize', 'horizontal', IMPORTANT);
-    } else {
-      hidden.style.setProperty('resize', 'none', IMPORTANT);
-    }
-
     for (let k of TextAreaGui.MIMICKED_STYLES) {
       hidden.style.setProperty(k, real_style.getPropertyValue(k), IMPORTANT);
     }

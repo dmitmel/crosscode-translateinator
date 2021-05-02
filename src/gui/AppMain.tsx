@@ -101,6 +101,8 @@ export class AppMain {
   public event_project_closed = new Event2();
 
   public current_fragment_list: Array<backend.ListedFragment & { file: string }> = [];
+  public event_fragment_list_update = new Event2();
+
   public current_fragment_pos = 0; // TODO: save a position per each tab
   public event_current_fragment_change = new Event2<[jump: boolean]>();
   public set_current_fragment_pos(pos: number, jump: boolean): void {
@@ -152,6 +154,8 @@ export class AppMain {
       };
     }
 
+    this.event_project_opened.fire();
+
     {
       let file_path = 'data/maps/hideout/entrance.json';
       // let file_path = 'data/maps/rookie-harbor/center.json';
@@ -166,9 +170,8 @@ export class AppMain {
       for (let fragment of this.current_fragment_list) {
         fragment.file = file_path;
       }
+      this.event_fragment_list_update.fire();
     }
-
-    this.event_project_opened.fire();
   }
 
   public disconnect(): void {

@@ -27,8 +27,15 @@ export interface EditorGuiProps {
   className?: string;
 }
 
-export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
+export interface EditorGuiState {
+  final_filler_height: number;
+}
+
+export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState> {
   public context!: AppMainGuiCtx;
+  public state: EditorGuiState = {
+    final_filler_height: 0,
+  };
 
   private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
   // TODO: Map<number, FragmentGui> ???
@@ -39,8 +46,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
 
   public componentDidMount(): void {
     let { app } = this.context;
-    app.event_project_opened.on(this.on_project_opened);
-    app.event_project_closed.on(this.on_project_closed);
+    app.event_fragment_list_update.on(this.on_fragment_list_update);
     app.event_current_fragment_change.on(this.on_current_fragment_change);
 
     let fragment_list_gui = this.fragment_list_ref.current;
@@ -51,12 +57,14 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
       root: fragment_list_gui,
     });
     this.fragment_observer_map = new WeakMap();
+
+    window.addEventListener('resize', this.on_window_resize);
+    this.on_window_resize();
   }
 
   public componentWillUnmount(): void {
     let { app } = this.context;
-    app.event_project_opened.off(this.on_project_opened);
-    app.event_project_closed.off(this.on_project_closed);
+    app.event_fragment_list_update.off(this.on_fragment_list_update);
     app.event_current_fragment_change.off(this.on_current_fragment_change);
 
     utils.assert(this.fragment_observer != null);
@@ -64,7 +72,28 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
     this.fragment_observer.disconnect();
     this.fragment_observer = null;
     this.fragment_observer_map = null;
+
+    window.removeEventListener('resize', this.on_window_resize);
   }
+
+  private on_window_resize = (): void => {
+    let { app } = this.context;
+    let last_fragment = app.current_fragment_list[app.current_fragment_list.length - 1];
+    let final_filler_height = 0;
+    if (last_fragment != null) {
+      let last_fragment_gui = this.fragment_guis_map.get(last_fragment);
+      utils.assert(last_fragment_gui != null);
+      let last_fragment_element = last_fragment_gui.root_ref.current;
+      utils.assert(last_fragment_element != null);
+      let fragment_list_ref = this.fragment_list_ref.current;
+      utils.assert(fragment_list_ref != null);
+      // Different height properties are not a typo here.
+      final_filler_height = fragment_list_ref.clientHeight - last_fragment_element.offsetHeight;
+    }
+    if (this.state.final_filler_height !== final_filler_height) {
+      this.setState({ final_filler_height });
+    }
+  };
 
   private on_fragment_intersection_change = (entries: IntersectionObserverEntry[]): void => {
     utils.assert(this.fragment_observer != null);
@@ -91,12 +120,10 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
     app.set_current_fragment_pos(top_pos ?? 1, /* jump */ false);
   };
 
-  private on_project_opened = (): void => {
-    this.forceUpdate();
-  };
-
-  private on_project_closed = (): void => {
-    this.forceUpdate();
+  private on_fragment_list_update = (): void => {
+    this.forceUpdate(() => {
+      this.on_window_resize();
+    });
   };
 
   private on_current_fragment_change = (jump: boolean): void => {
@@ -144,6 +171,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
           scroll
           className="BoxItem-expand FragmentList">
           {fragment_list_contents}
+          <div style={{ height: `${this.state.final_filler_height}px` }} />
         </WrapperGui>
       </BoxGui>
     );
