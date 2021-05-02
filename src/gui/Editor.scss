@@ -33,17 +33,17 @@
     }
   }
 
-  .FragmentList-Pinned {
+  .FragmentListPinned {
     padding: $spacing * 2;
     border-bottom: 1px solid #3c3c3c;
   }
 
-  .FragmentListPagination {
+  .FragmentListPinned-Pagination {
     > * {
       padding: $spacing * (2/3);
     }
 
-    .FragmentListPagination-JumpInput {
+    .FragmentListPinned-JumpInput {
       text-align: right;
       // This should be enough considering that CC in total contains 42k fragments
       $digits: 5;

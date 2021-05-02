@@ -107,11 +107,9 @@ export class Backend {
   private sent_request_success_callbacks = new Map<number, (data: ResponseMessageType) => void>();
   private sent_request_error_callbacks = new Map<number, (error: Error) => void>();
 
-  public events = {
-    error: new Event2<[error: Error]>(),
-    connected: new Event2(),
-    disconnected: new Event2(),
-  };
+  public event_error = new Event2<[error: Error]>();
+  public event_connected = new Event2();
+  public event_disconnected = new Event2();
 
   // eslint-disable-next-line @typescript-eslint/require-await
   public async connect(): Promise<void> {
@@ -122,7 +120,7 @@ export class Backend {
     void this.run_message_receiver_loop();
 
     this.state = BackendState.CONNECTED;
-    this.events.connected.fire();
+    this.event_connected.fire();
   }
 
   private async run_message_receiver_loop(): Promise<void> {
@@ -177,7 +175,7 @@ export class Backend {
 
       case 'err': {
         let error = new Error(message.message);
-        this.events.error.fire(error);
+        this.event_error.fire(error);
         if (message.id != null) {
           let callback = this.sent_request_error_callbacks.get(message.id);
           if (callback == null) {
@@ -222,6 +220,6 @@ export class Backend {
     this.transport.close();
     this.transport = null!;
 
-    this.events.disconnected.fire();
+    this.event_disconnected.fire();
   }
 }

@@ -25,14 +25,14 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
 
   public componentDidMount(): void {
     let { app } = this.context;
-    app.events.project_opened.on(this.on_project_opened);
-    app.events.project_closed.on(this.on_project_closed);
+    app.event_project_opened.on(this.on_project_opened);
+    app.event_project_closed.on(this.on_project_closed);
   }
 
   public componentWillUnmount(): void {
     let { app } = this.context;
-    app.events.project_opened.off(this.on_project_opened);
-    app.events.project_closed.off(this.on_project_closed);
+    app.event_project_opened.off(this.on_project_opened);
+    app.event_project_closed.off(this.on_project_closed);
   }
 
   private on_project_opened = async (): Promise<void> => {

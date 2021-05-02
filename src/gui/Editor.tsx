@@ -14,40 +14,34 @@ import { FancyTextGui } from './FancyText';
 import { IconGui } from './Icon';
 import { TextAreaGui } from './TextInput';
 
+export enum EditorTabType {
+  Search,
+  Queue,
+  TrFile,
+  GameFile,
+}
+
 export const FRAGMENT_PAGINATION_JUMP = 10;
 
 export interface EditorGuiProps {
   className?: string;
 }
 
-export interface EditorGuiState {
-  fragments: Array<ListedFragment & { file: string }>;
-  translation_locale: string;
-}
-
-export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState> {
+export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
   public context!: AppMainGuiCtx;
-  public state: EditorGuiState = {
-    fragments: [],
-    translation_locale: '',
-  };
 
-  private page_input_id: string = utils.new_html_id();
-
+  private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
   // TODO: Map<number, FragmentGui> ???
   private fragment_guis_map = new WeakMap<ListedFragment & { file: string }, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
   private visible_fragments = new Set<FragmentGui>();
-  private current_fragment_pos = 0;
-
-  private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
-  private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
 
   public componentDidMount(): void {
     let { app } = this.context;
-    app.events.project_opened.on(this.on_project_opened);
-    app.events.project_closed.on(this.on_project_closed);
+    app.event_project_opened.on(this.on_project_opened);
+    app.event_project_closed.on(this.on_project_closed);
+    app.event_current_fragment_change.on(this.on_current_fragment_change);
 
     let fragment_list_gui = this.fragment_list_ref.current;
     utils.assert(fragment_list_gui != null);
@@ -61,8 +55,9 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
 
   public componentWillUnmount(): void {
     let { app } = this.context;
-    app.events.project_opened.off(this.on_project_opened);
-    app.events.project_closed.off(this.on_project_closed);
+    app.event_project_opened.off(this.on_project_opened);
+    app.event_project_closed.off(this.on_project_closed);
+    app.event_current_fragment_change.off(this.on_current_fragment_change);
 
     utils.assert(this.fragment_observer != null);
     utils.assert(this.fragment_observer_map != null);
@@ -77,19 +72,12 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     for (let entry of entries) {
       let fragment_gui = this.fragment_observer_map.get(entry.target);
       utils.assert(fragment_gui != null);
-      console.log(entry);
       if (entry.isIntersecting) {
         this.visible_fragments.add(fragment_gui);
       } else {
         this.visible_fragments.delete(fragment_gui);
       }
     }
-
-    console.log(
-      Array.from(this.visible_fragments)
-        .sort((a, b) => a.props.pos - b.props.pos)
-        .map((fg) => fg.root_ref.current),
-    );
 
     let top_pos: number | null = null;
     for (let fragment_gui of this.visible_fragments) {
@@ -98,60 +86,37 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
         top_pos = pos;
       }
     }
-    this.current_fragment_pos = top_pos ?? 1;
 
-    let jump_pos_input = this.jump_pos_input_ref.current;
-    utils.assert(jump_pos_input != null);
-    jump_pos_input.value = this.current_fragment_pos.toString();
+    let { app } = this.context;
+    app.set_current_fragment_pos(top_pos ?? 1, /* jump */ false);
   };
 
-  private on_project_opened = async (): Promise<void> => {
-    let { app } = this.context;
-    this.setState({ translation_locale: app.current_project_meta!.translation_locale });
-
-    let file_path = 'data/maps/hideout/entrance.json';
-    let response = await app.backend.send_request({
-      type: 'VirtualGameFile/list_fragments',
-      project_id: app.current_project_id!,
-      file_path,
-    });
-    this.setState({ fragments: response.fragments.map((f) => ({ ...f, file: file_path })) });
+  private on_project_opened = (): void => {
+    this.forceUpdate();
   };
 
   private on_project_closed = (): void => {
-    this.setState({ fragments: [] });
+    this.forceUpdate();
   };
 
-  private on_jump_pos_submit = (event: Inferno.FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    let jump_pos_input = this.jump_pos_input_ref.current;
-    utils.assert(jump_pos_input != null);
+  private on_current_fragment_change = (jump: boolean): void => {
+    if (!jump) return;
+    let jump_pos = app.current_fragment_pos;
 
-    let jump_pos = parseInt(jump_pos_input.value, 10);
-    if (Number.isNaN(jump_pos)) return;
-    jump_pos = utils.clamp(jump_pos, 1, this.state.fragments.length);
-    let target_fragment = this.state.fragments[jump_pos - 1];
-    if (target_fragment == null) return;
+    let target_fragment = app.current_fragment_list[jump_pos - 1];
+    utils.assert(target_fragment != null);
     let target_fragment_gui = this.fragment_guis_map.get(target_fragment);
-    if (target_fragment_gui == null) return;
+    utils.assert(target_fragment_gui != null);
     let target_element = target_fragment_gui.root_ref.current;
-    if (target_element == null) return;
-
-    jump_pos_input.blur();
-    this.current_fragment_pos = jump_pos;
-    jump_pos_input.value = jump_pos.toString();
+    utils.assert(target_element != null);
     target_element.scrollIntoView();
   };
 
-  private on_jump_pos_unfocus = (_event: Inferno.FocusEvent<HTMLInputElement>): void => {
-    let jump_pos_input = this.jump_pos_input_ref.current;
-    utils.assert(jump_pos_input != null);
-    jump_pos_input.value = this.current_fragment_pos.toString();
-  };
-
   public render(): JSX.Element {
+    let { app } = this.context;
+
     let fragment_list_contents: JSX.Element[] = [];
-    for (let [index, fragment] of this.state.fragments.entries()) {
+    for (let [index, fragment] of app.current_fragment_list.entries()) {
       if (index > 0) {
         fragment_list_contents.push(
           <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
@@ -172,42 +137,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     return (
       <BoxGui orientation="vertical" className={cc(this.props.className, 'Editor')}>
         <EditorTabListGui />
-
-        <WrapperGui className="FragmentList-Pinned">
-          <BoxGui orientation="horizontal" align_items="center" className="FragmentListPagination">
-            <IconButtonGui icon="chevron-bar-left" title="First" />
-            <IconButtonGui
-              icon="chevron-double-left"
-              title={`Back by ${FRAGMENT_PAGINATION_JUMP}`}
-            />
-            <IconButtonGui icon="chevron-left" title="Previous" />
-            <form onSubmit={this.on_jump_pos_submit}>
-              <input
-                ref={this.jump_pos_input_ref}
-                onBlur={this.on_jump_pos_unfocus}
-                type="number"
-                id={this.page_input_id}
-                name={this.page_input_id}
-                className="FragmentListPagination-JumpInput"
-                defaultValue="1"
-                min={1}
-                max={this.state.fragments.length}
-                disabled={this.state.fragments.length === 0}
-                title="Jump to..."
-                autoComplete="off"
-              />
-            </form>
-            <span className="Label-whitespace-preserve">/</span>
-            <span className="Label-selectable">{this.state.fragments.length}</span>
-            <IconButtonGui icon="chevron-right" title="Next" />
-            <IconButtonGui
-              icon="chevron-double-right"
-              title={`Forward by ${FRAGMENT_PAGINATION_JUMP}`}
-            />
-            <IconButtonGui icon="chevron-bar-right" title="Last" />
-          </BoxGui>
-        </WrapperGui>
-
+        <FragmentListPinnedGui />
         <WrapperGui
           inner_ref={this.fragment_list_ref}
           scroll
@@ -226,22 +156,20 @@ export interface EditorTabListGuiProps {
 export function EditorTabListGui(props: gui.ComponentProps<EditorTabListGuiProps>): JSX.Element {
   return (
     <BoxGui orientation="horizontal" scroll className={cc(props.className, 'EditorTabList')}>
-      <EditorTabGui active={false} type="search" name={'Search'} />
-      <EditorTabGui active={false} type="queue" name={'Queue'} />
-      <EditorTabGui active={true} type="game_file" name={'database.json'} />
-      <EditorTabGui active={false} type="tr_file" name={'bergen.json'} />
-      <EditorTabGui active={false} type="game_file" name={'gui.en_US.json'} />
+      <EditorTabGui active={false} type={EditorTabType.Search} name={'Search'} />
+      <EditorTabGui active={false} type={EditorTabType.Queue} name={'Queue'} />
+      <EditorTabGui active={true} type={EditorTabType.GameFile} name={'database.json'} />
+      <EditorTabGui active={false} type={EditorTabType.GameFile} name={'bergen.json'} />
+      <EditorTabGui active={false} type={EditorTabType.GameFile} name={'gui.en_US.json'} />
     </BoxGui>
   );
 }
 
-type EditorTabType = 'search' | 'queue' | 'tr_file' | 'game_file';
-
 const EDITOR_TAB_ICONS = new Map<EditorTabType, string>([
-  ['search', 'search'],
-  ['queue', 'journal-bookmark-fill'],
-  ['tr_file', 'file-earmark-zip-fill'],
-  ['game_file', 'file-earmark-text-fill'],
+  [EditorTabType.Search, 'search'],
+  [EditorTabType.Queue, 'journal-bookmark-fill'],
+  [EditorTabType.TrFile, 'file-earmark-zip-fill'],
+  [EditorTabType.GameFile, 'file-earmark-text-fill'],
 ]);
 
 export interface EditorTabGuiProps {
@@ -260,6 +188,105 @@ export function EditorTabGui(props: gui.ComponentProps<EditorTabGuiProps>): JSX.
       <IconGui icon={EDITOR_TAB_ICONS.get(props.type)} /> {props.name} <IconGui icon="x" />
     </button>
   );
+}
+
+export interface FragmentListPinnedGuiProps {
+  className?: string;
+}
+
+export interface FragmentListPinnedGuiState {
+  jump_pos_value: string;
+}
+
+export class FragmentListPinnedGui extends Inferno.Component<
+  FragmentListPinnedGuiProps,
+  FragmentListPinnedGuiState
+> {
+  public context!: AppMainGuiCtx;
+  public state: FragmentListPinnedGuiState = {
+    jump_pos_value: '0',
+  };
+
+  private jump_pos_input_id: string = utils.new_html_id();
+  private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
+
+  public componentDidMount(): void {
+    let { app } = this.context;
+    app.event_current_fragment_change.on(this.on_current_fragment_change);
+  }
+
+  public componentWillUnmount(): void {
+    let { app } = this.context;
+    app.event_current_fragment_change.off(this.on_current_fragment_change);
+  }
+
+  private on_current_fragment_change = (): void => {
+    utils.assert(this.jump_pos_input_ref.current != null);
+    this.jump_pos_input_ref.current.blur();
+    let { app } = this.context;
+    this.setState({ jump_pos_value: app.current_fragment_pos.toString() });
+  };
+
+  private on_jump_pos_input = (event: Inferno.FormEvent<HTMLInputElement>): void => {
+    this.setState({ jump_pos_value: event.currentTarget.value });
+  };
+
+  private on_jump_pos_submit = (event: Inferno.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    let { app } = this.context;
+    let jump_pos = parseInt(this.state.jump_pos_value, 10);
+    if (!Number.isSafeInteger(jump_pos)) return;
+    app.set_current_fragment_pos(jump_pos, /* jump */ true);
+  };
+
+  private on_jump_pos_unfocus = (_event: Inferno.FocusEvent<HTMLInputElement>): void => {
+    let { app } = this.context;
+    this.setState({ jump_pos_value: app.current_fragment_pos.toString() });
+  };
+
+  public render(): JSX.Element {
+    let { app } = this.context;
+    let fragment_count = app.current_fragment_list.length;
+    console.log(this.state.jump_pos_value);
+
+    return (
+      <WrapperGui className={cc('FragmentListPinned', this.props.className)}>
+        <BoxGui
+          orientation="horizontal"
+          align_items="center"
+          className="FragmentListPinned-Pagination">
+          <IconButtonGui icon="chevron-bar-left" title="First" />
+          <IconButtonGui icon="chevron-double-left" title={`Back by ${FRAGMENT_PAGINATION_JUMP}`} />
+          <IconButtonGui icon="chevron-left" title="Previous" />
+          <form onSubmit={this.on_jump_pos_submit}>
+            <input
+              ref={this.jump_pos_input_ref}
+              type="number"
+              id={this.jump_pos_input_id}
+              name={this.jump_pos_input_id}
+              className="FragmentListPinned-JumpInput"
+              onInput={this.on_jump_pos_input}
+              onBlur={this.on_jump_pos_unfocus}
+              value={this.state.jump_pos_value}
+              min={Math.min(1, fragment_count)}
+              max={fragment_count}
+              disabled={fragment_count === 0}
+              title="Jump to..."
+              autoComplete="off"
+            />
+          </form>
+          <span className="Label-whitespace-preserve">/</span>
+          <span className="Label-selectable">{fragment_count}</span>
+          <IconButtonGui icon="chevron-right" title="Next" />
+          <IconButtonGui
+            icon="chevron-double-right"
+            title={`Forward by ${FRAGMENT_PAGINATION_JUMP}`}
+          />
+          <IconButtonGui icon="chevron-bar-right" title="Last" />
+        </BoxGui>
+      </WrapperGui>
+    );
+  }
 }
 
 export interface FragmentGuiProps {
@@ -397,12 +424,12 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
 
   public componentDidMount(): void {
     let { app } = this.context;
-    app.events.global_key_modifiers_change.on(this.on_keymod_event);
+    app.event_global_key_modifiers_change.on(this.on_keymod_event);
   }
 
   public componentWillUnmount(): void {
     let { app } = this.context;
-    app.events.global_key_modifiers_change.off(this.on_keymod_event);
+    app.event_global_key_modifiers_change.off(this.on_keymod_event);
   }
 
   private on_mouse_hover = (_event: Inferno.InfernoMouseEvent<HTMLElement>): void => {

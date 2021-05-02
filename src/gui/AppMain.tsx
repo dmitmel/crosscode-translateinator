@@ -94,19 +94,30 @@ declare global {
 
 export class AppMain {
   public backend: backend.Backend;
+
   public current_project_id: number | null = null;
   public current_project_meta: { translation_locale: string } | null = null;
-  public global_key_modifiers = gui.KeyMod.None;
-  public events = {
-    project_opened: new Event2(),
-    project_closed: new Event2(),
-    global_key_modifiers_change: new Event2<[state: gui.KeyMod]>(),
-  };
+  public event_project_opened = new Event2();
+  public event_project_closed = new Event2();
 
+  public current_fragment_list: Array<backend.ListedFragment & { file: string }> = [];
+  public current_fragment_pos = 0; // TODO: save a position per each tab
+  public event_current_fragment_change = new Event2<[jump: boolean]>();
+  public set_current_fragment_pos(pos: number, jump: boolean): void {
+    utils.assert(Number.isSafeInteger(pos));
+    pos = utils.clamp(pos, 1, app.current_fragment_list.length);
+    if (this.current_fragment_pos !== pos) {
+      this.current_fragment_pos = pos;
+      this.event_current_fragment_change.fire(jump);
+    }
+  }
+
+  public global_key_modifiers = gui.KeyMod.None;
+  public event_global_key_modifiers_change = new Event2<[state: gui.KeyMod]>();
   public set_global_key_modifiers(state: gui.KeyMod): void {
     if (this.global_key_modifiers !== state) {
       this.global_key_modifiers = state;
-      this.events.global_key_modifiers_change.fire(state);
+      this.event_global_key_modifiers_change.fire(state);
     }
   }
 
@@ -141,7 +152,23 @@ export class AppMain {
       };
     }
 
-    this.events.project_opened.fire();
+    {
+      let file_path = 'data/maps/hideout/entrance.json';
+      // let file_path = 'data/maps/rookie-harbor/center.json';
+      // let file_path = 'data/item-database.json';
+      let response = await app.backend.send_request({
+        type: 'VirtualGameFile/list_fragments',
+        project_id: app.current_project_id!,
+        file_path,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.current_fragment_list = response.fragments as any;
+      for (let fragment of this.current_fragment_list) {
+        fragment.file = file_path;
+      }
+    }
+
+    this.event_project_opened.fire();
   }
 
   public disconnect(): void {
