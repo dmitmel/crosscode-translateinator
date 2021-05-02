@@ -2,7 +2,7 @@ import './AppMain.scss';
 
 import * as Inferno from 'inferno';
 
-import * as backend from '../backend';
+import { Backend, Fragment, Project, ProjectMeta } from '../backend';
 import { Event2 } from '../events';
 import * as gui from '../gui';
 import * as utils from '../utils';
@@ -93,14 +93,14 @@ declare global {
 }
 
 export class AppMain {
-  public backend: backend.Backend;
+  public backend: Backend;
 
-  public current_project_id: number | null = null;
-  public current_project_meta: { translation_locale: string } | null = null;
+  public current_project: Project | null = null;
+  public current_project_meta: ProjectMeta | null = null;
   public event_project_opened = new Event2();
   public event_project_closed = new Event2();
 
-  public current_fragment_list: Array<backend.ListedFragment & { file: string }> = [];
+  public current_fragment_list: Fragment[] = [];
   public event_fragment_list_update = new Event2();
 
   public current_fragment_pos = 0; // TODO: save a position per each tab
@@ -130,48 +130,27 @@ export class AppMain {
     // installed, so that if there is an exception thrown somewhere in the
     // constructor, I still could quickly diagnose the issue.
 
-    this.backend = new backend.Backend();
+    this.backend = new Backend();
   }
 
   public async connect(): Promise<void> {
     await this.backend.connect();
 
-    {
-      let response = await this.backend.send_request<'Project/open'>({
-        type: 'Project/open',
-        dir: '/home/dmitmel/Projects/Rust/crosscode-localization-engine/tmp',
-      });
-      this.current_project_id = response.project_id;
-    }
-
-    {
-      let response = await this.backend.send_request<'Project/get_meta'>({
-        type: 'Project/get_meta',
-        project_id: this.current_project_id,
-      });
-      this.current_project_meta = {
-        translation_locale: response.translation_locale,
-      };
-    }
+    this.current_project = await Project.open(
+      this.backend,
+      '/home/dmitmel/Projects/Rust/crosscode-localization-engine/tmp',
+    );
+    this.current_project_meta = await this.current_project.get_meta();
 
     this.event_project_opened.fire();
 
-    {
-      let file_path = 'data/maps/hideout/entrance.json';
-      // let file_path = 'data/maps/rookie-harbor/center.json';
-      // let file_path = 'data/item-database.json';
-      let response = await __app__.backend.send_request({
-        type: 'VirtualGameFile/list_fragments',
-        project_id: __app__.current_project_id!,
-        file_path,
-      });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.current_fragment_list = response.fragments as any;
-      for (let fragment of this.current_fragment_list) {
-        fragment.file = file_path;
-      }
-      this.event_fragment_list_update.fire();
-    }
+    let file_path = 'data/maps/hideout/entrance.json';
+    // let file_path = 'data/maps/rookie-harbor/center.json';
+    // let file_path = 'data/item-database.json';
+    this.current_fragment_list = await (
+      await this.current_project.get_virtual_game_file(file_path)
+    ).list_fragments();
+    this.event_fragment_list_update.fire();
   }
 
   public disconnect(): void {

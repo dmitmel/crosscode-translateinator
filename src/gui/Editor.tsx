@@ -4,7 +4,7 @@ import './Label.scss';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
-import { ListedFragment, ListedTranslation } from '../backend';
+import { Fragment, Translation } from '../backend';
 import * as gui from '../gui';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
@@ -39,7 +39,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
 
   private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
   // TODO: Map<number, FragmentGui> ???
-  private fragment_guis_map = new WeakMap<ListedFragment & { file: string }, FragmentGui>();
+  private fragment_guis_map = new WeakMap<Fragment, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
   private visible_fragments = new Set<FragmentGui>();
@@ -366,8 +366,8 @@ export class FragmentListPinnedGui extends Inferno.Component<
 export interface FragmentGuiProps {
   className?: string;
   pos: number;
-  fragment: ListedFragment & { file: string };
-  map: WeakMap<ListedFragment & { file: string }, FragmentGui>;
+  fragment: Fragment;
+  map: WeakMap<Fragment, FragmentGui>;
   intersection_observer: IntersectionObserver | null;
   intersection_observer_map: WeakMap<Element, FragmentGui> | null;
 }
@@ -380,11 +380,11 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
   };
 
   private on_json_path_component_click = (component_path: string): void => {
-    console.log('search', this.props.fragment.file, component_path);
+    console.log('search', this.props.fragment.file_path, component_path);
   };
 
   private on_copy_original_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
-    nw.Clipboard.get().set(this.props.fragment.orig);
+    nw.Clipboard.get().set(this.props.fragment.original_text);
   };
 
   public componentDidMount(): void {
@@ -413,10 +413,6 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
 
   public render(): JSX.Element {
     let { fragment } = this.props;
-    let lang_uid = fragment.luid ?? 0;
-    let description = fragment.desc ?? [];
-    let translations = fragment.tr ?? [];
-
     return (
       <WrapperGui
         inner_ref={this.root_ref}
@@ -429,23 +425,29 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
           className="Fragment-Location">
           <span title="File path">
             <IconGui icon="file-earmark-text" />{' '}
-            <FragmentPathGui path={fragment.file} on_click={this.on_file_path_component_click} />
+            <FragmentPathGui
+              path={fragment.file_path}
+              on_click={this.on_file_path_component_click}
+            />
           </span>
           <span title="JSON path">
             <IconGui icon="code" />{' '}
-            <FragmentPathGui path={fragment.json} on_click={this.on_json_path_component_click} />
+            <FragmentPathGui
+              path={fragment.json_path}
+              on_click={this.on_json_path_component_click}
+            />
           </span>
-          {lang_uid !== 0 ? (
+          {fragment.has_lang_uid() ? (
             <span title="Lang UID">
               <span className="IconlikeText">#</span>{' '}
-              <span className="Label-selectable">{lang_uid}</span>
+              <span className="Label-selectable">{fragment.lang_uid}</span>
             </span>
           ) : null}
         </BoxGui>
 
-        {description.length > 0 ? (
+        {fragment.description.length > 0 ? (
           <div className="Fragment-Description Fragment-TextBlock Label-selectable">
-            {description.join('\n')}
+            {fragment.description.join('\n')}
           </div>
         ) : null}
 
@@ -453,7 +455,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
           <WrapperGui allow_overflow className="Fragment-Original BoxItem-expand">
             <div className="Fragment-TextBlock Label-selectable">
               <FancyTextGui highlight_crosscode_markup highlight_newlines>
-                {fragment.orig}
+                {fragment.original_text}
               </FancyTextGui>
             </div>
             <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
@@ -468,8 +470,8 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
           </WrapperGui>
 
           <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
-            {translations.flatMap((translation) => (
-              <TranslationGui key={translation.id} translation={translation} fragment={fragment} />
+            {fragment.translations.map((translation) => (
+              <TranslationGui key={translation.id} translation={translation} />
             ))}
             <NewTranslationGui fragment={fragment} />
           </WrapperGui>
@@ -581,8 +583,7 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
 }
 
 export interface TranslationGuiProps {
-  fragment: ListedFragment & { file: string };
-  translation: ListedTranslation;
+  translation: Translation;
 }
 
 export class TranslationGui extends Inferno.Component<TranslationGuiProps, unknown> {
@@ -601,9 +602,11 @@ export class TranslationGui extends Inferno.Component<TranslationGuiProps, unkno
           </FancyTextGui>
         </div>
         <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
-          <span className="Label Label-ellipsis Label-selectable">{translation.author}</span>
           <span className="Label Label-ellipsis Label-selectable">
-            at {format_timestamp(new Date(translation.ctime * 1000))}
+            {translation.author_username}
+          </span>
+          <span className="Label Label-ellipsis Label-selectable">
+            at {format_timestamp(translation.creation_timestamp)}
           </span>
           <BoxItemFillerGui />
           <IconButtonGui
@@ -621,7 +624,7 @@ export class TranslationGui extends Inferno.Component<TranslationGuiProps, unkno
 }
 
 export interface NewTranslationGuiProps {
-  fragment: ListedFragment & { file: string };
+  fragment: Fragment;
 }
 
 export interface NewTranslationGuiState {

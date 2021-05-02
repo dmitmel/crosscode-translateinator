@@ -39,21 +39,16 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
     let { app } = this.context;
     this.setState({ translation_locale: app.current_project_meta!.translation_locale });
 
-    {
-      let response = await app.backend.send_request({
-        type: 'Project/list_tr_files',
-        project_id: app.current_project_id!,
-      });
-      this.setState({ translation_files: paths_list_to_tree(response.paths) });
-    }
-
-    {
-      let response = await app.backend.send_request({
-        type: 'Project/list_virtual_game_files',
-        project_id: app.current_project_id!,
-      });
-      this.setState({ virtual_game_files: paths_list_to_tree(response.paths) });
-    }
+    this.setState({
+      virtual_game_files: paths_list_to_tree(
+        (await app.current_project!.list_virtual_game_files()).map((f) => f.path),
+      ),
+    });
+    this.setState({
+      translation_files: paths_list_to_tree(
+        (await app.current_project!.list_tr_files()).map((f) => f.path),
+      ),
+    });
   };
 
   private on_project_closed = (): void => {

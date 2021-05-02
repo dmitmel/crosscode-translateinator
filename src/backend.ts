@@ -192,9 +192,7 @@ export class Backend {
     }
   }
 
-  public async send_request<T extends RequestMessageType['type'] & ResponseMessageType['type']>(
-    data: RequestMessageType & { type: T },
-  ): Promise<ResponseMessageType & { type: T }> {
+  public async send_request(data: RequestMessageType): Promise<ResponseMessageType> {
     utils.assert(this.state !== BackendState.DISCONNECTED);
 
     this.current_request_id = Math.max(this.current_request_id, 1);
@@ -207,7 +205,7 @@ export class Backend {
         this.sent_request_error_callbacks.set(id, reject);
       });
       this.send_message_internal({ type: 'req', id, data });
-      return (await response_promise) as ResponseMessageType & { type: T };
+      return await response_promise;
     } finally {
       this.sent_request_success_callbacks.delete(id);
       this.sent_request_error_callbacks.delete(id);
@@ -222,4 +220,153 @@ export class Backend {
 
     this.event_disconnected.fire();
   }
+}
+
+export class Project {
+  public static async open(backend: Backend, dir: string): Promise<Project> {
+    let res = await backend.send_request({ type: 'Project/open', dir });
+    utils.assert(res.type === 'Project/open');
+    return new Project(backend, dir, res.project_id);
+  }
+
+  public constructor(public backend: Backend, public dir: string, public id: number) {}
+
+  public async get_meta(): Promise<ProjectMeta> {
+    let res = await this.backend.send_request({ type: 'Project/get_meta', project_id: this.id });
+    utils.assert(res.type === 'Project/get_meta');
+    return new ProjectMeta(
+      this,
+      res.root_dir,
+      res.id,
+      new Date(res.creation_timestamp * 1000),
+      new Date(res.modification_timestamp * 1000),
+      res.game_version,
+      res.original_locale,
+      res.reference_locales,
+      res.translation_locale,
+      res.translations_dir,
+      res.splitter,
+    );
+  }
+
+  public async list_tr_files(): Promise<TrFile[]> {
+    let res = await this.backend.send_request({
+      type: 'Project/list_tr_files',
+      project_id: this.id,
+    });
+    utils.assert(res.type === 'Project/list_tr_files');
+    return res.paths.map((path) => new TrFile(this, path));
+  }
+
+  public async list_virtual_game_files(): Promise<VirtualGameFile[]> {
+    let res = await this.backend.send_request({
+      type: 'Project/list_virtual_game_files',
+      project_id: this.id,
+    });
+    utils.assert(res.type === 'Project/list_virtual_game_files');
+    return res.paths.map((path) => new VirtualGameFile(this, path));
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async get_virtual_game_file(path: string): Promise<VirtualGameFile> {
+    return new VirtualGameFile(this, path);
+  }
+}
+
+export class ProjectMeta {
+  public constructor(
+    public project: Project,
+    public root_dir: string,
+    public id: string,
+    public creation_timestamp: Date,
+    public modification_timestamp: Date,
+    public game_version: string,
+    public original_locale: string,
+    public reference_locales: string[],
+    public translation_locale: string,
+    public translations_dir: string,
+    public splitter: string,
+  ) {}
+}
+
+export class TrFile {
+  public constructor(public project: Project, public path: string) {}
+}
+
+export class VirtualGameFile {
+  public constructor(public project: Project, public path: string) {}
+
+  public async list_fragments(
+    range?: { start?: number | null; end?: number | null } | null,
+  ): Promise<Fragment[]> {
+    let res = await this.project.backend.send_request({
+      type: 'VirtualGameFile/list_fragments',
+      project_id: this.project.id,
+      file_path: this.path,
+      start: range?.start,
+      end: range?.end,
+    });
+    utils.assert(res.type === 'VirtualGameFile/list_fragments');
+    return res.fragments.map((f_raw) => {
+      let f = new Fragment(
+        this.project,
+        f_raw.id,
+        this.path,
+        f_raw.json,
+        f_raw.luid ?? 0,
+        f_raw.desc ?? [],
+        f_raw.orig,
+        new Set(f_raw.flags ?? []),
+        [],
+        [],
+      );
+      for (let tr_raw of f_raw.tr ?? []) {
+        f.translations.push(
+          new Translation(
+            f,
+            tr_raw.id,
+            tr_raw.author,
+            tr_raw.editor,
+            new Date(tr_raw.ctime * 1000),
+            new Date(tr_raw.mtime * 1000),
+            tr_raw.text,
+            new Set(tr_raw.flags ?? []),
+          ),
+        );
+      }
+      return f;
+    });
+  }
+}
+
+export class Fragment {
+  public constructor(
+    public project: Project,
+    public id: string,
+    public file_path: string,
+    public json_path: string,
+    public lang_uid: number,
+    public description: string[],
+    public original_text: string,
+    public flags: Set<string>,
+    public translations: Translation[],
+    public comments: Comment[],
+  ) {}
+
+  public has_lang_uid(): boolean {
+    return this.lang_uid !== 0;
+  }
+}
+
+export class Translation {
+  public constructor(
+    public fragment: Fragment,
+    public id: string,
+    public author_username: string,
+    public editor_username: string,
+    public creation_timestamp: Date,
+    public modification_timestamp: Date,
+    public text: string,
+    public flags: Set<string>,
+  ) {}
 }
