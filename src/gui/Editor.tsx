@@ -244,10 +244,34 @@ export class FragmentListPinnedGui extends Inferno.Component<
     this.setState({ jump_pos_value: app.current_fragment_pos.toString() });
   };
 
+  private on_jump_button_click(
+    jump_type: 'first' | 'back_many' | 'back_one' | 'fwd_one' | 'fwd_many' | 'last',
+    _event: Inferno.InfernoMouseEvent<HTMLButtonElement>,
+  ): void {
+    let { app } = this.context;
+    let jump_pos = app.current_fragment_pos;
+    // prettier-ignore
+    switch (jump_type) {
+      case 'first':     { jump_pos  = 1;                                break; }
+      case 'back_many': { jump_pos -= FRAGMENT_PAGINATION_JUMP;         break; }
+      case 'back_one':  { jump_pos -= 1;                                break; }
+      case 'fwd_one':   { jump_pos += 1;                                break; }
+      case 'fwd_many':  { jump_pos += FRAGMENT_PAGINATION_JUMP;         break; }
+      case 'last':      { jump_pos  = app.current_fragment_list.length; break; }
+    }
+    app.set_current_fragment_pos(jump_pos, /* jump */ true);
+  }
+
+  private on_jump_first_btn_click = this.on_jump_button_click.bind(this, 'first');
+  private on_jump_back_many_btn_click = this.on_jump_button_click.bind(this, 'back_many');
+  private on_jump_back_one_btn_click = this.on_jump_button_click.bind(this, 'back_one');
+  private on_jump_fwd_one_btn_click = this.on_jump_button_click.bind(this, 'fwd_one');
+  private on_jump_fwd_many_btn_click = this.on_jump_button_click.bind(this, 'fwd_many');
+  private on_jump_last_btn_click = this.on_jump_button_click.bind(this, 'last');
+
   public render(): JSX.Element {
     let { app } = this.context;
     let fragment_count = app.current_fragment_list.length;
-    console.log(this.state.jump_pos_value);
 
     return (
       <WrapperGui className={cc('FragmentListPinned', this.props.className)}>
@@ -255,9 +279,21 @@ export class FragmentListPinnedGui extends Inferno.Component<
           orientation="horizontal"
           align_items="center"
           className="FragmentListPinned-Pagination">
-          <IconButtonGui icon="chevron-bar-left" title="First" />
-          <IconButtonGui icon="chevron-double-left" title={`Back by ${FRAGMENT_PAGINATION_JUMP}`} />
-          <IconButtonGui icon="chevron-left" title="Previous" />
+          <IconButtonGui
+            icon="chevron-bar-left"
+            title="First"
+            onClick={this.on_jump_first_btn_click}
+          />
+          <IconButtonGui
+            icon="chevron-double-left"
+            title={`Back by ${FRAGMENT_PAGINATION_JUMP}`}
+            onClick={this.on_jump_back_many_btn_click}
+          />
+          <IconButtonGui
+            icon="chevron-left"
+            title="Previous"
+            onClick={this.on_jump_back_one_btn_click}
+          />
           <form onSubmit={this.on_jump_pos_submit}>
             <input
               ref={this.jump_pos_input_ref}
@@ -275,14 +311,23 @@ export class FragmentListPinnedGui extends Inferno.Component<
               autoComplete="off"
             />
           </form>
-          <span className="Label-whitespace-preserve">/</span>
+          <span>/</span>
           <span className="Label-selectable">{fragment_count}</span>
-          <IconButtonGui icon="chevron-right" title="Next" />
+          <IconButtonGui
+            icon="chevron-right"
+            title="Next"
+            onClick={this.on_jump_fwd_one_btn_click}
+          />
           <IconButtonGui
             icon="chevron-double-right"
             title={`Forward by ${FRAGMENT_PAGINATION_JUMP}`}
+            onClick={this.on_jump_fwd_many_btn_click}
           />
-          <IconButtonGui icon="chevron-bar-right" title="Last" />
+          <IconButtonGui
+            icon="chevron-bar-right"
+            title="Last"
+            onClick={this.on_jump_last_btn_click}
+          />
         </BoxGui>
       </WrapperGui>
     );
