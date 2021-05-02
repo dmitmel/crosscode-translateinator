@@ -89,7 +89,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
 
 declare global {
   // eslint-disable-next-line no-var
-  var app: AppMain;
+  var __app__: AppMain;
 }
 
 export class AppMain {
@@ -105,7 +105,7 @@ export class AppMain {
   public event_current_fragment_change = new Event2<[jump: boolean]>();
   public set_current_fragment_pos(pos: number, jump: boolean): void {
     utils.assert(Number.isSafeInteger(pos));
-    pos = utils.clamp(pos, 1, app.current_fragment_list.length);
+    pos = utils.clamp(pos, 1, this.current_fragment_list.length);
     if (this.current_fragment_pos !== pos) {
       this.current_fragment_pos = pos;
       this.event_current_fragment_change.fire(jump);
@@ -123,7 +123,7 @@ export class AppMain {
 
   public constructor() {
     utils.assert(!('app' in window));
-    window.app = this;
+    window.__app__ = this;
     // Proper initialization happens after the global reference has been
     // installed, so that if there is an exception thrown somewhere in the
     // constructor, I still could quickly diagnose the issue.
@@ -156,9 +156,9 @@ export class AppMain {
       let file_path = 'data/maps/hideout/entrance.json';
       // let file_path = 'data/maps/rookie-harbor/center.json';
       // let file_path = 'data/item-database.json';
-      let response = await app.backend.send_request({
+      let response = await __app__.backend.send_request({
         type: 'VirtualGameFile/list_fragments',
-        project_id: app.current_project_id!,
+        project_id: __app__.current_project_id!,
         file_path,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -101,6 +101,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
 
   private on_current_fragment_change = (jump: boolean): void => {
     if (!jump) return;
+    let { app } = this.context;
     let jump_pos = app.current_fragment_pos;
 
     let target_fragment = app.current_fragment_list[jump_pos - 1];
