@@ -39,6 +39,13 @@
     }
   }
 
+  hr {
+    margin: unset;
+    height: $spacing;
+    background-color: rgba(#ffffff, 0.1);
+    border: unset;
+  }
+
   // See:
   // <https://webkit.org/blog/363/styling-scrollbars/>
   // <https://davidwalsh.name/custom-scrollbars>

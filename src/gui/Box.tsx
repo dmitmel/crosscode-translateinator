@@ -11,6 +11,7 @@ export interface BoxGuiProps extends HTMLAttributes<HTMLDivElement> {
   scroll?: boolean;
   allow_overflow?: boolean;
   allow_wrapping?: boolean;
+  align_items?: 'auto' | 'flex-start' | 'flex-end' | 'center' | 'baseline' | 'stretch';
 }
 
 export function BoxGui({
@@ -21,6 +22,7 @@ export function BoxGui({
   scroll,
   allow_overflow,
   allow_wrapping,
+  align_items,
   className,
   class: _class,
   children,
@@ -29,14 +31,38 @@ export function BoxGui({
   return (
     <div
       ref={inner_ref}
-      className={cc(className, 'Box', `Box-orientation-${orientation}`, {
-        'Box-inline': inline,
-        'Box-reverse-children': reverse_children,
-        'Box-scroll': scroll,
-        'Box-allow-overflow': allow_overflow,
-        'Box-allow-wrapping': allow_wrapping,
-      })}
+      className={cc(
+        className,
+        'Box',
+        `Box-orientation-${orientation}`,
+        align_items != null ? `Box-align-items-${align_items}` : null,
+        {
+          'Box-inline': inline,
+          'Box-reverse-children': reverse_children,
+          'Box-scroll': scroll,
+          'Box-allow-overflow': allow_overflow,
+          'Box-allow-wrapping': allow_wrapping,
+        },
+      )}
       {...rest}>
+      {children}
+    </div>
+  );
+}
+
+export interface BoxItemFillerGuiProps extends HTMLAttributes<HTMLDivElement> {
+  inner_ref?: Inferno.Ref<HTMLDivElement> | Inferno.Refs<HTMLDivElement>;
+}
+
+export function BoxItemFillerGui({
+  inner_ref,
+  className,
+  class: _class,
+  children,
+  ...rest
+}: BoxItemFillerGuiProps): JSX.Element {
+  return (
+    <div ref={inner_ref} className={cc(className, 'BoxItem-expand')} {...rest}>
       {children}
     </div>
   );

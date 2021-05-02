@@ -2,6 +2,10 @@ export function u32(num: number): number {
   return num | 0;
 }
 
+export function clamp(n: number, min: number, max: number): number {
+  return Math.min(Math.max(n, min), max);
+}
+
 export function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -24,4 +28,11 @@ export function assert(condition: boolean): asserts condition {
   if (!condition) {
     throw new Error('Assertion failed');
   }
+}
+
+let current_id = 0;
+export function new_html_id(prefix = 'id'): string {
+  let n = current_id;
+  current_id++;
+  return `${prefix}${n.toString(10)}`;
 }

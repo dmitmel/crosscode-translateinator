@@ -15,6 +15,8 @@ export interface TextAreaGuiProps extends TextareaHTMLAttributes<HTMLTextAreaEle
 export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
   public static HIDDEN_TEXT_AREA_STYLES = {
     position: 'absolute',
+    top: '0',
+    left: '0',
     'min-height': '0',
     'max-height': 'none',
     height: '0',
@@ -56,6 +58,7 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
   public static ensure_hidden_text_area(): HTMLTextAreaElement {
     if (this.hidden_text_area == null) {
       this.hidden_text_area = document.createElement('textarea');
+      this.hidden_text_area.id = utils.new_html_id();
       this.hidden_text_area.tabIndex = -1;
       this.hidden_text_area.setAttribute('aria-hidden', 'true');
       document.body.appendChild(this.hidden_text_area);

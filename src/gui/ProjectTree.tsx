@@ -1,5 +1,5 @@
 import './ProjectTree.scss';
-import './Label';
+import './Label.scss';
 import './Button';
 
 import cc from 'clsx';

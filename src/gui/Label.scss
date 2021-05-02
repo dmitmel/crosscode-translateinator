@@ -1,8 +1,16 @@
-.Label-ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+@import '../common.scss';
 
-.Label-selectable {
-  user-select: text;
+@include app-styles {
+  .Label-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .Label-selectable {
+    user-select: text;
+  }
+
+  .Label-whitespace-preserve {
+    white-space: pre-wrap;
+  }
 }

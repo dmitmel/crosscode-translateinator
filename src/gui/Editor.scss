@@ -33,15 +33,28 @@
     }
   }
 
-  .FragmentList {
+  .FragmentList-Pinned {
     padding: $spacing * 2;
+    border-bottom: 1px solid #3c3c3c;
+  }
 
-    > *:not(:first-child) {
-      padding-top: $spacing * 2;
+  .FragmentListPagination {
+    > * {
+      padding: $spacing * (2/3);
     }
-    > *:not(:last-child) {
-      padding-bottom: $spacing * 2;
-      border-bottom: $spacing solid rgba(#ffffff, 0.1);
+
+    .FragmentListPagination-JumpInput {
+      text-align: right;
+      // This should be enough considering that CC in total contains 42k fragments
+      $digits: 5;
+      width: calc(#{$spacing * 2} + #{$digits * 1ch});
+    }
+  }
+
+  .FragmentList {
+    padding: 0 ($spacing * 2);
+    > .Fragment {
+      padding: ($spacing * 2) 0;
     }
   }
 
@@ -74,11 +87,14 @@
 
     .Fragment-Translation {
       > .Fragment-Buttons {
-        align-items: baseline;
         > .Label:not(:last-child) {
           margin-right: 1em;
         }
       }
+    }
+
+    > .Fragment-Description {
+      font-family: monospace;
     }
   }
 }

@@ -51,6 +51,12 @@
     &.Box-allow-wrapping {
       flex-wrap: wrap;
     }
+
+    @each $align-items in auto, flex-start, flex-end, center, baseline, stretch {
+      &.Box-align-items-#{$align-items} {
+        align-items: $align-items;
+      }
+    }
   }
 
   .Wrapper {

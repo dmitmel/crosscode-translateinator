@@ -8,11 +8,13 @@ import { ListedFragment, ListedTranslation } from '../backend';
 import * as gui from '../gui';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
-import { BoxGui, WrapperGui } from './Box';
+import { BoxGui, BoxItemFillerGui, WrapperGui } from './Box';
 import { IconButtonGui } from './Button';
 import { FancyTextGui } from './FancyText';
 import { IconGui } from './Icon';
 import { TextAreaGui } from './TextInput';
+
+export const FRAGMENT_PAGINATION_JUMP = 10;
 
 export interface EditorGuiProps {
   className?: string;
@@ -30,17 +32,78 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     translation_locale: '',
   };
 
+  private page_input_id: string = utils.new_html_id();
+
+  // TODO: Map<number, FragmentGui> ???
+  private fragment_guis_map = new WeakMap<ListedFragment & { file: string }, FragmentGui>();
+  private fragment_observer: IntersectionObserver | null = null;
+  private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
+  private visible_fragments = new Set<FragmentGui>();
+  private current_fragment_pos = 0;
+
+  private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
+  private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
+
   public componentDidMount(): void {
     let { app } = this.context;
     app.events.project_opened.on(this.on_project_opened);
     app.events.project_closed.on(this.on_project_closed);
+
+    let fragment_list_gui = this.fragment_list_ref.current;
+    utils.assert(fragment_list_gui != null);
+    utils.assert(this.fragment_observer == null);
+    utils.assert(this.fragment_observer_map == null);
+    this.fragment_observer = new IntersectionObserver(this.on_fragment_intersection_change, {
+      root: fragment_list_gui,
+    });
+    this.fragment_observer_map = new WeakMap();
   }
 
   public componentWillUnmount(): void {
     let { app } = this.context;
     app.events.project_opened.off(this.on_project_opened);
     app.events.project_closed.off(this.on_project_closed);
+
+    utils.assert(this.fragment_observer != null);
+    utils.assert(this.fragment_observer_map != null);
+    this.fragment_observer.disconnect();
+    this.fragment_observer = null;
+    this.fragment_observer_map = null;
   }
+
+  private on_fragment_intersection_change = (entries: IntersectionObserverEntry[]): void => {
+    utils.assert(this.fragment_observer != null);
+    utils.assert(this.fragment_observer_map != null);
+    for (let entry of entries) {
+      let fragment_gui = this.fragment_observer_map.get(entry.target);
+      utils.assert(fragment_gui != null);
+      console.log(entry);
+      if (entry.isIntersecting) {
+        this.visible_fragments.add(fragment_gui);
+      } else {
+        this.visible_fragments.delete(fragment_gui);
+      }
+    }
+
+    console.log(
+      Array.from(this.visible_fragments)
+        .sort((a, b) => a.props.pos - b.props.pos)
+        .map((fg) => fg.root_ref.current),
+    );
+
+    let top_pos: number | null = null;
+    for (let fragment_gui of this.visible_fragments) {
+      let { pos } = fragment_gui.props;
+      if (top_pos == null || pos < top_pos) {
+        top_pos = pos;
+      }
+    }
+    this.current_fragment_pos = top_pos ?? 1;
+
+    let jump_pos_input = this.jump_pos_input_ref.current;
+    utils.assert(jump_pos_input != null);
+    jump_pos_input.value = this.current_fragment_pos.toString();
+  };
 
   private on_project_opened = async (): Promise<void> => {
     let { app } = this.context;
@@ -59,14 +122,97 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     this.setState({ fragments: [] });
   };
 
+  private on_jump_pos_submit = (event: Inferno.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    let jump_pos_input = this.jump_pos_input_ref.current;
+    utils.assert(jump_pos_input != null);
+
+    let jump_pos = parseInt(jump_pos_input.value, 10);
+    if (Number.isNaN(jump_pos)) return;
+    jump_pos = utils.clamp(jump_pos, 1, this.state.fragments.length);
+    let target_fragment = this.state.fragments[jump_pos - 1];
+    if (target_fragment == null) return;
+    let target_fragment_gui = this.fragment_guis_map.get(target_fragment);
+    if (target_fragment_gui == null) return;
+    let target_element = target_fragment_gui.root_ref.current;
+    if (target_element == null) return;
+
+    jump_pos_input.blur();
+    this.current_fragment_pos = jump_pos;
+    jump_pos_input.value = jump_pos.toString();
+    target_element.scrollIntoView();
+  };
+
+  private on_jump_pos_unfocus = (_event: Inferno.FocusEvent<HTMLInputElement>): void => {
+    let jump_pos_input = this.jump_pos_input_ref.current;
+    utils.assert(jump_pos_input != null);
+    jump_pos_input.value = this.current_fragment_pos.toString();
+  };
+
   public render(): JSX.Element {
+    let fragment_list_contents: JSX.Element[] = [];
+    for (let [index, fragment] of this.state.fragments.entries()) {
+      if (index > 0) {
+        fragment_list_contents.push(
+          <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
+        );
+      }
+      fragment_list_contents.push(
+        <FragmentGui
+          key={fragment.id}
+          pos={index + 1}
+          fragment={fragment}
+          map={this.fragment_guis_map}
+          intersection_observer={this.fragment_observer}
+          intersection_observer_map={this.fragment_observer_map}
+        />,
+      );
+    }
+
     return (
       <BoxGui orientation="vertical" className={cc(this.props.className, 'Editor')}>
         <EditorTabListGui />
-        <WrapperGui scroll className="BoxItem-expand FragmentList">
-          {this.state.fragments.map((f) => (
-            <FragmentGui key={f.id} fragment={f} />
-          ))}
+
+        <WrapperGui className="FragmentList-Pinned">
+          <BoxGui orientation="horizontal" align_items="center" className="FragmentListPagination">
+            <IconButtonGui icon="chevron-bar-left" title="First" />
+            <IconButtonGui
+              icon="chevron-double-left"
+              title={`Back by ${FRAGMENT_PAGINATION_JUMP}`}
+            />
+            <IconButtonGui icon="chevron-left" title="Previous" />
+            <form onSubmit={this.on_jump_pos_submit}>
+              <input
+                ref={this.jump_pos_input_ref}
+                onBlur={this.on_jump_pos_unfocus}
+                type="number"
+                id={this.page_input_id}
+                name={this.page_input_id}
+                className="FragmentListPagination-JumpInput"
+                defaultValue="1"
+                min={1}
+                max={this.state.fragments.length}
+                disabled={this.state.fragments.length === 0}
+                title="Jump to..."
+                autoComplete="off"
+              />
+            </form>
+            <span className="Label-whitespace-preserve">/</span>
+            <span className="Label-selectable">{this.state.fragments.length}</span>
+            <IconButtonGui icon="chevron-right" title="Next" />
+            <IconButtonGui
+              icon="chevron-double-right"
+              title={`Forward by ${FRAGMENT_PAGINATION_JUMP}`}
+            />
+            <IconButtonGui icon="chevron-bar-right" title="Last" />
+          </BoxGui>
+        </WrapperGui>
+
+        <WrapperGui
+          inner_ref={this.fragment_list_ref}
+          scroll
+          className="BoxItem-expand FragmentList">
+          {fragment_list_contents}
         </WrapperGui>
       </BoxGui>
     );
@@ -116,17 +262,18 @@ export function EditorTabGui(props: gui.ComponentProps<EditorTabGuiProps>): JSX.
   );
 }
 
-export interface FragmentListGuiProps {
-  className?: string;
-  fragments: Array<ListedFragment & { file: string }>;
-}
-
 export interface FragmentGuiProps {
   className?: string;
+  pos: number;
   fragment: ListedFragment & { file: string };
+  map: WeakMap<ListedFragment & { file: string }, FragmentGui>;
+  intersection_observer: IntersectionObserver | null;
+  intersection_observer_map: WeakMap<Element, FragmentGui> | null;
 }
 
 export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
+  public root_ref = Inferno.createRef<HTMLDivElement>();
+
   private on_file_path_component_click = (component_path: string): void => {
     console.log('search', component_path);
   };
@@ -139,6 +286,30 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     nw.Clipboard.get().set(this.props.fragment.orig);
   };
 
+  public componentDidMount(): void {
+    this.props.map.set(this.props.fragment, this);
+
+    let { intersection_observer, intersection_observer_map } = this.props;
+    let root_element = this.root_ref.current;
+    utils.assert(root_element != null);
+    utils.assert(intersection_observer != null);
+    utils.assert(intersection_observer_map != null);
+    intersection_observer.observe(root_element);
+    intersection_observer_map.set(root_element, this);
+  }
+
+  public componentWillUnmount(): void {
+    this.props.map.delete(this.props.fragment);
+
+    let { intersection_observer, intersection_observer_map } = this.props;
+    let root_element = this.root_ref.current;
+    utils.assert(root_element != null);
+    utils.assert(intersection_observer != null);
+    utils.assert(intersection_observer_map != null);
+    intersection_observer.unobserve(root_element);
+    intersection_observer_map.delete(root_element);
+  }
+
   public render(): JSX.Element {
     let { fragment } = this.props;
     let lang_uid = fragment.luid ?? 0;
@@ -146,7 +317,10 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     let translations = fragment.tr ?? [];
 
     return (
-      <WrapperGui allow_overflow className={cc(this.props.className, 'Fragment')}>
+      <WrapperGui
+        inner_ref={this.root_ref}
+        allow_overflow
+        className={cc(this.props.className, 'Fragment')}>
         <BoxGui
           orientation="horizontal"
           allow_wrapping
@@ -168,9 +342,11 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
           ) : null}
         </BoxGui>
 
-        <div className="Fragment-Description Fragment-TextBlock Label-selectable">
-          {description.join('\n')}
-        </div>
+        {description.length > 0 ? (
+          <div className="Fragment-Description Fragment-TextBlock Label-selectable">
+            {description.join('\n')}
+          </div>
+        ) : null}
 
         <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
           <WrapperGui allow_overflow className="Fragment-Original BoxItem-expand">
@@ -179,8 +355,8 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
                 {fragment.orig}
               </FancyTextGui>
             </div>
-            <BoxGui orientation="horizontal" className="Fragment-Buttons">
-              <div className="BoxItem-expand" />
+            <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
+              <BoxItemFillerGui />
               <IconButtonGui
                 icon="clipboard"
                 title="Copy the original text"
@@ -320,15 +496,15 @@ export class TranslationGui extends Inferno.Component<TranslationGuiProps, unkno
       <WrapperGui allow_overflow className="Fragment-Translation">
         <div className="Fragment-TextBlock Label-selectable">
           <FancyTextGui highlight_crosscode_markup highlight_newlines>
-            {this.props.translation.text}
+            {translation.text}
           </FancyTextGui>
         </div>
-        <BoxGui orientation="horizontal" className="Fragment-Buttons">
+        <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
           <span className="Label Label-ellipsis Label-selectable">{translation.author}</span>
           <span className="Label Label-ellipsis Label-selectable">
             at {format_timestamp(new Date(translation.ctime * 1000))}
           </span>
-          <div className="BoxItem-expand" />
+          <BoxItemFillerGui />
           <IconButtonGui
             icon="clipboard"
             title="Copy the translation text"
@@ -359,6 +535,8 @@ export class NewTranslationGui extends Inferno.Component<
     text: '',
   };
 
+  private textarea_id: string = utils.new_html_id();
+
   private on_input = (event: Inferno.FormEvent<HTMLTextAreaElement>): void => {
     this.setState({ text: event.currentTarget.value });
   };
@@ -367,6 +545,8 @@ export class NewTranslationGui extends Inferno.Component<
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
         <TextAreaGui
+          id={this.textarea_id}
+          name={this.textarea_id}
           value={this.state.text}
           onInput={this.on_input}
           placeholder="Add new translation..."
@@ -374,8 +554,8 @@ export class NewTranslationGui extends Inferno.Component<
           spellCheck={false}
           rows={2}
         />
-        <BoxGui orientation="horizontal" className="Fragment-Buttons">
-          <div className="BoxItem-expand" />
+        <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
+          <BoxItemFillerGui />
           <IconButtonGui icon="check2" title="Submit" />
         </BoxGui>
       </WrapperGui>
