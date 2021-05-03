@@ -14,7 +14,7 @@ for (let k in icons_obj) {
 }
 
 export interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
-  inner_ref?: Inferno.Ref<SVGSVGElement> | Inferno.Refs<SVGSVGElement>;
+  inner_ref?: Inferno.Ref<SVGSVGElement>;
   icon: string | null | undefined;
   size?: number | string;
   title?: string;
@@ -51,5 +51,24 @@ export function IconGui({
       {...rest}
       dangerouslySetInnerHTML={{ __html: icon_xml }}
     />
+  );
+}
+
+export interface IconlikeTextGuiProps extends HTMLAttributes<HTMLSpanElement> {
+  inner_ref?: Inferno.Ref<HTMLSpanElement>;
+  icon: string;
+}
+
+export function IconlikeTextGui({
+  inner_ref,
+  icon,
+  className,
+  class: _class,
+  ...rest
+}: IconlikeTextGuiProps): JSX.Element {
+  return (
+    <span ref={inner_ref} className={cc(className, 'IconlikeText')} {...rest}>
+      {icon}
+    </span>
   );
 }

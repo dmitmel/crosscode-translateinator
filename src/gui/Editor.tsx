@@ -1,5 +1,4 @@
 import './Editor.scss';
-import './Label.scss';
 
 import cc from 'clsx';
 import * as Inferno from 'inferno';
@@ -12,7 +11,8 @@ import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, BoxItemFillerGui, WrapperGui } from './Box';
 import { IconButtonGui } from './Button';
 import { FancyTextGui } from './FancyText';
-import { IconGui } from './Icon';
+import { IconGui, IconlikeTextGui } from './Icon';
+import { LabelGui } from './Label';
 import { TextAreaGui } from './TextInput';
 
 export interface EditorGuiProps {
@@ -269,7 +269,7 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
         onClick={this.on_click}
         title={this.props.description ?? this.props.name}>
         <IconGui icon={this.props.icon} className="EditorTab-Icon" />
-        <span className="Label-whitespace-preserve">{` ${this.props.name} `}</span>
+        {` ${this.props.name} `}
         <IconGui
           icon="x"
           className="EditorTab-Close"
@@ -405,8 +405,8 @@ export class FragmentListPinnedGui extends Inferno.Component<
               autoComplete="off"
             />
           </form>
-          <span>/</span>
-          <span className="Label-selectable">{fragment_count}</span>
+          <IconlikeTextGui icon="/" />
+          <LabelGui selectable>{fragment_count}</LabelGui>
           <IconButtonGui
             icon="chevron-right"
             title="Next"
@@ -504,25 +504,24 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
           </span>
           {fragment.has_lang_uid() ? (
             <span title="Lang UID">
-              <span className="IconlikeText">#</span>{' '}
-              <span className="Label-selectable">{fragment.lang_uid}</span>
+              <IconlikeTextGui icon="#" /> <LabelGui selectable>{fragment.lang_uid}</LabelGui>
             </span>
           ) : null}
         </BoxGui>
 
         {fragment.description.length > 0 ? (
-          <div className="Fragment-Description Fragment-TextBlock Label-selectable">
+          <LabelGui block selectable className="Fragment-Description Fragment-TextBlock">
             {fragment.description.join('\n')}
-          </div>
+          </LabelGui>
         ) : null}
 
         <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
           <WrapperGui allow_overflow className="Fragment-Original BoxItem-expand">
-            <div className="Fragment-TextBlock Label-selectable">
+            <LabelGui block selectable className="Fragment-TextBlock">
               <FancyTextGui highlight_crosscode_markup highlight_newlines>
                 {fragment.original_text}
               </FancyTextGui>
-            </div>
+            </LabelGui>
             <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
               <BoxItemFillerGui />
               <IconButtonGui
@@ -636,13 +635,13 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
     // links, hovering is lost for a moment, so a common element to catch all
     // mouse events is needed.
     return (
-      <span
-        className="Label-selectable"
+      <LabelGui
+        selectable
         onMouseEnter={this.on_mouse_hover}
         onMouseMove={this.on_mouse_hover}
         onMouseLeave={this.on_mouse_hover_end}>
         {children}
-      </span>
+      </LabelGui>
     );
   }
 }
@@ -661,18 +660,18 @@ export class TranslationGui extends Inferno.Component<TranslationGuiProps, unkno
 
     return (
       <WrapperGui allow_overflow className="Fragment-Translation">
-        <div className="Fragment-TextBlock Label-selectable">
+        <LabelGui block selectable className="Fragment-TextBlock">
           <FancyTextGui highlight_crosscode_markup highlight_newlines>
             {translation.text}
           </FancyTextGui>
-        </div>
+        </LabelGui>
         <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
-          <span className="Label Label-ellipsis Label-selectable">
+          <LabelGui ellipsis selectable>
             {translation.author_username}
-          </span>
-          <span className="Label Label-ellipsis Label-selectable">
+          </LabelGui>
+          <LabelGui ellipsis selectable>
             at {format_timestamp(translation.creation_timestamp)}
-          </span>
+          </LabelGui>
           <BoxItemFillerGui />
           <IconButtonGui
             icon="clipboard"

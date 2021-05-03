@@ -1,5 +1,4 @@
 import './ProjectTree.scss';
-import './Label.scss';
 import './Button';
 
 import cc from 'clsx';
@@ -8,9 +7,9 @@ import * as Inferno from 'inferno';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
+import { LabelGui } from './Label';
 
 export interface ProjectTreeGuiState {
-  translation_locale: string | null;
   translation_files: PathTree | null;
   virtual_game_files: PathTree | null;
 }
@@ -18,7 +17,6 @@ export interface ProjectTreeGuiState {
 export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiState> {
   public context!: AppMainGuiCtx;
   public state: ProjectTreeGuiState = {
-    translation_locale: null,
     translation_files: null,
     virtual_game_files: null,
   };
@@ -37,8 +35,6 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
 
   private on_project_opened = async (): Promise<void> => {
     let { app } = this.context;
-    this.setState({ translation_locale: app.current_project_meta!.translation_locale });
-
     this.setState({
       virtual_game_files: paths_list_to_tree(
         await app.current_project!.list_virtual_game_file_paths(),
@@ -51,40 +47,36 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
 
   private on_project_closed = (): void => {
     this.setState({
-      translation_locale: null,
       translation_files: null,
       virtual_game_files: null,
     });
   };
 
   public render(): JSX.Element {
-    let translation_locale = this.state.translation_locale ?? 'loading...';
+    let { app } = this.context;
     return (
       <BoxGui orientation="vertical" className="ProjectTree">
         <div className="ProjectTree-Header">
-          <IconGui icon={null} /> PROJECT [{translation_locale}]
+          <IconGui icon={null} /> PROJECT [
+          {app.current_project_meta?.translation_locale ?? 'loading...'}]
         </div>
 
         <ProjectTreeSectionGui name="Translation files">
-          {this.state.translation_files != null
-            ? render_FileTreeGui({
-                path_prefix: '',
-                tree_data: this.state.translation_files,
-                files_icon: 'file-earmark-zip',
-                depth: 0,
-              })
-            : null}
+          <FileTreeGui
+            path_prefix=""
+            tree_data={this.state.translation_files}
+            files_icon="file-earmark-zip"
+            depth={0}
+          />
         </ProjectTreeSectionGui>
 
         <ProjectTreeSectionGui name="Game files" default_opened>
-          {this.state.virtual_game_files != null
-            ? render_FileTreeGui({
-                path_prefix: '',
-                tree_data: this.state.virtual_game_files,
-                files_icon: 'file-earmark-text',
-                depth: 0,
-              })
-            : null}
+          <FileTreeGui
+            path_prefix=""
+            tree_data={this.state.virtual_game_files}
+            files_icon="file-earmark-text"
+            depth={0}
+          />
         </ProjectTreeSectionGui>
       </BoxGui>
     );
@@ -138,15 +130,21 @@ export class ProjectTreeSectionGui extends Inferno.Component<
 
 export interface FileTreeGuiProps {
   path_prefix: string;
-  tree_data: PathTree;
+  tree_data: PathTree | null;
   files_icon: string;
   depth: number;
 }
 
+export function FileTreeGui(props: FileTreeGuiProps): JSX.Element {
+  return <>{render_FileTreeGui(props, [])}</>;
+}
+
 export function render_FileTreeGui(
   props: FileTreeGuiProps,
-  elements: JSX.Element[] = [],
+  elements: JSX.Element[],
 ): JSX.Element[] {
+  if (props.tree_data == null) return [];
+
   let dir_elements: JSX.Element[] = [];
   let file_elements: JSX.Element[] = [];
 
@@ -188,6 +186,8 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
   };
 
   public render(): JSX.Element[] {
+    if (this.props.tree_data == null) return [];
+
     let is_directory = this.props.tree_data.size > 0;
     let { name } = this.props;
     let full_path = `${this.props.path_prefix}${name}`;
@@ -213,9 +213,9 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
           // otherwise the tree item shrinks when the enclosing list begins
           // overflowing.
         }
-        <div className="Label-ellipsis">
+        <LabelGui block ellipsis>
           <IconGui icon={icon} /> {name}
-        </div>
+        </LabelGui>
       </button>,
     ];
 

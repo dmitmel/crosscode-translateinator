@@ -1,6 +1,10 @@
 @import '../common.scss';
 
 @include app-styles {
+  .Label-block {
+    display: block;
+  }
+
   .Label-ellipsis {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -10,7 +14,7 @@
     user-select: text;
   }
 
-  .Label-whitespace-preserve {
+  .Label-preserve-whitespace {
     white-space: pre-wrap;
   }
 }

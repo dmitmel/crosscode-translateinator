@@ -4,7 +4,7 @@ import cc from 'clsx';
 import * as Inferno from 'inferno';
 
 export interface BoxGuiProps extends HTMLAttributes<HTMLDivElement> {
-  inner_ref?: Inferno.Ref<HTMLDivElement> | Inferno.Refs<HTMLDivElement>;
+  inner_ref?: Inferno.Ref<HTMLDivElement>;
   orientation: 'vertical' | 'horizontal';
   inline?: boolean;
   reverse_children?: boolean;
@@ -51,7 +51,7 @@ export function BoxGui({
 }
 
 export interface BoxItemFillerGuiProps extends HTMLAttributes<HTMLDivElement> {
-  inner_ref?: Inferno.Ref<HTMLDivElement> | Inferno.Refs<HTMLDivElement>;
+  inner_ref?: Inferno.Ref<HTMLDivElement>;
 }
 
 export function BoxItemFillerGui({
@@ -69,7 +69,7 @@ export function BoxItemFillerGui({
 }
 
 export interface WrapperGuiProps extends HTMLAttributes<HTMLDivElement> {
-  inner_ref?: Inferno.Ref<HTMLDivElement> | Inferno.Refs<HTMLDivElement>;
+  inner_ref?: Inferno.Ref<HTMLDivElement>;
   scroll?: boolean;
   allow_overflow?: boolean;
 }
