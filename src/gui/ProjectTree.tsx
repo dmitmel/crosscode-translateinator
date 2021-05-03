@@ -41,13 +41,11 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
 
     this.setState({
       virtual_game_files: paths_list_to_tree(
-        (await app.current_project!.list_virtual_game_files()).map((f) => f.path),
+        await app.current_project!.list_virtual_game_file_paths(),
       ),
     });
     this.setState({
-      translation_files: paths_list_to_tree(
-        (await app.current_project!.list_tr_files()).map((f) => f.path),
-      ),
+      translation_files: paths_list_to_tree(await app.current_project!.list_tr_file_paths()),
     });
   };
 

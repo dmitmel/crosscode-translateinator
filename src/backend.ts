@@ -249,22 +249,22 @@ export class Project {
     );
   }
 
-  public async list_tr_files(): Promise<TrFile[]> {
+  public async list_tr_file_paths(): Promise<string[]> {
     let res = await this.backend.send_request({
       type: 'Project/list_tr_files',
       project_id: this.id,
     });
     utils.assert(res.type === 'Project/list_tr_files');
-    return res.paths.map((path) => new TrFile(this, path));
+    return res.paths;
   }
 
-  public async list_virtual_game_files(): Promise<VirtualGameFile[]> {
+  public async list_virtual_game_file_paths(): Promise<string[]> {
     let res = await this.backend.send_request({
       type: 'Project/list_virtual_game_files',
       project_id: this.id,
     });
     utils.assert(res.type === 'Project/list_virtual_game_files');
-    return res.paths.map((path) => new VirtualGameFile(this, path));
+    return res.paths;
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
