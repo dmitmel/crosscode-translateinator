@@ -20,15 +20,23 @@
       background-color: $color-EditorTab-active;
     }
 
-    > .Icon.Icon-x {
-      transform: scale(1.5);
+    .Icon {
+      color: inherit;
+    }
 
+    $close-normal-scale: 1.5;
+    $close-pressed-scale: $close-normal-scale * 1.2;
+    > .EditorTab-Close {
+      transform: scale($close-normal-scale);
+      opacity: 0.3;
+    }
+    &.EditorTab-closeable > .EditorTab-Close {
+      opacity: unset;
       &:hover {
         color: #f48771;
       }
-
       &:active {
-        transform: scale(1.5 * 1.2);
+        transform: scale($close-pressed-scale);
       }
     }
   }

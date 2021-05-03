@@ -4,6 +4,7 @@ import './Label.scss';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
+import { OpenedFile, OpenedFileType, TAB_QUEUE_INDEX, TAB_SEARCH_INDEX } from '../app';
 import { Fragment, Translation } from '../backend';
 import * as gui from '../gui';
 import * as utils from '../utils';
@@ -13,15 +14,6 @@ import { IconButtonGui } from './Button';
 import { FancyTextGui } from './FancyText';
 import { IconGui } from './Icon';
 import { TextAreaGui } from './TextInput';
-
-export enum EditorTabType {
-  Search,
-  Queue,
-  TrFile,
-  GameFile,
-}
-
-export const FRAGMENT_PAGINATION_JUMP = 10;
 
 export interface EditorGuiProps {
   className?: string;
@@ -182,41 +174,110 @@ export interface EditorTabListGuiProps {
   className?: string;
 }
 
-export function EditorTabListGui(props: gui.ComponentProps<EditorTabListGuiProps>): JSX.Element {
-  return (
-    <BoxGui orientation="horizontal" scroll className={cc(props.className, 'EditorTabList')}>
-      <EditorTabGui active={false} type={EditorTabType.Search} name={'Search'} />
-      <EditorTabGui active={false} type={EditorTabType.Queue} name={'Queue'} />
-      <EditorTabGui active={true} type={EditorTabType.GameFile} name={'database.json'} />
-      <EditorTabGui active={false} type={EditorTabType.GameFile} name={'bergen.json'} />
-      <EditorTabGui active={false} type={EditorTabType.GameFile} name={'gui.en_US.json'} />
-    </BoxGui>
-  );
-}
+export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, unknown> {
+  public context!: AppMainGuiCtx;
 
-const EDITOR_TAB_ICONS = new Map<EditorTabType, string>([
-  [EditorTabType.Search, 'search'],
-  [EditorTabType.Queue, 'journal-bookmark-fill'],
-  [EditorTabType.TrFile, 'file-earmark-zip-fill'],
-  [EditorTabType.GameFile, 'file-earmark-text-fill'],
-]);
+  public componentDidMount(): void {
+    let { app } = this.context;
+    app.event_file_opened.on(this.on_opened_files_list_change);
+    app.event_file_closed.on(this.on_opened_files_list_change);
+  }
+
+  public componentWillUnmount(): void {
+    let { app } = this.context;
+    app.event_file_opened.off(this.on_opened_files_list_change);
+    app.event_file_closed.off(this.on_opened_files_list_change);
+  }
+
+  private on_opened_files_list_change = (): void => {
+    this.forceUpdate();
+  };
+
+  public render(): JSX.Element {
+    let { app } = this.context;
+    return (
+      <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
+        <EditorTabGui icon="search" name="Search" index={TAB_SEARCH_INDEX} />
+        <EditorTabGui icon="journal-bookmark-fill" name="Queue" index={TAB_QUEUE_INDEX} />
+        {app.opened_files.map(
+          (opened_file: OpenedFile, index: number): JSX.Element => {
+            let icon = null;
+            let description = opened_file.path;
+            if (opened_file.type === OpenedFileType.GameFile) {
+              icon = 'file-earmark-zip-fill';
+              description = `GameFile ${opened_file.path}`;
+            } else if (opened_file.type === OpenedFileType.TrFile) {
+              icon = 'file-earmark-text-fill';
+              description = `TrFile ${opened_file.path}`;
+            }
+            return (
+              <EditorTabGui
+                key={opened_file.gui_id}
+                icon={icon}
+                name={opened_file.name()}
+                description={description}
+                index={index}
+                closeable
+              />
+            );
+          },
+        )}
+      </BoxGui>
+    );
+  }
+}
 
 export interface EditorTabGuiProps {
-  type: EditorTabType;
+  icon: string | null;
   name: string;
-  active: boolean;
+  description?: string;
+  index: number;
+  closeable?: boolean;
 }
 
-export function EditorTabGui(props: gui.ComponentProps<EditorTabGuiProps>): JSX.Element {
-  return (
-    <button
-      type="button"
-      className={cc('EditorTab', { 'EditorTab-active': props.active })}
-      tabIndex={0}
-      onClick={() => console.log('open', props.name)}>
-      <IconGui icon={EDITOR_TAB_ICONS.get(props.type)} /> {props.name} <IconGui icon="x" />
-    </button>
-  );
+export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> {
+  public context!: AppMainGuiCtx;
+
+  public componentDidMount(): void {
+    let { app } = this.context;
+    app.event_current_tab_change.on(this.on_current_tab_change);
+  }
+
+  public componentWillUnmount(): void {
+    let { app } = this.context;
+    app.event_current_tab_change.off(this.on_current_tab_change);
+  }
+
+  private on_current_tab_change = (): void => {
+    this.forceUpdate();
+  };
+
+  public on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+    let { app } = this.context;
+    app.set_current_tab_index(this.props.index);
+  };
+
+  public render(): JSX.Element {
+    let { app } = this.context;
+    return (
+      <button
+        type="button"
+        className={cc('EditorTab', {
+          'EditorTab-active': this.props.index === app.current_tab_index,
+          'EditorTab-closeable': this.props.closeable,
+        })}
+        onClick={this.on_click}
+        title={this.props.description ?? this.props.name}>
+        <IconGui icon={this.props.icon} className="EditorTab-Icon" />
+        <span className="Label-whitespace-preserve">{` ${this.props.name} `}</span>
+        <IconGui
+          icon="x"
+          className="EditorTab-Close"
+          title={this.props.closeable ? 'Close this tab' : "This tab can't be closed!"}
+        />
+      </button>
+    );
+  }
 }
 
 export interface FragmentListPinnedGuiProps {
@@ -235,6 +296,8 @@ export class FragmentListPinnedGui extends Inferno.Component<
   public state: FragmentListPinnedGuiState = {
     jump_pos_value: '0',
   };
+
+  public static FRAGMENT_PAGINATION_JUMP = 10;
 
   private jump_pos_input_id: string = utils.new_html_id();
   private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
@@ -279,14 +342,16 @@ export class FragmentListPinnedGui extends Inferno.Component<
   ): void {
     let { app } = this.context;
     let jump_pos = app.current_fragment_pos;
+    let long_jump = FragmentListPinnedGui.FRAGMENT_PAGINATION_JUMP;
+    let fragment_count = app.current_fragment_list.length;
     // prettier-ignore
     switch (jump_type) {
-      case 'first':     { jump_pos  = 1;                                break; }
-      case 'back_many': { jump_pos -= FRAGMENT_PAGINATION_JUMP;         break; }
-      case 'back_one':  { jump_pos -= 1;                                break; }
-      case 'fwd_one':   { jump_pos += 1;                                break; }
-      case 'fwd_many':  { jump_pos += FRAGMENT_PAGINATION_JUMP;         break; }
-      case 'last':      { jump_pos  = app.current_fragment_list.length; break; }
+      case 'first':     { jump_pos  = 1;                  break; }
+      case 'back_many': { jump_pos -= long_jump;          break; }
+      case 'back_one':  { jump_pos -= 1;                  break; }
+      case 'fwd_one':   { jump_pos += 1;                  break; }
+      case 'fwd_many':  { jump_pos += long_jump;          break; }
+      case 'last':      { jump_pos  = fragment_count - 1; break; }
     }
     app.set_current_fragment_pos(jump_pos, /* jump */ true);
   }
@@ -301,7 +366,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
   public render(): JSX.Element {
     let { app } = this.context;
     let fragment_count = app.current_fragment_list.length;
-
+    let long_jump = FragmentListPinnedGui.FRAGMENT_PAGINATION_JUMP;
     return (
       <WrapperGui className={cc('FragmentListPinned', this.props.className)}>
         <BoxGui
@@ -315,7 +380,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
           />
           <IconButtonGui
             icon="chevron-double-left"
-            title={`Back by ${FRAGMENT_PAGINATION_JUMP}`}
+            title={`Back by ${long_jump}`}
             onClick={this.on_jump_back_many_btn_click}
           />
           <IconButtonGui
@@ -349,7 +414,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
           />
           <IconButtonGui
             icon="chevron-double-right"
-            title={`Forward by ${FRAGMENT_PAGINATION_JUMP}`}
+            title={`Forward by ${long_jump}`}
             onClick={this.on_jump_fwd_many_btn_click}
           />
           <IconButtonGui

@@ -296,15 +296,13 @@ export class TrFile {
 export class VirtualGameFile {
   public constructor(public project: Project, public path: string) {}
 
-  public async list_fragments(
-    range?: { start?: number | null; end?: number | null } | null,
-  ): Promise<Fragment[]> {
+  public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
     let res = await this.project.backend.send_request({
       type: 'VirtualGameFile/list_fragments',
       project_id: this.project.id,
       file_path: this.path,
-      start: range?.start,
-      end: range?.end,
+      start,
+      end,
     });
     utils.assert(res.type === 'VirtualGameFile/list_fragments');
     return res.fragments.map((f_raw) => {

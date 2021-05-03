@@ -4,16 +4,10 @@ import * as Inferno from 'inferno';
 
 import { AppMain } from '../app';
 import * as gui from '../gui';
-import * as utils from '../utils';
 import { BoxGui } from './Box';
 import { EditorGui } from './Editor';
 import { ProjectTreeGui } from './ProjectTree';
 import { StatusBarGui } from './StatusBar';
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __app__: AppMain | undefined;
-}
 
 export interface AppMainGuiCtx {
   app: AppMain;
@@ -27,8 +21,6 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
   }
 
   public componentDidMount(): void {
-    utils.assert(!('app' in window));
-    window.__app__ = this.inner;
     nw.Window.get(window).on('closed', this.on_nw_window_closing);
     window.addEventListener('beforeunload', this.on_before_page_unload);
     window.addEventListener('keydown', this.on_global_key_down);
@@ -37,7 +29,6 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
   }
 
   public componentWillUnmount(): void {
-    delete window.__app__;
     nw.Window.get(window).removeListener('closed', this.on_nw_window_closing);
     window.removeEventListener('beforeunload', this.on_before_page_unload);
     window.removeEventListener('keydown', this.on_global_key_down);

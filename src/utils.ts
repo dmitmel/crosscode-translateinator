@@ -30,9 +30,13 @@ export function assert(condition: boolean): asserts condition {
   }
 }
 
-let current_id = 0;
+let current_react_id = 0;
+export function new_gui_id(): number {
+  let n = current_react_id;
+  current_react_id++;
+  return n;
+}
+
 export function new_html_id(prefix = 'id'): string {
-  let n = current_id;
-  current_id++;
-  return `${prefix}${n.toString(10)}`;
+  return `${prefix}${new_gui_id().toString(10)}`;
 }

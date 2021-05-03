@@ -26,4 +26,4 @@ $color-EditorTabList: $color-ProjectTree;
 $color-EditorTab-active: $color-Editor;
 $color-EditorTab-active-fg: #ffffff;
 $color-EditorTab-inactive: #2d2d2d;
-$color-EditorTab-inactive-fg: #969696;
+$color-EditorTab-inactive-fg: rgba($color-EditorTab-active-fg, 0.5);
