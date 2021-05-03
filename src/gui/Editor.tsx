@@ -41,12 +41,10 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     app.event_fragment_list_update.on(this.on_fragment_list_update);
     app.event_current_fragment_change.on(this.on_current_fragment_change);
 
-    let fragment_list_gui = this.fragment_list_ref.current;
-    utils.assert(fragment_list_gui != null);
     utils.assert(this.fragment_observer == null);
     utils.assert(this.fragment_observer_map == null);
     this.fragment_observer = new IntersectionObserver(this.on_fragment_intersection_change, {
-      root: fragment_list_gui,
+      root: this.fragment_list_ref.current!,
     });
     this.fragment_observer_map = new WeakMap();
 
@@ -75,12 +73,10 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     if (last_fragment != null) {
       let last_fragment_gui = this.fragment_guis_map.get(last_fragment);
       utils.assert(last_fragment_gui != null);
-      let last_fragment_element = last_fragment_gui.root_ref.current;
-      utils.assert(last_fragment_element != null);
-      let fragment_list_ref = this.fragment_list_ref.current;
-      utils.assert(fragment_list_ref != null);
       // Different height properties are not a typo here.
-      final_filler_height = fragment_list_ref.clientHeight - last_fragment_element.offsetHeight;
+      final_filler_height =
+        this.fragment_list_ref.current!.clientHeight -
+        last_fragment_gui.root_ref.current!.offsetHeight;
     }
     if (this.state.final_filler_height !== final_filler_height) {
       this.setState({ final_filler_height });
@@ -127,9 +123,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     utils.assert(target_fragment != null);
     let target_fragment_gui = this.fragment_guis_map.get(target_fragment);
     utils.assert(target_fragment_gui != null);
-    let target_element = target_fragment_gui.root_ref.current;
-    utils.assert(target_element != null);
-    target_element.scrollIntoView();
+    target_fragment_gui.root_ref.current!.scrollIntoView();
   };
 
   public render(): JSX.Element {
@@ -313,8 +307,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
   }
 
   private on_current_fragment_change = (): void => {
-    utils.assert(this.jump_pos_input_ref.current != null);
-    this.jump_pos_input_ref.current.blur();
+    this.jump_pos_input_ref.current!.blur();
     let { app } = this.context;
     this.setState({ jump_pos_value: app.current_fragment_pos.toString() });
   };
@@ -456,24 +449,20 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     this.props.map.set(this.props.fragment, this);
 
     let { intersection_observer, intersection_observer_map } = this.props;
-    let root_element = this.root_ref.current;
-    utils.assert(root_element != null);
     utils.assert(intersection_observer != null);
     utils.assert(intersection_observer_map != null);
-    intersection_observer.observe(root_element);
-    intersection_observer_map.set(root_element, this);
+    intersection_observer.observe(this.root_ref.current!);
+    intersection_observer_map.set(this.root_ref.current!, this);
   }
 
   public componentWillUnmount(): void {
     this.props.map.delete(this.props.fragment);
 
     let { intersection_observer, intersection_observer_map } = this.props;
-    let root_element = this.root_ref.current;
-    utils.assert(root_element != null);
     utils.assert(intersection_observer != null);
     utils.assert(intersection_observer_map != null);
-    intersection_observer.unobserve(root_element);
-    intersection_observer_map.delete(root_element);
+    intersection_observer.unobserve(this.root_ref.current!);
+    intersection_observer_map.delete(this.root_ref.current!);
   }
 
   public render(): JSX.Element {
