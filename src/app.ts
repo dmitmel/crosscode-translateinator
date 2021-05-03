@@ -25,6 +25,7 @@ export class AppMain {
   public event_file_closed = new Event2<[file: OpenedFile, index: number]>();
 
   public current_tab_index: number = TAB_QUEUE_INDEX;
+  public current_tab_opened_file: OpenedFile | null = null;
   public event_current_tab_change = new Event2();
   public set_current_tab_index(index: number): void {
     utils.assert(Number.isSafeInteger(index));
@@ -33,6 +34,7 @@ export class AppMain {
     }
     if (this.current_tab_index !== index) {
       this.current_tab_index = index;
+      this.current_tab_opened_file = index < 0 ? null : this.opened_files[this.current_tab_index];
       this.event_current_tab_change.fire();
     }
   }
@@ -80,15 +82,8 @@ export class AppMain {
     this.current_project_meta = await this.current_project.get_meta();
     this.event_project_opened.fire();
 
-    let file_path = 'data/maps/hideout/entrance.json';
-    // let file_path = 'data/maps/rookie-harbor/center.json';
-    // let file_path = 'data/item-database.json';
-    this.current_fragment_list = await (
-      await this.current_project.get_virtual_game_file(file_path)
-    ).list_fragments();
-    this.event_fragment_list_update.fire();
-
     for (let tab_file_path of [
+      'data/maps/hideout/entrance.json',
       'data/database.json',
       'data/maps/bergen/bergen.json',
       'data/lang/sc/gui.en_US.json',
@@ -98,6 +93,18 @@ export class AppMain {
       this.opened_files.push(opened_file);
       this.event_file_opened.fire(opened_file, index);
     }
+
+    let file_path = 'data/maps/hideout/entrance.json';
+    // let file_path = 'data/maps/rookie-harbor/center.json';
+    // let file_path = 'data/item-database.json';
+    this.current_fragment_list = await (
+      await this.current_project.get_virtual_game_file(file_path)
+    ).list_fragments();
+    this.event_fragment_list_update.fire();
+
+    this.set_current_tab_index(
+      this.opened_files.findIndex((file) => file.path === 'data/maps/hideout/entrance.json'),
+    );
   }
 
   public disconnect(): void {
@@ -116,7 +123,7 @@ export abstract class OpenedFile {
   public readonly gui_id: number = utils.new_gui_id();
   public constructor(public readonly app: AppMain, public readonly path: string) {}
 
-  public name(): string {
+  public get_name(): string {
     let idx = this.path.lastIndexOf('/');
     if (idx < 0) {
       return this.path;

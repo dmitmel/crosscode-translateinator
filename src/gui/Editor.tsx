@@ -208,7 +208,7 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
               <EditorTabGui
                 key={opened_file.gui_id}
                 icon={icon}
-                name={opened_file.name()}
+                name={opened_file.get_name()}
                 description={description}
                 index={index}
                 closeable
@@ -232,6 +232,8 @@ export interface EditorTabGuiProps {
 export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> {
   public context!: AppMainGuiCtx;
 
+  public root_ref = Inferno.createRef<HTMLButtonElement>();
+
   public componentDidMount(): void {
     let { app } = this.context;
     app.event_current_tab_change.on(this.on_current_tab_change);
@@ -249,12 +251,14 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
   public on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
     app.set_current_tab_index(this.props.index);
+    this.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
   };
 
   public render(): JSX.Element {
     let { app } = this.context;
     return (
       <button
+        ref={this.root_ref}
         type="button"
         className={cc('EditorTab', {
           'EditorTab-active': this.props.index === app.current_tab_index,
@@ -594,13 +598,14 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
     if (this.state.clickable) {
       let links: JSX.Element[] = [];
       // An empty href is required for focus to work on the links.
+      // TODO: cache link splitting results
 
       let component_start_index = 0;
-      while (true) {
+      while (component_start_index < full_path.length) {
         let separator_index = full_path.indexOf('/', component_start_index);
-        if (separator_index < 0) break;
-        let component = full_path.slice(component_start_index, separator_index + 1);
-        let component_path = full_path.slice(0, separator_index + 1);
+        let component_end_index = separator_index < 0 ? full_path.length : separator_index + 1;
+        let component = full_path.slice(component_start_index, component_end_index);
+        let component_path = full_path.slice(0, component_end_index);
 
         links.push(
           <a key={component_path} href="" data-path={component_path} onClick={this.on_link_click}>
@@ -608,15 +613,9 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
           </a>,
         );
 
-        component_start_index = separator_index + 1;
+        component_start_index = component_end_index;
       }
 
-      let last_component = full_path.slice(component_start_index);
-      links.push(
-        <a key={full_path} href="" data-path={full_path} onClick={this.on_link_click}>
-          {last_component}
-        </a>,
-      );
       children = links;
     }
 

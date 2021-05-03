@@ -31,6 +31,10 @@
       background-color: $color-ProjectTreeItem-hover;
     }
 
+    &.ProjectTreeItem-current {
+      background-color: $color-ProjectTreeItem-current;
+    }
+
     &:focus {
       background-color: $color-ProjectTreeItem-focus;
       outline: none;

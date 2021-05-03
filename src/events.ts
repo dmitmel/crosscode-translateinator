@@ -18,7 +18,8 @@ export class Event2<Args extends unknown[] = []> {
   }
 
   public fire(...args: Args): void {
-    for (let listener of this.listeners) {
+    let listeners_copy = new Set(this.listeners);
+    for (let listener of listeners_copy) {
       listener(...args);
     }
   }
