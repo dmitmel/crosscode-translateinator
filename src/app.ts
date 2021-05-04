@@ -75,10 +75,7 @@ export class AppMain {
   public async connect(): Promise<void> {
     await this.backend.connect();
 
-    this.current_project = await Project.open(
-      this.backend,
-      '/home/dmitmel/Projects/Rust/crosscode-localization-engine/tmp',
-    );
+    this.current_project = await Project.open(this.backend, 'tmp-tr-project');
     this.current_project_meta = await this.current_project.get_meta();
     this.event_project_opened.fire();
 
