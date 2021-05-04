@@ -343,12 +343,12 @@ export class FragmentListPinnedGui extends Inferno.Component<
     let fragment_count = app.current_fragment_list.length;
     // prettier-ignore
     switch (jump_type) {
-      case 'first':     { jump_pos  = 1;                  break; }
-      case 'back_many': { jump_pos -= long_jump;          break; }
-      case 'back_one':  { jump_pos -= 1;                  break; }
-      case 'fwd_one':   { jump_pos += 1;                  break; }
-      case 'fwd_many':  { jump_pos += long_jump;          break; }
-      case 'last':      { jump_pos  = fragment_count - 1; break; }
+      case 'first':     { jump_pos  = 1;              break; }
+      case 'back_many': { jump_pos -= long_jump;      break; }
+      case 'back_one':  { jump_pos -= 1;              break; }
+      case 'fwd_one':   { jump_pos += 1;              break; }
+      case 'fwd_many':  { jump_pos += long_jump;      break; }
+      case 'last':      { jump_pos  = fragment_count; break; }
     }
     app.set_current_fragment_pos(jump_pos, /* jump */ true);
   }
