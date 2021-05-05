@@ -581,7 +581,10 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
   };
 
   private update_clickable_state(): void {
-    this.setState({ clickable: this.is_mouse_over && this.is_ctrl_pressed });
+    let clickable = this.is_mouse_over && this.is_ctrl_pressed;
+    if (this.state.clickable !== clickable) {
+      this.setState({ clickable });
+    }
   }
 
   private on_link_click = (event: Inferno.InfernoMouseEvent<HTMLAnchorElement>): void => {
@@ -597,8 +600,6 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
 
     if (this.state.clickable) {
       let links: JSX.Element[] = [];
-      // An empty href is required for focus to work on the links.
-      // TODO: cache link splitting results
 
       let component_start_index = 0;
       while (component_start_index < full_path.length) {
@@ -606,13 +607,12 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
         let component_end_index = separator_index < 0 ? full_path.length : separator_index + 1;
         let component = full_path.slice(component_start_index, component_end_index);
         let component_path = full_path.slice(0, component_end_index);
-
         links.push(
+          // An empty href is required for focus to work on the links.
           <a key={component_path} href="" data-path={component_path} onClick={this.on_link_click}>
             {component}
           </a>,
         );
-
         component_start_index = component_end_index;
       }
 
