@@ -40,3 +40,7 @@ export function new_gui_id(): number {
 export function new_html_id(prefix = 'id'): string {
   return `${prefix}${new_gui_id().toString(10)}`;
 }
+
+export function strip_prefix(str: string, prefix: string): string {
+  return str.startsWith(prefix) ? str.slice(prefix.length) : str;
+}

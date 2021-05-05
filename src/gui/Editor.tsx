@@ -193,10 +193,12 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
       <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
         <EditorTabGui icon="search" name="Search" index={TAB_SEARCH_INDEX} />
         <EditorTabGui icon="journal-bookmark-fill" name="Queue" index={TAB_QUEUE_INDEX} />
+
         {app.opened_files.map(
           (opened_file: OpenedFile, index: number): JSX.Element => {
             let icon = null;
-            let description = opened_file.path;
+            let full_path = opened_file.path;
+            let description = full_path;
             if (opened_file.type === OpenedFileType.GameFile) {
               icon = 'file-earmark-zip-fill';
               description = `GameFile ${opened_file.path}`;
@@ -204,11 +206,29 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
               icon = 'file-earmark-text-fill';
               description = `TrFile ${opened_file.path}`;
             }
+
+            let shorter_path = utils.strip_prefix(full_path, 'data/');
+            let display_path = '';
+            let component_start = 0;
+            while (component_start < shorter_path.length) {
+              let separator_index = shorter_path.indexOf('/', component_start);
+              let is_last_component = separator_index < 0;
+              let component_end = is_last_component ? shorter_path.length : separator_index;
+              let component = shorter_path.slice(component_start, component_end);
+              if (is_last_component) {
+                display_path += component;
+              } else {
+                display_path += component.charAt(0);
+                display_path += '/';
+              }
+              component_start = component_end + 1;
+            }
+
             return (
               <EditorTabGui
                 key={opened_file.gui_id}
                 icon={icon}
-                name={opened_file.get_name()}
+                name={display_path}
                 description={description}
                 index={index}
                 closeable
