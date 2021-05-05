@@ -236,6 +236,7 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
 
   public componentDidMount(): void {
     let { app } = this.context;
+    // TODO: rewrite with a WeakMap or something
     app.event_current_tab_change.on(this.on_current_tab_change);
   }
 
@@ -246,12 +247,23 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
 
   private on_current_tab_change = (): void => {
     this.forceUpdate();
+    let { app } = this.context;
+    if (app.current_tab_index === this.props.index) {
+      this.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
+    }
   };
 
   public on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
     app.set_current_tab_index(this.props.index);
-    this.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
+  };
+
+  public on_close_click = (event: Inferno.InfernoMouseEvent<SVGSVGElement>): void => {
+    event.stopPropagation();
+    let { app } = this.context;
+    if (this.props.closeable) {
+      app.close_game_file(this.props.index);
+    }
   };
 
   public render(): JSX.Element {
@@ -272,6 +284,7 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
           icon="x"
           className="EditorTab-Close"
           title={this.props.closeable ? 'Close this tab' : "This tab can't be closed!"}
+          onClick={this.on_close_click}
         />
       </button>
     );

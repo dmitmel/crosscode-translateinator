@@ -4,23 +4,15 @@ import './Button';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
+import { PathTree } from '../app';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 
-export interface ProjectTreeGuiState {
-  tr_files_tree_data: PathTree;
-  game_files_tree_data: PathTree;
-}
-
-export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiState> {
+export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
   public context!: AppMainGuiCtx;
-  public state: ProjectTreeGuiState = {
-    tr_files_tree_data: new Map(),
-    game_files_tree_data: new Map(),
-  };
   public prev_tr_file_path: string | null = null;
   public tr_file_tree_map = new Map<string, FileTreeItemGui>();
   public prev_game_file_path: string | null = null;
@@ -44,26 +36,15 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
     app.event_current_tab_change.off(this.on_current_tab_change);
   }
 
-  private on_project_opened = async (): Promise<void> => {
-    let { app } = this.context;
-    this.setState({
-      game_files_tree_data: paths_list_to_tree(
-        await app.current_project!.list_virtual_game_file_paths(),
-      ),
-    });
-    this.setState({
-      tr_files_tree_data: paths_list_to_tree(await app.current_project!.list_tr_file_paths()),
-    });
+  private on_project_opened = (): void => {
+    this.forceUpdate();
   };
 
   private on_project_closed = (): void => {
-    this.setState({
-      tr_files_tree_data: new Map(),
-      game_files_tree_data: new Map(),
-    });
+    this.forceUpdate();
   };
 
-  private on_current_tab_change = (): void => {
+  private on_current_tab_change = (triggered_from_tree: boolean): void => {
     let { app } = this.context;
 
     if (this.prev_game_file_path != null) {
@@ -94,7 +75,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
         if (!tree_item_gui.state.is_opened) {
           tree_item_gui.setState({ is_opened: true });
         }
-        if (is_last_component) {
+        if (is_last_component && !triggered_from_tree) {
           tree_item_gui.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
         }
 
@@ -116,7 +97,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
           <FileTreeGui
             map={this.tr_file_tree_map}
             path_prefix=""
-            tree_data={this.state.tr_files_tree_data}
+            tree_data={app.project_tr_files_tree}
             files_icon="file-earmark-zip"
             depth={0}
           />
@@ -126,7 +107,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, ProjectTreeGuiSta
           <FileTreeGui
             map={this.game_file_tree_map}
             path_prefix=""
-            tree_data={this.state.game_files_tree_data}
+            tree_data={app.project_game_files_tree}
             files_icon="file-earmark-text"
             depth={0}
           />
@@ -199,11 +180,14 @@ export interface FileTreeItemGuiProps extends FileTreeGuiProps {
 }
 
 export interface FileTreeItemGuiState {
+  full_path: string;
   is_opened: boolean;
 }
 
 export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, FileTreeItemGuiState> {
+  public context!: AppMainGuiCtx;
   public state: FileTreeItemGuiState = {
+    full_path: '',
     is_opened: this.props.default_opened ?? false,
   };
 
@@ -213,31 +197,33 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     return this.props.tree_data.size > 0;
   }
 
-  private get_full_path(): string {
-    let s = `${this.props.path_prefix}${this.props.name}`;
-    return s;
+  public static getDerivedStateFromProps(
+    props: FileTreeItemGuiProps,
+  ): Partial<FileTreeItemGuiState> {
+    return { full_path: `${props.path_prefix}${props.name}` };
   }
 
   public componentDidMount(): void {
-    this.props.map.set(this.get_full_path(), this);
+    this.props.map.set(this.state.full_path, this);
   }
 
   public componentWillUnmount(): void {
-    this.props.map.delete(this.get_full_path());
+    this.props.map.delete(this.state.full_path);
   }
 
   private on_click = (): void => {
+    let { app } = this.context;
     if (this.is_directory()) {
       this.setState({ is_opened: !this.state.is_opened });
     } else {
-      console.log('open', this.get_full_path());
+      app.open_game_file(this.state.full_path, /* triggered_from_tree */ true);
     }
   };
 
   public render(): JSX.Element[] {
     let is_directory = this.is_directory();
     let { name } = this.props;
-    let full_path = this.get_full_path();
+    let { full_path } = this.state;
     let key = full_path;
     if (this.is_directory()) full_path += '/';
     let icon = is_directory
@@ -296,30 +282,4 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     elements.push(...file_elements);
     return elements;
   }
-}
-
-export type PathTree = Map<string, PathTree>;
-export function paths_list_to_tree(paths: string[]): PathTree {
-  let root_dir: PathTree = new Map();
-
-  for (let path of paths) {
-    let current_dir: PathTree = root_dir;
-    let component_start = 0;
-    while (component_start < path.length) {
-      let sep_index = path.indexOf('/', component_start);
-      let component_end = sep_index < 0 ? path.length : sep_index;
-      let component = path.slice(component_start, component_end);
-
-      let next_dir = current_dir.get(component);
-      if (next_dir == null) {
-        next_dir = new Map();
-        current_dir.set(component, next_dir);
-      }
-      current_dir = next_dir;
-
-      component_start = component_end + 1;
-    }
-  }
-
-  return root_dir;
 }
