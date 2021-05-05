@@ -211,7 +211,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     this.props.map.delete(this.state.full_path);
   }
 
-  private on_click = (): void => {
+  private on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
     if (this.is_directory()) {
       this.setState({ is_opened: !this.state.is_opened });
