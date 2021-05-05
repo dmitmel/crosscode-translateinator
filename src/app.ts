@@ -141,7 +141,6 @@ export enum OpenedFileType {
 export abstract class OpenedFile {
   public abstract readonly type: OpenedFileType;
 
-  public readonly gui_id: number = utils.new_gui_id();
   public constructor(public readonly app: AppMain, public readonly path: string) {}
 
   public get_name(): string {

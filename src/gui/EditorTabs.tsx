@@ -38,49 +38,9 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
       <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
         <EditorTabGui icon="search" name="Search" index={TAB_SEARCH_INDEX} />
         <EditorTabGui icon="journal-bookmark-fill" name="Queue" index={TAB_QUEUE_INDEX} />
-
-        {app.opened_files.map(
-          (opened_file: OpenedFile, index: number): JSX.Element => {
-            let icon = null;
-            let full_path = opened_file.path;
-            let description = full_path;
-            if (opened_file.type === OpenedFileType.GameFile) {
-              icon = 'file-earmark-zip-fill';
-              description = `GameFile ${opened_file.path}`;
-            } else if (opened_file.type === OpenedFileType.TrFile) {
-              icon = 'file-earmark-text-fill';
-              description = `TrFile ${opened_file.path}`;
-            }
-
-            let shorter_path = utils.strip_prefix(full_path, 'data/');
-            let display_path = '';
-            let component_start = 0;
-            while (component_start < shorter_path.length) {
-              let separator_index = shorter_path.indexOf('/', component_start);
-              let is_last_component = separator_index < 0;
-              let component_end = is_last_component ? shorter_path.length : separator_index;
-              let component = shorter_path.slice(component_start, component_end);
-              if (is_last_component) {
-                display_path += component;
-              } else {
-                display_path += component.charAt(0);
-                display_path += '/';
-              }
-              component_start = component_end + 1;
-            }
-
-            return (
-              <EditorTabGui
-                key={opened_file.gui_id}
-                icon={icon}
-                name={display_path}
-                description={description}
-                index={index}
-                closeable
-              />
-            );
-          },
-        )}
+        {app.opened_files.map((file, index) => (
+          <EditorFileTabGui key={`${file.type}:${file.path}`} file={file} index={index} />
+        ))}
       </BoxGui>
     );
   }
@@ -152,6 +112,59 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
           onClick={this.on_close_click}
         />
       </button>
+    );
+  }
+}
+
+export interface EditorFileTabGuiProps {
+  file: OpenedFile;
+  index: number;
+}
+
+export class EditorFileTabGui extends Inferno.Component<EditorFileTabGuiProps, unknown> {
+  public render(): JSX.Element {
+    let { file } = this.props;
+
+    let icon;
+    let description;
+    if (file.type === OpenedFileType.GameFile) {
+      icon = 'file-earmark-zip-fill';
+      description = `GameFile ${file.path}`;
+    } else if (file.type === OpenedFileType.TrFile) {
+      icon = 'file-earmark-text-fill';
+      description = `TrFile ${file.path}`;
+    } else {
+      throw new Error(`unknown OpenedFile type: ${file.type}`);
+    }
+
+    // Almost all paths you'll ever see begin with `data/` anyway.
+    let shorter_path = utils.strip_prefix(file.path, 'data/');
+    // The path shortener was inspired by Vim's pathshorten() function, see
+    // <https://neovim.io/doc/user/eval.html#pathshorten()>.
+    let display_path = '';
+    let component_start = 0;
+    while (component_start < shorter_path.length) {
+      let separator_index = shorter_path.indexOf('/', component_start);
+      let is_last_component = separator_index < 0;
+      let component_end = is_last_component ? shorter_path.length : separator_index;
+      let component = shorter_path.slice(component_start, component_end);
+      if (is_last_component) {
+        display_path += component;
+      } else {
+        display_path += component.charAt(0);
+        display_path += '/';
+      }
+      component_start = component_end + 1;
+    }
+
+    return (
+      <EditorTabGui
+        icon={icon}
+        name={display_path}
+        description={description}
+        index={this.props.index}
+        closeable
+      />
     );
   }
 }
