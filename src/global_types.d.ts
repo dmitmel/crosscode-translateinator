@@ -8,6 +8,6 @@ declare module '*.svg' {
 
 declare namespace chrome {
   namespace runtime {
-    function reload(): void;
+    function reload(): never;
   }
 }
