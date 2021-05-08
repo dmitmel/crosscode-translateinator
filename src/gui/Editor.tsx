@@ -219,10 +219,10 @@ export class FragmentListPinnedGui extends Inferno.Component<
     this.setState({ jump_pos_value: app.current_fragment_pos.toString() });
   };
 
-  private on_jump_button_click(
+  private on_jump_button_click = (
     jump_type: 'first' | 'back_many' | 'back_one' | 'fwd_one' | 'fwd_many' | 'last',
     _event: Inferno.InfernoMouseEvent<HTMLButtonElement>,
-  ): void {
+  ): void => {
     let { app } = this.context;
     let jump_pos = app.current_fragment_pos;
     let long_jump = FragmentListPinnedGui.FRAGMENT_PAGINATION_JUMP;
@@ -237,14 +237,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
       case 'last':      { jump_pos  = fragment_count; break; }
     }
     app.set_current_fragment_pos(jump_pos, /* jump */ true);
-  }
-
-  private on_jump_first_btn_click = this.on_jump_button_click.bind(this, 'first');
-  private on_jump_back_many_btn_click = this.on_jump_button_click.bind(this, 'back_many');
-  private on_jump_back_one_btn_click = this.on_jump_button_click.bind(this, 'back_one');
-  private on_jump_fwd_one_btn_click = this.on_jump_button_click.bind(this, 'fwd_one');
-  private on_jump_fwd_many_btn_click = this.on_jump_button_click.bind(this, 'fwd_many');
-  private on_jump_last_btn_click = this.on_jump_button_click.bind(this, 'last');
+  };
 
   public render(): JSX.Element {
     let { app } = this.context;
@@ -259,17 +252,17 @@ export class FragmentListPinnedGui extends Inferno.Component<
           <IconButtonGui
             icon="chevron-bar-left"
             title="First"
-            onClick={this.on_jump_first_btn_click}
+            onClick={Inferno.linkEvent('first', this.on_jump_button_click)}
           />
           <IconButtonGui
             icon="chevron-double-left"
             title={`Back by ${long_jump}`}
-            onClick={this.on_jump_back_many_btn_click}
+            onClick={Inferno.linkEvent('back_many', this.on_jump_button_click)}
           />
           <IconButtonGui
             icon="chevron-left"
             title="Previous"
-            onClick={this.on_jump_back_one_btn_click}
+            onClick={Inferno.linkEvent('back_one', this.on_jump_button_click)}
           />
           <form onSubmit={this.on_jump_pos_submit}>
             <input
@@ -289,21 +282,23 @@ export class FragmentListPinnedGui extends Inferno.Component<
             />
           </form>
           <IconlikeTextGui icon="/" />
-          <LabelGui selectable>{fragment_count}</LabelGui>
+          <LabelGui selectable title="Total fragments">
+            {fragment_count}
+          </LabelGui>
           <IconButtonGui
             icon="chevron-right"
             title="Next"
-            onClick={this.on_jump_fwd_one_btn_click}
+            onClick={Inferno.linkEvent('fwd_one', this.on_jump_button_click)}
           />
           <IconButtonGui
             icon="chevron-double-right"
             title={`Forward by ${long_jump}`}
-            onClick={this.on_jump_fwd_many_btn_click}
+            onClick={Inferno.linkEvent('fwd_many', this.on_jump_button_click)}
           />
           <IconButtonGui
             icon="chevron-bar-right"
             title="Last"
-            onClick={this.on_jump_last_btn_click}
+            onClick={Inferno.linkEvent('last', this.on_jump_button_click)}
           />
         </BoxGui>
       </WrapperGui>
@@ -473,10 +468,11 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
     }
   }
 
-  private on_link_click = (event: Inferno.InfernoMouseEvent<HTMLAnchorElement>): void => {
+  private on_link_click = (
+    component_path: string,
+    event: Inferno.InfernoMouseEvent<HTMLAnchorElement>,
+  ): void => {
     event.preventDefault();
-    let component_path = event.currentTarget.dataset.path;
-    utils.assert(component_path != null);
     this.props.on_click?.(component_path);
   };
 
@@ -495,7 +491,10 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
         let component_path = full_path.slice(0, component_end_index);
         links.push(
           // An empty href is required for focus to work on the links.
-          <a key={component_path} href="" data-path={component_path} onClick={this.on_link_click}>
+          <a
+            key={component_path}
+            href=""
+            onClick={Inferno.linkEvent(component_path, this.on_link_click)}>
             {component}
           </a>,
         );
