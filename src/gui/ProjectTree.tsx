@@ -4,7 +4,7 @@ import './Button';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
-import { PathTree } from '../app';
+import { FileTree, FileTreeDir, FileTreeFile } from '../app';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
@@ -96,8 +96,8 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
         <ProjectTreeSectionGui name="Translation files">
           <FileTreeGui
             map={this.tr_file_tree_map}
-            path_prefix=""
-            tree_data={app.project_tr_files_tree}
+            tree={app.project_tr_files_tree}
+            file={app.project_tr_files_tree.root_dir}
             files_icon="file-earmark-zip"
             depth={0}
           />
@@ -106,8 +106,8 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
         <ProjectTreeSectionGui name="Game files" default_opened>
           <FileTreeGui
             map={this.game_file_tree_map}
-            path_prefix=""
-            tree_data={app.project_game_files_tree}
+            tree={app.project_game_files_tree}
+            file={app.project_game_files_tree.root_dir}
             files_icon="file-earmark-text"
             depth={0}
           />
@@ -164,68 +164,55 @@ export class ProjectTreeSectionGui extends Inferno.Component<
 
 export interface FileTreeGuiProps {
   map: Map<string, FileTreeItemGui>;
-  path_prefix: string;
-  tree_data: PathTree;
+  tree: FileTree;
   files_icon: string;
   depth: number;
 }
 
-export function FileTreeGui(props: FileTreeGuiProps): JSX.Element {
-  return <>{FileTreeItemGui.render_children(props, [])}</>;
+export function FileTreeGui(props: FileTreeGuiProps & { file: FileTreeDir }): JSX.Element {
+  return <>{FileTreeItemGui.render_children(props, props.file, [])}</>;
 }
 
 export interface FileTreeItemGuiProps extends FileTreeGuiProps {
-  name: string;
+  file: FileTreeFile;
   default_opened?: boolean;
 }
 
 export interface FileTreeItemGuiState {
-  full_path: string;
   is_opened: boolean;
 }
 
 export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, FileTreeItemGuiState> {
   public context!: AppMainGuiCtx;
   public state: FileTreeItemGuiState = {
-    full_path: '',
     is_opened: this.props.default_opened ?? false,
   };
 
   public root_ref = Inferno.createRef<HTMLButtonElement>();
 
-  private is_directory(): boolean {
-    return this.props.tree_data.size > 0;
-  }
-
-  public static getDerivedStateFromProps(
-    props: FileTreeItemGuiProps,
-  ): Partial<FileTreeItemGuiState> {
-    return { full_path: `${props.path_prefix}${props.name}` };
-  }
-
   public componentDidMount(): void {
-    this.props.map.set(this.state.full_path, this);
+    this.props.map.set(this.props.file.path, this);
   }
 
   public componentWillUnmount(): void {
-    this.props.map.delete(this.state.full_path);
+    this.props.map.delete(this.props.file.path);
   }
 
   private on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
-    if (this.is_directory()) {
+    if (this.props.file instanceof FileTreeDir) {
       this.setState({ is_opened: !this.state.is_opened });
     } else {
-      app.open_game_file(this.state.full_path, /* triggered_from_tree */ true);
+      app.open_game_file(this.props.file.path, /* triggered_from_tree */ true);
     }
   };
 
   public render(): JSX.Element[] {
-    let is_directory = this.is_directory();
-    let { name } = this.props;
-    let { full_path } = this.state;
-    let key = full_path;
-    if (this.is_directory()) full_path += '/';
+    let { file } = this.props;
+    let is_directory = file instanceof FileTreeDir;
+    let { name, path } = file;
+    let key = path;
+    if (is_directory) path += '/';
     let icon = is_directory
       ? `chevron-${this.state.is_opened ? 'down' : 'right'}`
       : this.props.files_icon;
@@ -239,7 +226,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
           'ProjectTreeItem-current': !is_directory && this.state.is_opened,
         })}
         style={{ '--ProjectTreeItem-depth': this.props.depth }}
-        title={full_path}
+        title={path}
         tabIndex={0}
         onClick={this.on_click}>
         {
@@ -253,33 +240,41 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
       </button>,
     ];
 
-    if (this.state.is_opened && is_directory) {
-      FileTreeItemGui.render_children({ ...this.props, path_prefix: full_path }, elements);
+    if (this.state.is_opened && this.props.file instanceof FileTreeDir) {
+      FileTreeItemGui.render_children(this.props, this.props.file, elements);
     }
     return elements;
   }
 
-  public static render_children(props: FileTreeGuiProps, elements: JSX.Element[]): JSX.Element[] {
+  public static render_children(
+    props: FileTreeGuiProps,
+    dir: FileTreeDir,
+    out_elements: JSX.Element[],
+  ): JSX.Element[] {
     let dir_elements: JSX.Element[] = [];
     let file_elements: JSX.Element[] = [];
 
-    for (let [subtree_name, subtree_data] of props.tree_data) {
-      let subtree_is_directory = subtree_data.size > 0;
-      (subtree_is_directory ? dir_elements : file_elements).push(
-        <FileTreeItemGui
-          map={props.map}
-          key={`${props.path_prefix}${subtree_name}`}
-          path_prefix={props.path_prefix}
-          name={subtree_name}
-          tree_data={subtree_data}
-          files_icon={props.files_icon}
-          depth={props.depth + 1}
-        />,
+    for (let path of dir.children) {
+      let child: FileTreeFile | undefined;
+      let dest_elements: JSX.Element[];
+
+      /* eslint-disable no-cond-assign */
+      if ((child = props.tree.dirs.get(path)) != null) {
+        dest_elements = dir_elements;
+      } else if ((child = props.tree.files.get(path)) != null) {
+        dest_elements = file_elements;
+      } else {
+        throw new Error(`Unknown file: ${path}`);
+      }
+      /* eslint-enable no-cond-assign */
+
+      dest_elements.push(
+        <FileTreeItemGui {...props} key={child.path} file={child} depth={props.depth + 1} />,
       );
     }
 
-    elements.push(...dir_elements);
-    elements.push(...file_elements);
-    return elements;
+    out_elements.push(...dir_elements);
+    out_elements.push(...file_elements);
+    return out_elements;
   }
 }

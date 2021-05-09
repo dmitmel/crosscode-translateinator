@@ -258,7 +258,7 @@ export class Project {
     return res.paths;
   }
 
-  public async list_virtual_game_file_paths(): Promise<string[]> {
+  public async list_game_file_paths(): Promise<string[]> {
     let res = await this.backend.send_request({
       type: 'Project/list_virtual_game_files',
       project_id: this.id,

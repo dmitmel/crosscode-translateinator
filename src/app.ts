@@ -30,10 +30,10 @@ export class AppMain {
 
     this.current_project = await Project.open(this.backend, 'tmp-tr-project');
     this.current_project_meta = await this.current_project.get_meta();
-    this.project_tr_files_paths = await this.current_project.list_tr_file_paths();
-    this.project_game_files_paths = await this.current_project.list_virtual_game_file_paths();
-    this.project_tr_files_tree = paths_list_to_tree(this.project_tr_files_paths);
-    this.project_game_files_tree = paths_list_to_tree(this.project_game_files_paths);
+    this.project_tr_files_tree.clear();
+    this.project_tr_files_tree.add_paths(await this.current_project.list_tr_file_paths());
+    this.project_game_files_tree.clear();
+    this.project_game_files_tree.add_paths(await this.current_project.list_game_file_paths());
 
     this.event_project_opened.fire();
 
@@ -62,10 +62,8 @@ export class AppMain {
   public event_project_opened = new Event2();
   public event_project_closed = new Event2();
 
-  public project_game_files_paths: string[] = [];
-  public project_game_files_tree: PathTree = new Map();
-  public project_tr_files_paths: string[] = [];
-  public project_tr_files_tree: PathTree = new Map();
+  public project_game_files_tree: FileTree = new FileTree();
+  public project_tr_files_tree: FileTree = new FileTree();
 
   public opened_files: OpenedFile[] = [];
   public event_file_opened = new Event2<[file: OpenedFile, index: number]>();
@@ -165,28 +163,72 @@ export class OpenedGameFile extends OpenedFile {
   }
 }
 
-export type PathTree = Map<string, PathTree>;
-export function paths_list_to_tree(paths: string[]): PathTree {
-  let root_dir: PathTree = new Map();
+export class FileTree {
+  public static readonly ROOT_DIR = '';
 
-  for (let path of paths) {
-    let current_dir: PathTree = root_dir;
-    let component_start = 0;
-    while (component_start < path.length) {
-      let sep_index = path.indexOf('/', component_start);
-      let component_end = sep_index < 0 ? path.length : sep_index;
-      let component = path.slice(component_start, component_end);
+  public readonly dirs = new Map<string, FileTreeDir>();
+  public readonly files = new Map<string, FileTreeFile>();
 
-      let next_dir = current_dir.get(component);
-      if (next_dir == null) {
-        next_dir = new Map();
-        current_dir.set(component, next_dir);
-      }
-      current_dir = next_dir;
-
-      component_start = component_end + 1;
-    }
+  public get root_dir(): FileTreeDir {
+    let root_dir = this.dirs.get(FileTree.ROOT_DIR);
+    utils.assert(root_dir != null);
+    return root_dir;
   }
 
-  return root_dir;
+  public constructor() {
+    this.clear();
+  }
+
+  public clear(): void {
+    this.dirs.clear();
+    this.files.clear();
+
+    let root_dir = new FileTreeDir(FileTree.ROOT_DIR);
+    this.dirs.set(root_dir.path, root_dir);
+  }
+
+  public add_paths(paths: string[]): void {
+    for (let path of paths) {
+      let parent_dir = this.root_dir;
+
+      let component_start = 0;
+      while (component_start < path.length) {
+        let sep_index = path.indexOf('/', component_start);
+        let is_last = sep_index < 0;
+        let component_end = is_last ? path.length : sep_index;
+        let component_path = path.slice(0, component_end);
+        component_start = component_end + 1;
+
+        parent_dir.children.add(component_path);
+        if (is_last) {
+          let file = new FileTreeFile(component_path);
+          this.files.set(component_path, file);
+        } else {
+          let dir = this.dirs.get(component_path);
+          if (dir == null) {
+            dir = new FileTreeDir(component_path);
+            this.dirs.set(dir.path, dir);
+          }
+          parent_dir = dir;
+        }
+      }
+    }
+  }
+}
+
+export class FileTreeFile {
+  public constructor(public readonly path: string) {}
+
+  public get name(): string {
+    let idx = this.path.lastIndexOf('/');
+    if (idx < 0) {
+      return this.path;
+    } else {
+      return this.path.slice(idx + 1);
+    }
+  }
+}
+
+export class FileTreeDir extends FileTreeFile {
+  public readonly children = new Set<string>();
 }
