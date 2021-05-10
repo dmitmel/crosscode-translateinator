@@ -13,7 +13,7 @@ export interface TextAreaGuiProps extends TextareaHTMLAttributes<HTMLTextAreaEle
 // Indeed, the JQuery plugin used in Notabenoid. Also see
 // <https://github.com/Andarist/react-textarea-autosize/tree/58c9807645dceb9034b733d9cb63aa66df2364b0/src>.
 export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
-  public static HIDDEN_TEXT_AREA_STYLES = {
+  public static readonly HIDDEN_TEXT_AREA_STYLES = {
     position: 'absolute',
     top: '0',
     left: '0',
@@ -26,7 +26,7 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
     'z-index': '-1000',
   } as const;
 
-  public static MIMICKED_STYLES = [
+  public static readonly MIMICKED_STYLES = [
     // layout
     'box-sizing',
     'width',
@@ -74,10 +74,6 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
     element.addEventListener('input', this.update_size);
     window.addEventListener('resize', this.update_size);
 
-    this.update_size();
-  }
-
-  public componentDidUpdate(): void {
     this.update_size();
   }
 

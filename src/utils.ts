@@ -44,3 +44,9 @@ export function new_html_id(prefix = 'id'): string {
 export function strip_prefix(str: string, prefix: string): string {
   return str.startsWith(prefix) ? str.slice(prefix.length) : str;
 }
+
+export function sanity_check_slice(start: number, end: number, list_len: number): void {
+  assert(start <= end);
+  assert(0 <= start && start <= list_len);
+  assert(0 <= end && end <= list_len);
+}

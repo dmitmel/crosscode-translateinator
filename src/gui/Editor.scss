@@ -24,9 +24,10 @@
   }
 
   .FragmentList {
-    padding: 0 ($spacing * 2);
+    $spacing-FragmentList: $spacing * 3;
+    padding: 0 $spacing-FragmentList;
     > .Fragment {
-      padding: ($spacing * 2) 0;
+      padding: $spacing-FragmentList 0;
     }
   }
 
@@ -53,6 +54,17 @@
       margin-right: 1em;
     }
 
+    .Fragment-Location > .Fragment-Index {
+      margin-left: auto;
+    }
+
+    &.Fragment-current .Fragment-Index {
+      color: #73c991;
+      .IconlikeText {
+        color: inherit;
+      }
+    }
+
     .Fragment-Translations > *:not(:last-child) {
       margin-bottom: $spacing-Fragment;
     }
@@ -65,7 +77,7 @@
       }
     }
 
-    > .Fragment-Description {
+    .Fragment-Description {
       font-family: monospace;
     }
   }

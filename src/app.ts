@@ -108,15 +108,23 @@ export class AppMain {
   }
 
   public current_fragment_list: Fragment[] = [];
+  public fragment_list_slice_start = 0;
+  public fragment_list_slice_end = 10;
   public event_fragment_list_update = new Event2();
+  public get_current_fragment_list_slice(): Fragment[] {
+    return this.current_fragment_list.slice(
+      this.fragment_list_slice_start,
+      this.fragment_list_slice_end,
+    );
+  }
 
-  public current_fragment_pos = 0; // TODO: save a position per each tab
+  public current_fragment_index = -1; // TODO: save a position per each tab
   public event_current_fragment_change = new Event2<[jump: boolean]>();
-  public set_current_fragment_pos(pos: number, jump: boolean): void {
-    utils.assert(Number.isSafeInteger(pos));
-    pos = utils.clamp(pos, 1, this.current_fragment_list.length);
-    if (this.current_fragment_pos !== pos) {
-      this.current_fragment_pos = pos;
+  public set_current_fragment_index(index: number, jump: boolean): void {
+    utils.assert(Number.isSafeInteger(index));
+    index = utils.clamp(index, 0, this.current_fragment_list.length - 1);
+    if (this.current_fragment_index !== index) {
+      this.current_fragment_index = index;
       this.event_current_fragment_change.fire(jump);
     }
   }

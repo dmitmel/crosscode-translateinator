@@ -23,6 +23,10 @@ export interface EditorGuiState {
   final_filler_height: number;
 }
 
+const FRAGMENT_LIST_LOAD_DISTANCE = 0;
+const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
+const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
+
 export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState> {
   public context!: AppMainGuiCtx;
   public state: EditorGuiState = {
@@ -30,8 +34,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
   };
 
   private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
-  // TODO: Map<number, FragmentGui> ???
-  private fragment_guis_map = new WeakMap<Fragment, FragmentGui>();
+  private fragment_guis_map = new Map<number, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
   private visible_fragments = new Set<FragmentGui>();
@@ -66,17 +69,23 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     window.removeEventListener('resize', this.on_window_resize);
   }
 
+  public componentDidUpdate(): void {
+    this.on_window_resize();
+  }
+
   private on_window_resize = (): void => {
     let { app } = this.context;
-    let last_fragment = app.current_fragment_list[app.current_fragment_list.length - 1];
     let final_filler_height = 0;
-    if (last_fragment != null) {
-      let last_fragment_gui = this.fragment_guis_map.get(last_fragment);
-      utils.assert(last_fragment_gui != null);
-      // Different height properties are not a typo here.
+    let last_fragment_gui = this.fragment_guis_map.get(app.fragment_list_slice_end - 1);
+    if (last_fragment_gui != null) {
+      let container_elem = this.fragment_list_ref.current!;
+      let fragment_elem = last_fragment_gui.root_ref.current!;
+      let fragment_style = window.getComputedStyle(fragment_elem);
+      let fragment_margin_size =
+        parseFloat(fragment_style.marginBottom) + parseFloat(fragment_style.marginTop);
       final_filler_height =
-        this.fragment_list_ref.current!.clientHeight -
-        last_fragment_gui.root_ref.current!.offsetHeight;
+        // Different height properties are not a typo here.
+        container_elem.clientHeight - (fragment_elem.offsetHeight + fragment_margin_size);
     }
     if (this.state.final_filler_height !== final_filler_height) {
       this.setState({ final_filler_height });
@@ -86,66 +95,161 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
   private on_fragment_intersection_change = (entries: IntersectionObserverEntry[]): void => {
     utils.assert(this.fragment_observer != null);
     utils.assert(this.fragment_observer_map != null);
+    let { app } = this.context;
+
+    let affected_fragments: FragmentGui[] = [];
     for (let entry of entries) {
       let fragment_gui = this.fragment_observer_map.get(entry.target);
       utils.assert(fragment_gui != null);
-      if (entry.isIntersecting) {
+      fragment_gui.is_visible = entry.isIntersecting;
+      if (fragment_gui.is_visible) {
         this.visible_fragments.add(fragment_gui);
       } else {
         this.visible_fragments.delete(fragment_gui);
       }
+      affected_fragments.push(fragment_gui);
     }
 
-    let top_pos: number | null = null;
-    for (let fragment_gui of this.visible_fragments) {
-      let { pos } = fragment_gui.props;
-      if (top_pos == null || pos < top_pos) {
-        top_pos = pos;
+    let new_slice_start = app.fragment_list_slice_start;
+    let new_slice_end = app.fragment_list_slice_end;
+    let list_length = app.current_fragment_list.length;
+    // The following must be done in a second loop because we rely on the
+    // `is_visible` flags, and they must be filled in correctly on all affected
+    // fragments.
+    for (let fragment_gui of affected_fragments) {
+      // I don't care about fragments which became invisible, however they will
+      // be eventually unloaded when an edge of the list slice is reached.
+      if (!fragment_gui.is_visible) continue;
+      let fragment_index = fragment_gui.props.index;
+
+      // Check if the very first fragment in the slice is visible.
+      if (fragment_index - FRAGMENT_LIST_LOAD_DISTANCE <= new_slice_start) {
+        new_slice_start = Math.max(new_slice_start - FRAGMENT_LIST_LOAD_CHUNK_SIZE, 0);
+      }
+      // Check if the very last fragment in the slice is visible.
+      if (fragment_index + FRAGMENT_LIST_LOAD_DISTANCE >= new_slice_end - 1) {
+        new_slice_end = Math.min(new_slice_end + FRAGMENT_LIST_LOAD_CHUNK_SIZE, list_length);
       }
     }
 
-    let { app } = this.context;
-    app.set_current_fragment_pos(top_pos ?? 1, /* jump */ false);
+    // Sanity-check the validity of the new range after extending.
+    utils.sanity_check_slice(new_slice_start, new_slice_end, list_length);
+
+    let slice_grew_at_start = new_slice_start < app.fragment_list_slice_start;
+    let slice_grew_at_end = new_slice_end > app.fragment_list_slice_end;
+    if (!slice_grew_at_start && !slice_grew_at_end) {
+      // ok. my work here is done
+      //
+    } else if (slice_grew_at_start && !slice_grew_at_end) {
+      // The list grew only at the beginning, shrink the end as far as possible.
+
+      while (new_slice_end - new_slice_start > FRAGMENT_LIST_SLICE_MAX_LENGTH) {
+        let other_fragment_gui = this.fragment_guis_map.get(new_slice_end - 1);
+        utils.assert(other_fragment_gui != null);
+        if (!other_fragment_gui.is_visible) {
+          new_slice_end--;
+        } else {
+          // No more invisible (out of range) fragments to unload.
+          break;
+        }
+      }
+
+      //
+    } else if (!slice_grew_at_start && slice_grew_at_end) {
+      // The list grew only at the end, shrink the beginning as far as possible.
+
+      while (new_slice_end - new_slice_start > FRAGMENT_LIST_SLICE_MAX_LENGTH) {
+        let other_fragment_gui = this.fragment_guis_map.get(new_slice_start);
+        utils.assert(other_fragment_gui != null);
+        if (!other_fragment_gui.is_visible) {
+          new_slice_start++;
+        } else {
+          // No more invisible (out of range) fragments to unload.
+          break;
+        }
+      }
+
+      //
+    } else if (slice_grew_at_start && slice_grew_at_end) {
+      // The list grew at both edges, most likely because the screen is larger
+      // than the list chunk size. Try to shrink as far as possible?
+      throw new Error('TODO');
+
+      //
+    } else {
+      // wut?
+      throw new Error('Unreachable');
+    }
+
+    // Sanity-check again after shrinking.
+    utils.sanity_check_slice(new_slice_start, new_slice_end, list_length);
+
+    if (
+      new_slice_start !== app.fragment_list_slice_start ||
+      new_slice_end !== app.fragment_list_slice_end
+    ) {
+      app.fragment_list_slice_start = new_slice_start;
+      app.fragment_list_slice_end = new_slice_end;
+      app.event_fragment_list_update.fire();
+    }
+
+    // Why doesn't JS have a binary tree Set collection?
+    let top_index: number | null = null;
+    for (let fragment_gui of this.visible_fragments) {
+      let { index } = fragment_gui.props;
+      if (top_index == null || index < top_index) {
+        top_index = index;
+      }
+    }
+
+    app.set_current_fragment_index(top_index ?? 0, /* jump */ false);
   };
 
   private on_fragment_list_update = (): void => {
-    this.forceUpdate(() => {
-      this.on_window_resize();
-    });
+    this.forceUpdate();
   };
 
+  private prev_current_fragment_index = 0;
   private on_current_fragment_change = (jump: boolean): void => {
-    if (!jump) return;
     let { app } = this.context;
-    let jump_pos = app.current_fragment_pos;
 
-    let target_fragment = app.current_fragment_list[jump_pos - 1];
-    utils.assert(target_fragment != null);
-    let target_fragment_gui = this.fragment_guis_map.get(target_fragment);
-    utils.assert(target_fragment_gui != null);
-    target_fragment_gui.root_ref.current!.scrollIntoView();
+    let prev_current_fragment_gui = this.fragment_guis_map.get(this.prev_current_fragment_index);
+    prev_current_fragment_gui?.forceUpdate();
+    this.prev_current_fragment_index = app.current_fragment_index;
+    let current_fragment_gui = this.fragment_guis_map.get(app.current_fragment_index);
+    current_fragment_gui?.forceUpdate();
+
+    if (jump) {
+      current_fragment_gui?.root_ref.current!.scrollIntoView();
+    }
   };
 
   public render(): JSX.Element {
     let { app } = this.context;
 
     let fragment_list_contents: JSX.Element[] = [];
-    for (let [index, fragment] of app.current_fragment_list.entries()) {
-      if (index > 0) {
+
+    if (app.current_fragment_list.length > 0) {
+      let start = app.fragment_list_slice_start;
+      let end = app.fragment_list_slice_end;
+      for (let i = start; i < end; i++) {
+        let fragment = app.current_fragment_list[i];
+        if (i > start) {
+          fragment_list_contents.push(
+            <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
+          );
+        }
         fragment_list_contents.push(
-          <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
+          <FragmentGui
+            key={fragment.id}
+            index={i}
+            fragment={fragment}
+            map={this.fragment_guis_map}
+            intersection_observer={this.fragment_observer}
+            intersection_observer_map={this.fragment_observer_map}
+          />,
         );
       }
-      fragment_list_contents.push(
-        <FragmentGui
-          key={fragment.id}
-          pos={index + 1}
-          fragment={fragment}
-          map={this.fragment_guis_map}
-          intersection_observer={this.fragment_observer}
-          intersection_observer_map={this.fragment_observer_map}
-        />,
-      );
     }
 
     return (
@@ -181,7 +285,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
     jump_pos_value: '0',
   };
 
-  public static FRAGMENT_PAGINATION_JUMP = 10;
+  public static readonly FRAGMENT_PAGINATION_JUMP = 10;
 
   private jump_pos_input_id: string = utils.new_html_id();
   private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
@@ -199,7 +303,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
   private on_current_fragment_change = (): void => {
     this.jump_pos_input_ref.current!.blur();
     let { app } = this.context;
-    this.setState({ jump_pos_value: app.current_fragment_pos.toString() });
+    this.setState({ jump_pos_value: (app.current_fragment_index + 1).toString() });
   };
 
   private on_jump_pos_input = (event: Inferno.FormEvent<HTMLInputElement>): void => {
@@ -211,12 +315,12 @@ export class FragmentListPinnedGui extends Inferno.Component<
     let { app } = this.context;
     let jump_pos = parseInt(this.state.jump_pos_value, 10);
     if (!Number.isSafeInteger(jump_pos)) return;
-    app.set_current_fragment_pos(jump_pos, /* jump */ true);
+    app.set_current_fragment_index(jump_pos - 1, /* jump */ true);
   };
 
   private on_jump_pos_unfocus = (_event: Inferno.FocusEvent<HTMLInputElement>): void => {
     let { app } = this.context;
-    this.setState({ jump_pos_value: app.current_fragment_pos.toString() });
+    this.setState({ jump_pos_value: app.current_fragment_index.toString() });
   };
 
   private on_jump_button_click = (
@@ -224,19 +328,19 @@ export class FragmentListPinnedGui extends Inferno.Component<
     _event: Inferno.InfernoMouseEvent<HTMLButtonElement>,
   ): void => {
     let { app } = this.context;
-    let jump_pos = app.current_fragment_pos;
+    let jump_pos = app.current_fragment_index;
     let long_jump = FragmentListPinnedGui.FRAGMENT_PAGINATION_JUMP;
     let fragment_count = app.current_fragment_list.length;
     // prettier-ignore
     switch (jump_type) {
-      case 'first':     { jump_pos  = 1;              break; }
-      case 'back_many': { jump_pos -= long_jump;      break; }
-      case 'back_one':  { jump_pos -= 1;              break; }
-      case 'fwd_one':   { jump_pos += 1;              break; }
-      case 'fwd_many':  { jump_pos += long_jump;      break; }
-      case 'last':      { jump_pos  = fragment_count; break; }
+      case 'first':     { jump_pos  = 0;                break; }
+      case 'back_many': { jump_pos -= long_jump;        break; }
+      case 'back_one':  { jump_pos -= 1;                break; }
+      case 'fwd_one':   { jump_pos += 1;                break; }
+      case 'fwd_many':  { jump_pos += long_jump;        break; }
+      case 'last':      { jump_pos  = fragment_count-1; break; }
     }
-    app.set_current_fragment_pos(jump_pos, /* jump */ true);
+    app.set_current_fragment_index(jump_pos, /* jump */ true);
   };
 
   public render(): JSX.Element {
@@ -308,15 +412,17 @@ export class FragmentListPinnedGui extends Inferno.Component<
 
 export interface FragmentGuiProps {
   className?: string;
-  pos: number;
+  index: number;
   fragment: Fragment;
-  map: WeakMap<Fragment, FragmentGui>;
+  map: Map<number, FragmentGui>;
   intersection_observer: IntersectionObserver | null;
   intersection_observer_map: WeakMap<Element, FragmentGui> | null;
 }
 
 export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
+  public context!: AppMainGuiCtx;
   public root_ref = Inferno.createRef<HTMLDivElement>();
+  public is_visible = false;
 
   private on_file_path_component_click = (component_path: string): void => {
     console.log('search', component_path);
@@ -331,7 +437,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
   };
 
   public componentDidMount(): void {
-    this.props.map.set(this.props.fragment, this);
+    this.props.map.set(this.props.index, this);
 
     let { intersection_observer, intersection_observer_map } = this.props;
     utils.assert(intersection_observer != null);
@@ -341,7 +447,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
   }
 
   public componentWillUnmount(): void {
-    this.props.map.delete(this.props.fragment);
+    this.props.map.delete(this.props.index);
 
     let { intersection_observer, intersection_observer_map } = this.props;
     utils.assert(intersection_observer != null);
@@ -351,36 +457,37 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
   }
 
   public render(): JSX.Element {
+    let { app } = this.context;
     let { fragment } = this.props;
     return (
       <WrapperGui
         inner_ref={this.root_ref}
         allow_overflow
-        className={cc(this.props.className, 'Fragment')}>
+        className={cc(this.props.className, 'Fragment', {
+          'Fragment-current': this.props.index === app.current_fragment_index,
+        })}>
         <BoxGui
           orientation="horizontal"
           allow_wrapping
           allow_overflow
           className="Fragment-Location">
-          <span title="File path">
+          <span title="File path" className="Fragment-FilePath">
             <IconGui icon="file-earmark-text" />{' '}
             <FragmentPathGui
               path={fragment.file_path}
               on_click={this.on_file_path_component_click}
             />
           </span>
-          <span title="JSON path">
+          <span title="JSON path" className="Fragment-JsonPath">
             <IconGui icon="code" />{' '}
             <FragmentPathGui
               path={fragment.json_path}
               on_click={this.on_json_path_component_click}
             />
           </span>
-          {fragment.has_lang_uid() ? (
-            <span title="Lang UID">
-              <IconlikeTextGui icon="#" /> <LabelGui selectable>{fragment.lang_uid}</LabelGui>
-            </span>
-          ) : null}
+          <span title="Position in the list" className="Fragment-Index">
+            <IconlikeTextGui icon="#" /> <LabelGui selectable>{this.props.index + 1}</LabelGui>
+          </span>
         </BoxGui>
 
         {fragment.description.length > 0 ? (
