@@ -2,7 +2,8 @@
 const parseJson = require('json-parse-better-errors');
 const paths = require('path');
 
-const SVG_CONTENT_EXTRACTION_REGEX = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="16" height="16" fill="currentColor" class="bi bi-[a-z0-9-]+" viewBox="0 0 16 16">(.+)<\/svg>$/s;
+const SVG_CONTENT_EXTRACTION_REGEX =
+  /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="16" height="16" fill="currentColor" class="bi bi-[a-z0-9-]+" viewBox="0 0 16 16">(.+)<\/svg>$/s;
 
 /**
  * @this {import('@types/webpack').loader.LoaderContext}

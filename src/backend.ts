@@ -134,7 +134,7 @@ export class Backend {
           });
         });
       } catch (e) {
-        if (e.code === 'CROSSLOCALE_ERR_BACKEND_DISCONNECTED') {
+        if ((e as NodeJS.ErrnoException).code === 'CROSSLOCALE_ERR_BACKEND_DISCONNECTED') {
           break;
         }
         throw e;
