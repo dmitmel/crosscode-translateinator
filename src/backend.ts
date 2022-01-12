@@ -42,6 +42,18 @@ export type RequestMessageType =
       file_path: string;
       start?: number | null;
       end?: number | null;
+      fragment_fields: ReadonlyArray<keyof ListedFragmentFields>;
+      translation_fields?: ReadonlyArray<keyof ListedTranslationFields> | null;
+      comments_fields?: ReadonlyArray<keyof ListedCommentFields> | null;
+    }
+  | {
+      type: 'VirtualGameFile/get_fragment';
+      project_id: number;
+      file_path: string;
+      json_paths: string[];
+      fragment_fields: ReadonlyArray<keyof ListedFragmentFields>;
+      translation_fields?: ReadonlyArray<keyof ListedTranslationFields> | null;
+      comments_fields?: ReadonlyArray<keyof ListedCommentFields> | null;
     };
 
 export type ResponseMessageType =
@@ -63,36 +75,75 @@ export type ResponseMessageType =
     }
   | { type: 'Project/list_tr_files'; paths: string[] }
   | { type: 'Project/list_virtual_game_files'; paths: string[] }
-  | { type: 'VirtualGameFile/list_fragments'; fragments: ListedFragment[] };
+  | { type: 'VirtualGameFile/list_fragments'; fragments: unknown[][] };
 
-export interface ListedFragment {
+export interface ListedFragmentFields {
   id: string;
-  json: string;
-  luid?: number | null;
-  desc?: string[] | null;
-  orig: string;
-  flags?: string[] | null;
-  tr?: ListedTranslation[] | null;
-  cm?: ListedComment[] | null;
+  tr_file_path: string;
+  game_file_path: string;
+  json_path: string;
+  lang_uid: number;
+  description: string[];
+  original_text: string;
+  flags: string[];
+  translations: ListedTranslationFields[];
+  comments: ListedCommentFields[];
 }
 
-export interface ListedTranslation {
+export interface ListedTranslationFields {
   id: string;
-  author: string;
-  editor: string;
-  ctime: number;
-  mtime: number;
+  author_username: string;
+  editor_username: string;
+  creation_timestamp: number;
+  modification_timestamp: number;
   text: string;
-  flags?: string[] | null;
+  flags: string[];
 }
 
-export interface ListedComment {
+export interface ListedCommentFields {
   id: string;
-  author: string;
-  editor: string;
-  ctime: number;
-  mtime: number;
+  author_username: string;
+  editor_username: string;
+  creation_timestamp: number;
+  modification_timestamp: number;
   text: string;
+}
+
+export interface TableDataTypes {
+  fragments: ListedFragmentFields;
+  translations: ListedTranslationFields;
+  comments: ListedCommentFields;
+}
+
+export function expand_table_data<T extends keyof TableDataTypes>(
+  table_type: T,
+  table_data: unknown[][],
+  requested_fields_cfg: { [K in keyof TableDataTypes]?: ReadonlyArray<keyof TableDataTypes[K]> },
+): Array<TableDataTypes[T]> {
+  let expanded_data: unknown[] = [];
+  if (utils.has_key(requested_fields_cfg, table_type)) {
+    let requested_columns = requested_fields_cfg[table_type]!;
+    for (let i = 0, len = table_data.length; i < len; i++) {
+      let row = table_data[i];
+      let row_obj = {} as Record<string, unknown>;
+      for (let j = 0, len = requested_columns.length; j < len; j++) {
+        let column_name = requested_columns[j];
+        let column = row[j];
+        if (utils.has_key(requested_fields_cfg, column_name)) {
+          column = expand_table_data(
+            column_name as keyof TableDataTypes,
+            column as unknown[][],
+            requested_fields_cfg,
+          );
+        }
+        row_obj[column_name] = column;
+      }
+      expanded_data.push(row_obj);
+    }
+  } else {
+    expanded_data = table_data;
+  }
+  return expanded_data as Array<TableDataTypes[T]>;
 }
 
 export enum BackendState {
@@ -297,41 +348,62 @@ export class VirtualGameFile {
   public constructor(public project: Project, public path: string) {}
 
   public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
+    let fragment_fields = [
+      'id',
+      'json_path',
+      'lang_uid',
+      'description',
+      'original_text',
+      'flags',
+      'translations',
+    ] as const;
+    let translation_fields = [
+      'id',
+      'author_username',
+      'editor_username',
+      'creation_timestamp',
+      'modification_timestamp',
+      'text',
+      'flags',
+    ] as const;
     let res = await this.project.backend.send_request({
       type: 'VirtualGameFile/list_fragments',
       project_id: this.project.id,
       file_path: this.path,
       start,
       end,
+      fragment_fields,
+      translation_fields,
     });
     utils.assert(res.type === 'VirtualGameFile/list_fragments');
-    return res.fragments.map((f_raw) => {
+    return expand_table_data('fragments', res.fragments, {
+      fragments: fragment_fields,
+      translations: translation_fields,
+    }).map((f_raw) => {
       let f = new Fragment(
         this.project,
         f_raw.id,
         this.path,
-        f_raw.json,
-        f_raw.luid ?? 0,
-        f_raw.desc ?? [],
-        f_raw.orig,
-        new Set(f_raw.flags ?? []),
+        f_raw.json_path,
+        f_raw.lang_uid,
+        f_raw.description,
+        f_raw.original_text,
+        new Set(f_raw.flags),
         [],
         [],
       );
-      for (let tr_raw of f_raw.tr ?? []) {
-        f.translations.push(
-          new Translation(
-            f,
-            tr_raw.id,
-            tr_raw.author,
-            tr_raw.editor,
-            new Date(tr_raw.ctime * 1000),
-            new Date(tr_raw.mtime * 1000),
-            tr_raw.text,
-            new Set(tr_raw.flags ?? []),
-          ),
+      f.translations = f_raw.translations.map((tr_raw) => {
+        return new Translation(
+          f,
+          tr_raw.id,
+          tr_raw.author_username,
+          tr_raw.editor_username,
+          new Date(tr_raw.creation_timestamp * 1000),
+          new Date(tr_raw.modification_timestamp * 1000),
+          tr_raw.text,
+          new Set(tr_raw.flags),
         );
-      }
+      });
       return f;
     });
   }
