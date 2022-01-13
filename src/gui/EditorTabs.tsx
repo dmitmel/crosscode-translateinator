@@ -14,15 +14,15 @@ export interface EditorTabListGuiProps {
 }
 
 export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, unknown> {
-  public context!: AppMainGuiCtx;
+  public override context!: AppMainGuiCtx;
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     let { app } = this.context;
     app.event_file_opened.on(this.on_opened_files_list_change);
     app.event_file_closed.on(this.on_opened_files_list_change);
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     let { app } = this.context;
     app.event_file_opened.off(this.on_opened_files_list_change);
     app.event_file_closed.off(this.on_opened_files_list_change);
@@ -32,7 +32,7 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
     this.forceUpdate();
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { app } = this.context;
     return (
       <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
@@ -55,17 +55,17 @@ export interface EditorTabGuiProps {
 }
 
 export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> {
-  public context!: AppMainGuiCtx;
+  public override context!: AppMainGuiCtx;
 
   public root_ref = Inferno.createRef<HTMLButtonElement>();
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     let { app } = this.context;
     // TODO: rewrite with a WeakMap or something
     app.event_current_tab_change.on(this.on_current_tab_change);
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     let { app } = this.context;
     app.event_current_tab_change.off(this.on_current_tab_change);
   }
@@ -91,7 +91,7 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
     }
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { app } = this.context;
     return (
       <button
@@ -122,7 +122,7 @@ export interface EditorFileTabGuiProps {
 }
 
 export class EditorFileTabGui extends Inferno.Component<EditorFileTabGuiProps, unknown> {
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { file } = this.props;
 
     let icon;

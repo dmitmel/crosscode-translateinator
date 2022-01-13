@@ -16,11 +16,11 @@ export interface AppMainGuiCtx {
 export class AppMainGui extends Inferno.Component<unknown, unknown> {
   public inner = new AppMain();
 
-  public getChildContext(): AppMainGuiCtx {
+  public override getChildContext(): AppMainGuiCtx {
     return { app: this.inner };
   }
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     nw.Window.get(window).on('closed', this.on_nw_window_closing);
     window.addEventListener('beforeunload', this.on_before_page_unload);
     window.addEventListener('keydown', this.on_global_key_down);
@@ -28,7 +28,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
     void this.inner.connect();
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     nw.Window.get(window).removeListener('closed', this.on_nw_window_closing);
     window.removeEventListener('beforeunload', this.on_before_page_unload);
     window.removeEventListener('keydown', this.on_global_key_down);
@@ -70,7 +70,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
     }
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     return (
       <div className="App">
         <BoxGui className="App-MainLayout" orientation="vertical">

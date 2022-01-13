@@ -12,13 +12,13 @@ import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 
 export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
-  public context!: AppMainGuiCtx;
+  public override context!: AppMainGuiCtx;
   public prev_tr_file_path: string | null = null;
   public tr_file_tree_map = new Map<string, FileTreeItemGui>();
   public prev_game_file_path: string | null = null;
   public game_file_tree_map = new Map<string, FileTreeItemGui>();
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     this.tr_file_tree_map.clear();
     this.game_file_tree_map.clear();
     let { app } = this.context;
@@ -27,7 +27,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     app.event_current_tab_change.on(this.on_current_tab_change);
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     this.tr_file_tree_map.clear();
     this.game_file_tree_map.clear();
     let { app } = this.context;
@@ -84,7 +84,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     }
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { app } = this.context;
     return (
       <BoxGui orientation="vertical" className="ProjectTree">
@@ -130,7 +130,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<
   ProjectTreeSectionGuiProps,
   ProjectTreeSectionGuiState
 > {
-  public state: ProjectTreeSectionGuiState = {
+  public override state: ProjectTreeSectionGuiState = {
     is_opened: this.props.default_opened ?? false,
   };
 
@@ -138,7 +138,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<
     this.setState({ is_opened: !this.state.is_opened });
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { is_opened } = this.state;
     return (
       <BoxGui
@@ -183,18 +183,18 @@ export interface FileTreeItemGuiState {
 }
 
 export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, FileTreeItemGuiState> {
-  public context!: AppMainGuiCtx;
-  public state: FileTreeItemGuiState = {
+  public override context!: AppMainGuiCtx;
+  public override state: FileTreeItemGuiState = {
     is_opened: this.props.default_opened ?? false,
   };
 
   public root_ref = Inferno.createRef<HTMLButtonElement>();
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     this.props.map.set(this.props.file.path, this);
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     this.props.map.delete(this.props.file.path);
   }
 
@@ -207,7 +207,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     }
   };
 
-  public render(): JSX.Element[] {
+  public override render(): JSX.Element[] {
     let { file } = this.props;
     let is_directory = file instanceof FileTreeDir;
     let { name, path } = file;

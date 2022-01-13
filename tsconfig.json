@@ -4,6 +4,7 @@
     "outDir": "target/tmp",
     "sourceMap": true,
     "strict": true,
+    "noImplicitOverride": true,
     "jsx": "preserve",
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,

@@ -68,7 +68,7 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
 
   public ref = Inferno.createRef<HTMLTextAreaElement>();
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     let element = this.ref.current;
     utils.assert(element != null);
     element.addEventListener('input', this.update_size);
@@ -77,7 +77,7 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
     this.update_size();
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     let element = this.ref.current;
     utils.assert(element != null);
     element.removeEventListener('input', this.update_size);
@@ -125,7 +125,7 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
     real.style.setProperty('height', `${height}px`, IMPORTANT);
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     return (
       <textarea
         {...this.props}

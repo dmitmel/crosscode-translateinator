@@ -28,8 +28,8 @@ const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
 const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
 
 export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState> {
-  public context!: AppMainGuiCtx;
-  public state: EditorGuiState = {
+  public override context!: AppMainGuiCtx;
+  public override state: EditorGuiState = {
     final_filler_height: 0,
   };
 
@@ -39,7 +39,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
   private visible_fragments = new Set<FragmentGui>();
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     let { app } = this.context;
     app.event_fragment_list_update.on(this.on_fragment_list_update);
     app.event_current_fragment_change.on(this.on_current_fragment_change);
@@ -55,7 +55,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     this.on_window_resize();
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     let { app } = this.context;
     app.event_fragment_list_update.off(this.on_fragment_list_update);
     app.event_current_fragment_change.off(this.on_current_fragment_change);
@@ -69,7 +69,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     window.removeEventListener('resize', this.on_window_resize);
   }
 
-  public componentDidUpdate(): void {
+  public override componentDidUpdate(): void {
     this.on_window_resize();
   }
 
@@ -224,7 +224,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     }
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { app } = this.context;
 
     let fragment_list_contents: JSX.Element[] = [];
@@ -280,8 +280,8 @@ export class FragmentListPinnedGui extends Inferno.Component<
   FragmentListPinnedGuiProps,
   FragmentListPinnedGuiState
 > {
-  public context!: AppMainGuiCtx;
-  public state: FragmentListPinnedGuiState = {
+  public override context!: AppMainGuiCtx;
+  public override state: FragmentListPinnedGuiState = {
     jump_pos_value: '0',
   };
 
@@ -290,12 +290,12 @@ export class FragmentListPinnedGui extends Inferno.Component<
   private jump_pos_input_id: string = utils.new_html_id();
   private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     let { app } = this.context;
     app.event_current_fragment_change.on(this.on_current_fragment_change);
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     let { app } = this.context;
     app.event_current_fragment_change.off(this.on_current_fragment_change);
   }
@@ -343,7 +343,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
     app.set_current_fragment_index(jump_pos, /* jump */ true);
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { app } = this.context;
     let fragment_count = app.current_fragment_list.length;
     let long_jump = FragmentListPinnedGui.FRAGMENT_PAGINATION_JUMP;
@@ -420,7 +420,7 @@ export interface FragmentGuiProps {
 }
 
 export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
-  public context!: AppMainGuiCtx;
+  public override context!: AppMainGuiCtx;
   public root_ref = Inferno.createRef<HTMLDivElement>();
   public is_visible = false;
 
@@ -436,7 +436,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     nw.Clipboard.get().set(this.props.fragment.original_text);
   };
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     this.props.map.set(this.props.index, this);
 
     let { intersection_observer, intersection_observer_map } = this.props;
@@ -446,7 +446,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     intersection_observer_map.set(this.root_ref.current!, this);
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     this.props.map.delete(this.props.index);
 
     let { intersection_observer, intersection_observer_map } = this.props;
@@ -456,7 +456,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     intersection_observer_map.delete(this.root_ref.current!);
   }
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { app } = this.context;
     let { fragment } = this.props;
     return (
@@ -536,19 +536,19 @@ export interface FragmentPathGuiState {
 }
 
 export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, FragmentPathGuiState> {
-  public context!: AppMainGuiCtx;
-  public state: FragmentPathGuiState = {
+  public override context!: AppMainGuiCtx;
+  public override state: FragmentPathGuiState = {
     clickable: false,
   };
   private is_mouse_over = false;
   private is_ctrl_pressed = false;
 
-  public componentDidMount(): void {
+  public override componentDidMount(): void {
     let { app } = this.context;
     app.event_global_key_modifiers_change.on(this.on_keymod_event);
   }
 
-  public componentWillUnmount(): void {
+  public override componentWillUnmount(): void {
     let { app } = this.context;
     app.event_global_key_modifiers_change.off(this.on_keymod_event);
   }
@@ -583,7 +583,7 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
     this.props.on_click?.(component_path);
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let full_path = this.props.path;
     let children: Inferno.InfernoNode = full_path;
 
@@ -635,7 +635,7 @@ export class TranslationGui extends Inferno.Component<TranslationGuiProps, unkno
     nw.Clipboard.get().set(this.props.translation.text);
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     let { translation } = this.props;
 
     return (
@@ -679,7 +679,7 @@ export class NewTranslationGui extends Inferno.Component<
   NewTranslationGuiProps,
   NewTranslationGuiState
 > {
-  public state: NewTranslationGuiState = {
+  public override state: NewTranslationGuiState = {
     text: '',
   };
 
@@ -689,7 +689,7 @@ export class NewTranslationGui extends Inferno.Component<
     this.setState({ text: event.currentTarget.value });
   };
 
-  public render(): JSX.Element {
+  public override render(): JSX.Element {
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
         <TextAreaGui
