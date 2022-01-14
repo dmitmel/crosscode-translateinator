@@ -259,7 +259,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     return (
       <BoxGui orientation="vertical" className={cc(this.props.className, 'Editor')}>
         <EditorTabListGui />
-        <FragmentListPinnedGui />
+        <FragmentListToolbarGui />
         <WrapperGui
           inner_ref={this.fragment_list_ref}
           scroll
@@ -272,27 +272,29 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
   }
 }
 
-export interface FragmentListPinnedGuiProps {
+export interface FragmentListToolbarGuiProps {
   className?: string;
 }
 
-export interface FragmentListPinnedGuiState {
+export interface FragmentListToolbarGuiState {
   jump_pos_value: string;
+  filter_value: string;
 }
 
-export class FragmentListPinnedGui extends Inferno.Component<
-  FragmentListPinnedGuiProps,
-  FragmentListPinnedGuiState
+export class FragmentListToolbarGui extends Inferno.Component<
+  FragmentListToolbarGuiProps,
+  FragmentListToolbarGuiState
 > {
   public override context!: AppMainGuiCtx;
-  public override state: FragmentListPinnedGuiState = {
+  public override state: FragmentListToolbarGuiState = {
     jump_pos_value: '0',
+    filter_value: '',
   };
 
   public static readonly FRAGMENT_PAGINATION_JUMP = 10;
 
-  private jump_pos_input_id: string = utils.new_html_id();
   private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
+  private filter_input_ref = Inferno.createRef<HTMLInputElement>();
 
   public override componentDidMount(): void {
     let { app } = this.context;
@@ -333,7 +335,7 @@ export class FragmentListPinnedGui extends Inferno.Component<
   ): void => {
     let { app } = this.context;
     let jump_pos = app.current_fragment_index;
-    let long_jump = FragmentListPinnedGui.FRAGMENT_PAGINATION_JUMP;
+    let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
     let fragment_count = app.current_fragment_list.length;
     // prettier-ignore
     switch (jump_type) {
@@ -347,16 +349,22 @@ export class FragmentListPinnedGui extends Inferno.Component<
     app.set_current_fragment_index(jump_pos, /* jump */ true);
   };
 
+  private on_filter_submit = (_event: Inferno.FormEvent<HTMLFormElement>): void => {};
+
+  private on_filter_input = (event: Inferno.FormEvent<HTMLInputElement>): void => {
+    this.setState({ filter_value: event.currentTarget.value });
+  };
+
   public override render(): JSX.Element {
     let { app } = this.context;
     let fragment_count = app.current_fragment_list.length;
-    let long_jump = FragmentListPinnedGui.FRAGMENT_PAGINATION_JUMP;
+    let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
     return (
-      <WrapperGui className={cc('FragmentListPinned', this.props.className)}>
+      <WrapperGui className={cc('FragmentListToolbar', this.props.className)}>
         <BoxGui
           orientation="horizontal"
           align_items="center"
-          className="FragmentListPinned-Pagination">
+          className="FragmentListToolbar-Pagination">
           <IconButtonGui
             icon="chevron-bar-left"
             title="First"
@@ -376,9 +384,8 @@ export class FragmentListPinnedGui extends Inferno.Component<
             <input
               ref={this.jump_pos_input_ref}
               type="number"
-              id={this.jump_pos_input_id}
-              name={this.jump_pos_input_id}
-              className="FragmentListPinned-JumpInput"
+              name="jump_pos"
+              className="FragmentListToolbar-JumpInput"
               onInput={this.on_jump_pos_input}
               onBlur={this.on_jump_pos_unfocus}
               value={this.state.jump_pos_value}
@@ -408,6 +415,20 @@ export class FragmentListPinnedGui extends Inferno.Component<
             title="Last"
             onClick={Inferno.linkEvent('last', this.on_jump_button_click)}
           />
+          <BoxItemFillerGui />
+          <form onSubmit={this.on_filter_submit}>
+            <input
+              ref={this.filter_input_ref}
+              type="filter"
+              name="filter"
+              className="FragmentListToolbar-Filter"
+              onInput={this.on_filter_input}
+              value={this.state.filter_value}
+              title="Quick search"
+              placeholder="Quick search..."
+              autoComplete="off"
+            />
+          </form>
         </BoxGui>
       </WrapperGui>
     );
