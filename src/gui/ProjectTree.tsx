@@ -4,7 +4,7 @@ import './Button';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
-import { FileTree, FileTreeDir, FileTreeFile } from '../app';
+import { FileTree, FileTreeDir, FileTreeFile, OpenedGameFile, TabFile } from '../app';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
@@ -44,7 +44,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     this.forceUpdate();
   };
 
-  private on_current_tab_change = (triggered_from_tree: boolean): void => {
+  private on_current_tab_change = (triggered_from_file_tree: boolean): void => {
     let { app } = this.context;
 
     if (this.prev_game_file_path != null) {
@@ -53,8 +53,8 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     }
     this.prev_game_file_path = null;
 
-    if (app.current_tab_opened_file != null) {
-      let full_path = app.current_tab_opened_file.path;
+    if (app.current_tab instanceof TabFile && app.current_tab.file instanceof OpenedGameFile) {
+      let full_path = app.current_tab.file.path;
       this.prev_game_file_path = full_path;
 
       let component_start_index = 0;
@@ -75,7 +75,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
         if (!tree_item_gui.state.is_opened) {
           tree_item_gui.setState({ is_opened: true });
         }
-        if (is_last_component && !triggered_from_tree) {
+        if (is_last_component && !triggered_from_file_tree) {
           tree_item_gui.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
         }
 
@@ -191,11 +191,24 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
   public root_ref = Inferno.createRef<HTMLButtonElement>();
 
   public override componentDidMount(): void {
-    this.props.map.set(this.props.file.path, this);
+    this.register_into_container(this.props);
+  }
+
+  public override componentDidUpdate(prev_props: FileTreeItemGuiProps): void {
+    this.unregister_from_container(prev_props);
+    this.register_into_container(this.props);
   }
 
   public override componentWillUnmount(): void {
-    this.props.map.delete(this.props.file.path);
+    this.unregister_from_container(this.props);
+  }
+
+  public register_into_container(props: FileTreeItemGuiProps): void {
+    props.map.set(props.file.path, this);
+  }
+
+  public unregister_from_container(props: FileTreeItemGuiProps): void {
+    props.map.delete(props.file.path);
   }
 
   private on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
@@ -203,7 +216,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     if (this.props.file instanceof FileTreeDir) {
       this.setState({ is_opened: !this.state.is_opened });
     } else {
-      app.open_game_file(this.props.file.path, /* triggered_from_tree */ true);
+      app.open_game_file(this.props.file.path, /* triggered_from_file_tree */ true);
     }
   };
 

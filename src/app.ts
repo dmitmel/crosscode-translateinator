@@ -8,10 +8,6 @@ declare global {
   var __app__: AppMain | undefined;
 }
 
-export const TAB_NONE_INDEX = -3;
-export const TAB_SEARCH_INDEX = -2;
-export const TAB_QUEUE_INDEX = -1;
-
 export class AppMain {
   public backend: Backend;
 
@@ -65,46 +61,57 @@ export class AppMain {
   public project_game_files_tree: FileTree = new FileTree();
   public project_tr_files_tree: FileTree = new FileTree();
 
-  public opened_files: OpenedFile[] = [];
-  public event_file_opened = new Event2<[file: OpenedFile, index: number]>();
-  public event_file_closed = new Event2<[file: OpenedFile, index: number]>();
+  public opened_tabs: EditorTab[] = [new TabQueue(this), new TabSearch(this)];
+  public event_tab_opened = new Event2<[tab: EditorTab, index: number]>();
+  public event_tab_closed = new Event2<[tab: EditorTab, index: number]>();
 
-  public current_tab_index: number = TAB_QUEUE_INDEX;
-  public current_tab_opened_file: OpenedFile | null = null;
-  public event_current_tab_change = new Event2<[triggered_from_tree: boolean]>();
-  public set_current_tab_index(index: number, triggered_from_tree = false): void {
+  public current_tab_index = 0;
+  public current_tab: EditorTab | null = this.opened_tabs[this.current_tab_index];
+  public event_current_tab_change = new Event2<[triggered_from_file_tree: boolean]>();
+  public set_current_tab_index(index: number, triggered_from_file_tree = false): void {
     utils.assert(Number.isSafeInteger(index));
-    if (!(index === TAB_NONE_INDEX || index === TAB_SEARCH_INDEX || index === TAB_QUEUE_INDEX)) {
-      index = utils.clamp(index, 0, this.opened_files.length - 1);
-    }
+    index = this.clamp_tab_index(index);
     if (this.current_tab_index !== index) {
       this.current_tab_index = index;
-      this.current_tab_opened_file = index < 0 ? null : this.opened_files[this.current_tab_index];
-      this.event_current_tab_change.fire(triggered_from_tree);
+      this.current_tab = this.opened_tabs[this.current_tab_index];
+      this.event_current_tab_change.fire(triggered_from_file_tree);
     }
   }
 
-  public open_game_file(path: string, triggered_from_tree = false): void {
-    let index = this.opened_files.findIndex((file) => file.path === path);
-    if (index < 0) {
-      let opened_file = new OpenedGameFile(this, path);
-      index = this.opened_files.length;
-      this.opened_files.push(opened_file);
-      this.event_file_opened.fire(opened_file, index);
-    }
-    this.set_current_tab_index(index, triggered_from_tree);
+  public clamp_tab_index(index: number): number {
+    return Math.max(0, utils.clamp(Math.floor(index), 0, this.opened_tabs.length - 1));
   }
 
-  public close_game_file(index: number): void {
-    if (index < 0) return;
-    let opened_file = this.opened_files[index];
-    if (opened_file != null) {
-      this.opened_files.splice(index, 1);
-      this.event_file_closed.fire(opened_file, index);
-    }
-    this.set_current_tab_index(
-      utils.clamp(this.current_tab_index, 0, this.opened_files.length - 1),
+  // public create_game_file_tab(path: string): TabFile {
+  //   return new TabFile(this, new OpenedGameFile(this, path));
+  // }
+
+  // public create_tr_file_tab(path: string): TabFile {
+  //   return new TabFile(this, new OpenedTrFile(this, path));
+  // }
+
+  // TODO: generalize
+  public open_game_file(path: string, triggered_from_file_tree = false): void {
+    let index = this.opened_tabs.findIndex(
+      (tab) =>
+        tab instanceof TabFile && tab.file instanceof OpenedGameFile && tab.file.path === path,
     );
+    if (index < 0) {
+      let tab = new TabFile(this, new OpenedGameFile(this, path));
+      index = this.opened_tabs.length;
+      this.opened_tabs.push(tab);
+      this.event_tab_opened.fire(tab, index);
+    }
+    this.set_current_tab_index(index, triggered_from_file_tree);
+  }
+
+  public close_tab(index: number): void {
+    let tab = this.opened_tabs[index];
+    utils.assert(tab != null);
+    if (!tab.is_closeable()) return;
+    this.opened_tabs.splice(index, 1);
+    this.event_tab_closed.fire(tab, index);
+    this.set_current_tab_index(this.current_tab_index - (this.current_tab_index > index ? 1 : 0));
   }
 
   public current_fragment_list: Fragment[] = [];
@@ -139,14 +146,35 @@ export class AppMain {
   }
 }
 
-export enum OpenedFileType {
-  TrFile,
-  GameFile,
+export abstract class EditorTab {
+  public current_fragment_index = 0;
+
+  public constructor(public readonly app: AppMain) {}
+
+  public is_closeable(): boolean {
+    return true;
+  }
+}
+
+export class TabQueue extends EditorTab {
+  public override is_closeable(): boolean {
+    return false;
+  }
+}
+
+export class TabSearch extends EditorTab {
+  public override is_closeable(): boolean {
+    return false;
+  }
+}
+
+export class TabFile extends EditorTab {
+  public constructor(app: AppMain, public readonly file: OpenedFile) {
+    super(app);
+  }
 }
 
 export abstract class OpenedFile {
-  public abstract readonly type: OpenedFileType;
-
   public constructor(public readonly app: AppMain, public readonly path: string) {}
 
   public get_name(): string {
@@ -162,12 +190,17 @@ export abstract class OpenedFile {
 }
 
 export class OpenedGameFile extends OpenedFile {
-  public readonly type = OpenedFileType.GameFile;
   public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
     return (await this.app.current_project!.get_virtual_game_file(this.path)).list_fragments(
       start,
       end,
     );
+  }
+}
+
+export class OpenedTrFile extends OpenedFile {
+  public list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
+    throw new Error('Method not implemented.');
   }
 }
 

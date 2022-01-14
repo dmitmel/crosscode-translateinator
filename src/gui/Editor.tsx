@@ -34,10 +34,14 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
   };
 
   private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
-  private fragment_guis_map = new Map<number, FragmentGui>();
+  private fragment_guis_map = new WeakMap<Fragment, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
   private visible_fragments = new Set<FragmentGui>();
+
+  public get_fragment_gui_by_index(index: number): FragmentGui | undefined {
+    return this.fragment_guis_map.get(this.context.app.current_fragment_list[index]);
+  }
 
   public override componentDidMount(): void {
     let { app } = this.context;
@@ -76,7 +80,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
   private on_window_resize = (): void => {
     let { app } = this.context;
     let final_filler_height = 0;
-    let last_fragment_gui = this.fragment_guis_map.get(app.fragment_list_slice_end - 1);
+    let last_fragment_gui = this.get_fragment_gui_by_index(app.fragment_list_slice_end - 1);
     if (last_fragment_gui != null) {
       let container_elem = this.fragment_list_ref.current!;
       let fragment_elem = last_fragment_gui.root_ref.current!;
@@ -144,7 +148,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
       // The list grew only at the beginning, shrink the end as far as possible.
 
       while (new_slice_end - new_slice_start > FRAGMENT_LIST_SLICE_MAX_LENGTH) {
-        let other_fragment_gui = this.fragment_guis_map.get(new_slice_end - 1);
+        let other_fragment_gui = this.get_fragment_gui_by_index(new_slice_end - 1);
         utils.assert(other_fragment_gui != null);
         if (!other_fragment_gui.is_visible) {
           new_slice_end--;
@@ -159,7 +163,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
       // The list grew only at the end, shrink the beginning as far as possible.
 
       while (new_slice_end - new_slice_start > FRAGMENT_LIST_SLICE_MAX_LENGTH) {
-        let other_fragment_gui = this.fragment_guis_map.get(new_slice_start);
+        let other_fragment_gui = this.get_fragment_gui_by_index(new_slice_start);
         utils.assert(other_fragment_gui != null);
         if (!other_fragment_gui.is_visible) {
           new_slice_start++;
@@ -209,14 +213,14 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     this.forceUpdate();
   };
 
-  private prev_current_fragment_index = 0;
+  private previous_fragment_index = 0;
   private on_current_fragment_change = (jump: boolean): void => {
     let { app } = this.context;
 
-    let prev_current_fragment_gui = this.fragment_guis_map.get(this.prev_current_fragment_index);
-    prev_current_fragment_gui?.forceUpdate();
-    this.prev_current_fragment_index = app.current_fragment_index;
-    let current_fragment_gui = this.fragment_guis_map.get(app.current_fragment_index);
+    let previous_fragment_gui = this.get_fragment_gui_by_index(this.previous_fragment_index);
+    previous_fragment_gui?.forceUpdate();
+    this.previous_fragment_index = app.current_fragment_index;
+    let current_fragment_gui = this.get_fragment_gui_by_index(app.current_fragment_index);
     current_fragment_gui?.forceUpdate();
 
     if (jump) {
@@ -414,7 +418,7 @@ export interface FragmentGuiProps {
   className?: string;
   index: number;
   fragment: Fragment;
-  map: Map<number, FragmentGui>;
+  map: WeakMap<Fragment, FragmentGui>;
   intersection_observer: IntersectionObserver | null;
   intersection_observer_map: WeakMap<Element, FragmentGui> | null;
 }
@@ -437,7 +441,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
   };
 
   public override componentDidMount(): void {
-    this.props.map.set(this.props.index, this);
+    this.register_into_container(this.props);
 
     let { intersection_observer, intersection_observer_map } = this.props;
     utils.assert(intersection_observer != null);
@@ -446,14 +450,27 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     intersection_observer_map.set(this.root_ref.current!, this);
   }
 
+  public override componentDidUpdate(prev_props: FragmentGuiProps): void {
+    this.unregister_from_container(prev_props);
+    this.register_into_container(this.props);
+  }
+
   public override componentWillUnmount(): void {
-    this.props.map.delete(this.props.index);
+    this.unregister_from_container(this.props);
 
     let { intersection_observer, intersection_observer_map } = this.props;
     utils.assert(intersection_observer != null);
     utils.assert(intersection_observer_map != null);
     intersection_observer.unobserve(this.root_ref.current!);
     intersection_observer_map.delete(this.root_ref.current!);
+  }
+
+  public register_into_container(props: FragmentGuiProps): void {
+    props.map.set(props.fragment, this);
+  }
+
+  public unregister_from_container(props: FragmentGuiProps): void {
+    props.map.delete(props.fragment);
   }
 
   public override render(): JSX.Element {
@@ -650,7 +667,7 @@ export class TranslationGui extends Inferno.Component<TranslationGuiProps, unkno
             {translation.author_username}
           </LabelGui>
           <LabelGui ellipsis selectable>
-            at {format_timestamp(translation.creation_timestamp)}
+            at {format_timestamp(translation.modification_timestamp)}
           </LabelGui>
           <BoxItemFillerGui />
           <IconButtonGui
