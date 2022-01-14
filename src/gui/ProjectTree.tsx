@@ -71,18 +71,19 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
         let component_path = full_path.slice(0, component_end_index);
 
         let tree_item_gui = this.game_file_tree_map.get(component_path);
-        // Remember that setState is synchronous in Inferno. By the time the
-        // path splitting loop reaches the next iteration, this tree item
-        // component will have already been rendered, and its children will
-        // have already been inserted into our map. For React we would've had
-        // to wait for the callback of setState to be called until resuming
-        // iteration.
-        utils.assert(tree_item_gui != null);
-        if (!tree_item_gui.state.is_opened) {
-          tree_item_gui.setState({ is_opened: true });
-        }
-        if (is_last_component && !triggered_from_file_tree) {
-          tree_item_gui.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
+        if (tree_item_gui) {
+          if (!tree_item_gui.state.is_opened) {
+            // Remember that setState is synchronous in Inferno. By the time the
+            // path splitting loop reaches the next iteration, this tree item
+            // component will have already been rendered, and its children will
+            // have already been inserted into our map. For React we would've had
+            // to wait for the callback of setState to be called until resuming
+            // iteration.
+            tree_item_gui.setState({ is_opened: true });
+          }
+          if (is_last_component && !triggered_from_file_tree) {
+            tree_item_gui.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
+          }
         }
 
         component_start_index = component_end_index + 1;
