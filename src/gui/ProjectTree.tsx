@@ -13,6 +13,10 @@ import { LabelGui } from './Label';
 
 export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
   public override context!: AppMainGuiCtx;
+
+  public tr_files_section_ref = Inferno.createRef<ProjectTreeSectionGui>();
+  public game_files_section_ref = Inferno.createRef<ProjectTreeSectionGui>();
+
   public prev_tr_file_path: string | null = null;
   public tr_file_tree_map = new Map<string, FileTreeItemGui>();
   public prev_game_file_path: string | null = null;
@@ -57,6 +61,8 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
       let full_path = app.current_tab.file.path;
       this.prev_game_file_path = full_path;
 
+      this.game_files_section_ref.current!.setState({ is_opened: true });
+
       let component_start_index = 0;
       while (component_start_index < full_path.length) {
         let separator_index = full_path.indexOf('/', component_start_index);
@@ -93,7 +99,10 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
           {app.current_project_meta?.translation_locale ?? 'loading...'}]
         </div>
 
-        <ProjectTreeSectionGui name="Translation files">
+        <ProjectTreeSectionGui
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ref={this.tr_files_section_ref as any}
+          name="Translation files">
           <FileTreeGui
             map={this.tr_file_tree_map}
             tree={app.project_tr_files_tree}
@@ -103,7 +112,11 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
           />
         </ProjectTreeSectionGui>
 
-        <ProjectTreeSectionGui name="Game files" default_opened>
+        <ProjectTreeSectionGui
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ref={this.game_files_section_ref as any}
+          name="Game files"
+          default_opened>
           <FileTreeGui
             map={this.game_file_tree_map}
             tree={app.project_game_files_tree}
