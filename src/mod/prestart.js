@@ -29,13 +29,16 @@
 // translations), I instead inject JSON and file paths at runtime using
 // autopatchers (see `preload.js` for that).
 
-import * as symbols from './symbols.js';
+import * as utils from './utils.js';
 
 ig.module('translateinator.connector')
   .requires('impact.feature.lang-edit.lang-edit', 'impact.base.lang')
   .defines(() => {
     if (sc.tr2 == null) sc.tr2 = {};
-    sc.tr2.symbols = symbols;
+    sc.tr2.symbols = {
+      LangLabel_filePath: utils.Symbol_LangLabel_filePath,
+      LangLabel_jsonPath: utils.Symbol_LangLabel_jsonPath,
+    };
 
     ig.LangEdit.inject({
       // The hero of the day. Internally pushes strings to
@@ -61,18 +64,30 @@ ig.module('translateinator.connector')
         if (!(langLabel instanceof ig.LangLabel))
           throw Error('Assertion failed: langLabel instanceof ig.LangLabel');
         // Extract our secretly injected stuff.
-        let filePath = langLabel.data[symbols.LangLabel_filePath];
-        let jsonPath = langLabel.data[symbols.LangLabel_jsonPath];
+        let filePath = langLabel.data[utils.Symbol_LangLabel_filePath];
+        let jsonPath = langLabel.data[utils.Symbol_LangLabel_jsonPath];
         if (filePath != null && jsonPath != null) {
           sc.tr2.sendLangLabelToTrTool(filePath, jsonPath);
         }
       },
     });
 
-    sc.tr2.sendLangLabelToTrTool = function sendLangLabelToTrTool(filePath, jsonPath) {
-      // This function is supposed to invoke a callback on the attached
-      // translation tool window, but for now it just prints the "sent" paths
-      // (for debugging purposes).
-      console.log(filePath, jsonPath);
-    };
+    Object.assign(sc.tr2, {
+      findTrTool() {
+        let instances = [];
+        for (let [otherNwWindow] of Object.values(global.__nw_windows)) {
+          let otherWindow = otherNwWindow.window;
+          if (utils.hasKey(otherWindow, '__crosscode_translation_tool__')) {
+            instances.push(otherWindow.__app__);
+          }
+        }
+        return instances;
+      },
+
+      sendLangLabelToTrTool(filePath, jsonPath) {
+        for (let tool of sc.tr2.findTrTool()) {
+          tool.receive_fragments_from_game([{ file_path: filePath, json_path: jsonPath }]);
+        }
+      },
+    });
   });

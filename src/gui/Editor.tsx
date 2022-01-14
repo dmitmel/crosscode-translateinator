@@ -238,6 +238,7 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
       let end = app.fragment_list_slice_end;
       for (let i = start; i < end; i++) {
         let fragment = app.current_fragment_list[i];
+        if (fragment == null) continue;
         if (i > start) {
           fragment_list_contents.push(
             <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
@@ -454,7 +455,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
   };
 
   private on_json_path_component_click = (component_path: string): void => {
-    console.log('search', this.props.fragment.file_path, component_path);
+    console.log('search', this.props.fragment.game_file_path, component_path);
   };
 
   private on_copy_original_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
@@ -512,7 +513,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
           <span title="File path" className="Fragment-FilePath">
             <IconGui icon="file-earmark-text" />{' '}
             <FragmentPathGui
-              path={fragment.file_path}
+              path={fragment.game_file_path}
               on_click={this.on_file_path_component_click}
             />
           </span>

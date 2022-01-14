@@ -50,3 +50,28 @@ export function sanity_check_slice(start: number, end: number, list_len: number)
   assert(0 <= start && start <= list_len);
   assert(0 <= end && end <= list_len);
 }
+
+// <https://docs.python.org/3/library/stdtypes.html#dict.setdefault>
+export function map_set_default<K, V>(map: Map<K, V>, key: K, default_value: V): V {
+  if (map.has(key)) {
+    return map.get(key)!;
+  } else {
+    map.set(key, default_value);
+    return default_value;
+  }
+}
+
+export function group_by<T, K>(arr: T[], fn: (value: T, index: number) => K): Map<K, T[]> {
+  let result = new Map<K, T[]>();
+  for (let i = 0, len = arr.length; i < len; i++) {
+    let item = arr[i];
+    let key = fn(item, i);
+    let batch = result.get(key);
+    if (batch == null) {
+      result.set(key, [item]);
+    } else {
+      batch.push(item);
+    }
+  }
+  return result;
+}

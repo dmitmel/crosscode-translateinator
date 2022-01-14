@@ -42,18 +42,14 @@ export type RequestMessageType =
       file_path: string;
       start?: number | null;
       end?: number | null;
-      fragment_fields: ReadonlyArray<keyof ListedFragmentFields>;
-      translation_fields?: ReadonlyArray<keyof ListedTranslationFields> | null;
-      comments_fields?: ReadonlyArray<keyof ListedCommentFields> | null;
+      select_fields: FieldsSelection;
     }
   | {
       type: 'VirtualGameFile/get_fragment';
       project_id: number;
       file_path: string;
-      json_paths: string[];
-      fragment_fields: ReadonlyArray<keyof ListedFragmentFields>;
-      translation_fields?: ReadonlyArray<keyof ListedTranslationFields> | null;
-      comments_fields?: ReadonlyArray<keyof ListedCommentFields> | null;
+      json_path: string;
+      select_fields: FieldsSelection;
     };
 
 export type ResponseMessageType =
@@ -75,7 +71,8 @@ export type ResponseMessageType =
     }
   | { type: 'Project/list_tr_files'; paths: string[] }
   | { type: 'Project/list_virtual_game_files'; paths: string[] }
-  | { type: 'VirtualGameFile/list_fragments'; fragments: unknown[][] };
+  | { type: 'VirtualGameFile/list_fragments'; fragments: unknown[][] }
+  | { type: 'VirtualGameFile/get_fragment'; fragment: unknown[] };
 
 export interface ListedFragmentFields {
   id: string;
@@ -115,25 +112,33 @@ export interface TableDataTypes {
   comments: ListedCommentFields;
 }
 
+export type FieldsSelection = {
+  [K in keyof TableDataTypes]?: ReadonlyArray<keyof TableDataTypes[K]>;
+};
+
 export function expand_table_data<T extends keyof TableDataTypes>(
   table_type: T,
   table_data: unknown[][],
-  requested_fields_cfg: { [K in keyof TableDataTypes]?: ReadonlyArray<keyof TableDataTypes[K]> },
-): Array<TableDataTypes[T]> {
+  select_fields: FieldsSelection,
+): Array<TableDataTypes[T] | null | undefined> {
   let expanded_data: unknown[] = [];
-  if (utils.has_key(requested_fields_cfg, table_type)) {
-    let requested_columns = requested_fields_cfg[table_type]!;
+  if (utils.has_key(select_fields, table_type)) {
+    let requested_columns = select_fields[table_type]!;
     for (let i = 0, len = table_data.length; i < len; i++) {
       let row = table_data[i];
+      if (row == null) {
+        expanded_data.push(row);
+        continue;
+      }
       let row_obj = {} as Record<string, unknown>;
       for (let j = 0, len = requested_columns.length; j < len; j++) {
         let column_name = requested_columns[j];
         let column = row[j];
-        if (utils.has_key(requested_fields_cfg, column_name)) {
+        if (utils.has_key(select_fields, column_name)) {
           column = expand_table_data(
             column_name as keyof TableDataTypes,
             column as unknown[][],
-            requested_fields_cfg,
+            select_fields,
           );
         }
         row_obj[column_name] = column;
@@ -322,6 +327,35 @@ export class Project {
   public async get_virtual_game_file(path: string): Promise<VirtualGameFile> {
     return new VirtualGameFile(this, path);
   }
+
+  public _create_fragment(f_raw: ListedFragmentFields): Fragment {
+    let f = new Fragment(
+      this,
+      f_raw.id,
+      f_raw.tr_file_path,
+      f_raw.game_file_path,
+      f_raw.json_path,
+      f_raw.lang_uid,
+      f_raw.description,
+      f_raw.original_text,
+      new Set(f_raw.flags),
+      [],
+      [],
+    );
+    f.translations = f_raw.translations.map((tr_raw) => {
+      return new Translation(
+        f,
+        tr_raw.id,
+        tr_raw.author_username,
+        tr_raw.editor_username,
+        new Date(tr_raw.creation_timestamp * 1000),
+        new Date(tr_raw.modification_timestamp * 1000),
+        tr_raw.text,
+        new Set(tr_raw.flags),
+      );
+    });
+    return f;
+  }
 }
 
 export class ProjectMeta {
@@ -348,63 +382,78 @@ export class VirtualGameFile {
   public constructor(public project: Project, public path: string) {}
 
   public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
-    let fragment_fields = [
-      'id',
-      'json_path',
-      'lang_uid',
-      'description',
-      'original_text',
-      'flags',
-      'translations',
-    ] as const;
-    let translation_fields = [
-      'id',
-      'author_username',
-      'editor_username',
-      'creation_timestamp',
-      'modification_timestamp',
-      'text',
-      'flags',
-    ] as const;
+    let select_fields: FieldsSelection = {
+      fragments: [
+        'id',
+        'tr_file_path',
+        'json_path',
+        'lang_uid',
+        'description',
+        'original_text',
+        'flags',
+        'translations',
+      ],
+      translations: [
+        'id',
+        'author_username',
+        'editor_username',
+        'creation_timestamp',
+        'modification_timestamp',
+        'text',
+        'flags',
+      ],
+    };
     let res = await this.project.backend.send_request({
       type: 'VirtualGameFile/list_fragments',
       project_id: this.project.id,
       file_path: this.path,
       start,
       end,
-      fragment_fields,
-      translation_fields,
+      select_fields,
     });
     utils.assert(res.type === 'VirtualGameFile/list_fragments');
-    return expand_table_data('fragments', res.fragments, {
-      fragments: fragment_fields,
-      translations: translation_fields,
-    }).map((f_raw) => {
-      let f = new Fragment(
-        this.project,
-        f_raw.id,
-        this.path,
-        f_raw.json_path,
-        f_raw.lang_uid,
-        f_raw.description,
-        f_raw.original_text,
-        new Set(f_raw.flags),
-        [],
-        [],
-      );
-      f.translations = f_raw.translations.map((tr_raw) => {
-        return new Translation(
-          f,
-          tr_raw.id,
-          tr_raw.author_username,
-          tr_raw.editor_username,
-          new Date(tr_raw.creation_timestamp * 1000),
-          new Date(tr_raw.modification_timestamp * 1000),
-          tr_raw.text,
-          new Set(tr_raw.flags),
-        );
+    return expand_table_data('fragments', res.fragments, select_fields).map((f_raw) => {
+      return this.project._create_fragment({
+        ...f_raw!,
+        game_file_path: this.path,
       });
-      return f;
+    });
+  }
+
+  public async get_fragment(json_path: string): Promise<Fragment> {
+    let select_fields: FieldsSelection = {
+      fragments: [
+        'id',
+        'tr_file_path',
+        'lang_uid',
+        'description',
+        'original_text',
+        'flags',
+        'translations',
+      ],
+      translations: [
+        'id',
+        'author_username',
+        'editor_username',
+        'creation_timestamp',
+        'modification_timestamp',
+        'text',
+        'flags',
+      ],
+    };
+    let res = await this.project.backend.send_request({
+      type: 'VirtualGameFile/get_fragment',
+      project_id: this.project.id,
+      file_path: this.path,
+      json_path,
+      select_fields,
+    });
+    utils.assert(res.type === 'VirtualGameFile/get_fragment');
+    let [f_raw] = expand_table_data('fragments', [res.fragment], select_fields);
+    return this.project._create_fragment({
+      ...f_raw!,
+      game_file_path: this.path,
+      json_path,
     });
   }
 }
@@ -413,7 +462,8 @@ export class Fragment {
   public constructor(
     public project: Project,
     public id: string,
-    public file_path: string,
+    public tr_file_path: string,
+    public game_file_path: string,
     public json_path: string,
     public lang_uid: number,
     public description: string[],
