@@ -1,4 +1,4 @@
-import { Backend, Fragment, Project, ProjectMeta } from './backend';
+import { Backend, Fragment, Project, ProjectMeta, VirtualGameFile } from './backend';
 import { Event2 } from './events';
 import * as gui from './gui';
 import * as utils from './utils';
@@ -33,20 +33,14 @@ export class AppMain {
 
     this.event_project_opened.fire();
 
-    this.open_game_file('data/maps/hideout/entrance.json');
-    this.open_game_file('data/database.json');
-    this.open_game_file('data/maps/bergen/bergen.json');
-    this.open_game_file('data/lang/sc/gui.en_US.json');
+    this.open_file(FileType.GameFile, 'data/maps/hideout/entrance.json');
+    this.open_file(FileType.GameFile, 'data/database.json');
+    this.open_file(FileType.GameFile, 'data/maps/bergen/bergen.json');
+    this.open_file(FileType.GameFile, 'data/lang/sc/gui.en_US.json');
+    this.open_file(FileType.GameFile, 'data/maps/rookie-harbor/center.json');
+    this.open_file(FileType.GameFile, 'data/item-database.json');
 
-    this.open_game_file('data/maps/hideout/entrance.json');
-
-    let file_path = 'data/maps/hideout/entrance.json';
-    // let file_path = 'data/maps/rookie-harbor/center.json';
-    // let file_path = 'data/item-database.json';
-    this.current_fragment_list = await (
-      await this.current_project.get_virtual_game_file(file_path)
-    ).list_fragments();
-    this.event_fragment_list_update.fire();
+    this.open_file(FileType.GameFile, 'data/maps/hideout/entrance.json');
   }
 
   public disconnect(): void {
@@ -68,13 +62,25 @@ export class AppMain {
   public current_tab_index = 0;
   public current_tab: EditorTab | null = this.opened_tabs[this.current_tab_index];
   public event_current_tab_change = new Event2<[triggered_from_file_tree: boolean]>();
+  private current_tab_loading_promise: Promise<void> | null = null;
+
   public set_current_tab_index(index: number, triggered_from_file_tree = false): void {
     utils.assert(Number.isSafeInteger(index));
     index = this.clamp_tab_index(index);
     if (this.current_tab_index !== index) {
       this.current_tab_index = index;
-      this.current_tab = this.opened_tabs[this.current_tab_index];
+      let tab = this.opened_tabs[this.current_tab_index];
+      this.current_tab = tab;
       this.event_current_tab_change.fire(triggered_from_file_tree);
+
+      // TODO: handle cancellation, the current tab being closed, etc etc
+      this.current_tab_loading_promise = (async () => {
+        await this.current_tab_loading_promise;
+        await tab.loaded_promise;
+        this.current_fragment_list = await tab.list_fragments();
+        this.current_tab_loading_promise = null;
+        this.event_fragment_list_update.fire();
+      })();
     }
   }
 
@@ -83,21 +89,26 @@ export class AppMain {
   }
 
   // public create_game_file_tab(path: string): TabFile {
-  //   return new TabFile(this, new OpenedGameFile(this, path));
+  //   return new TabGameFile(this, path);
   // }
 
   // public create_tr_file_tab(path: string): TabFile {
-  //   return new TabFile(this, new OpenedTrFile(this, path));
+  //   return new TabTrFile(this, path);
   // }
 
-  // TODO: generalize
-  public open_game_file(path: string, triggered_from_file_tree = false): void {
+  public open_file(ft: FileType, path: string, triggered_from_file_tree = false): void {
     let index = this.opened_tabs.findIndex(
-      (tab) =>
-        tab instanceof TabFile && tab.file instanceof OpenedGameFile && tab.file.path === path,
+      (tab) => tab instanceof TabFile && tab.file_type === ft && tab.file_path === path,
     );
     if (index < 0) {
-      let tab = new TabFile(this, new OpenedGameFile(this, path));
+      let tab: TabFile;
+      if (ft === FileType.GameFile) {
+        tab = new TabGameFile(this, path);
+      } else if (ft === FileType.TrFile) {
+        tab = new TabTrFile(this, path);
+      } else {
+        throw new Error('unreachable');
+      }
       index = this.opened_tabs.length;
       this.opened_tabs.push(tab);
       this.event_tab_opened.fire(tab, index);
@@ -147,6 +158,7 @@ export class AppMain {
 }
 
 export abstract class EditorTab {
+  public readonly loaded_promise: Promise<void> | null = null;
   public current_fragment_index = 0;
 
   public constructor(public readonly app: AppMain) {}
@@ -154,11 +166,17 @@ export abstract class EditorTab {
   public is_closeable(): boolean {
     return true;
   }
+
+  public abstract list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]>;
 }
 
 export class TabQueue extends EditorTab {
   public override is_closeable(): boolean {
     return false;
+  }
+
+  public async list_fragments(_start?: number | null, _end?: number | null): Promise<Fragment[]> {
+    return [];
   }
 }
 
@@ -166,41 +184,59 @@ export class TabSearch extends EditorTab {
   public override is_closeable(): boolean {
     return false;
   }
+
+  public async list_fragments(_start?: number | null, _end?: number | null): Promise<Fragment[]> {
+    return [];
+  }
 }
 
-export class TabFile extends EditorTab {
-  public constructor(app: AppMain, public readonly file: OpenedFile) {
+export enum FileType {
+  TrFile,
+  GameFile,
+}
+
+export abstract class TabFile extends EditorTab {
+  public abstract readonly file_type: FileType;
+
+  public constructor(app: AppMain, public readonly file_path: string) {
     super(app);
   }
-}
 
-export abstract class OpenedFile {
-  public constructor(public readonly app: AppMain, public readonly path: string) {}
-
-  public get_name(): string {
-    let idx = this.path.lastIndexOf('/');
+  public get_file_name(): string {
+    let idx = this.file_path.lastIndexOf('/');
     if (idx < 0) {
-      return this.path;
+      return this.file_path;
     } else {
-      return this.path.slice(idx + 1);
+      return this.file_path.slice(idx + 1);
     }
   }
-
-  public abstract list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]>;
 }
 
-export class OpenedGameFile extends OpenedFile {
+export class TabGameFile extends TabFile {
+  public readonly file_type = FileType.GameFile;
+
+  public virtual_game_file: VirtualGameFile | null = null;
+  public override readonly loaded_promise: Promise<void>;
+
+  public constructor(app: AppMain, path: string) {
+    super(app, path);
+    this.loaded_promise = (async () => {
+      this.virtual_game_file = await this.app.current_project!.get_virtual_game_file(
+        this.file_path,
+      );
+    })();
+  }
+
   public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
-    return (await this.app.current_project!.get_virtual_game_file(this.path)).list_fragments(
-      start,
-      end,
-    );
+    return this.virtual_game_file!.list_fragments(start, end);
   }
 }
 
-export class OpenedTrFile extends OpenedFile {
-  public list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
-    throw new Error('Method not implemented.');
+export class TabTrFile extends TabFile {
+  public readonly file_type = FileType.TrFile;
+
+  public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
+    return [];
   }
 }
 

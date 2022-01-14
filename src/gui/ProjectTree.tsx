@@ -4,8 +4,7 @@ import './Button';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
-import { FileTree, FileTreeDir, FileTreeFile, OpenedGameFile, TabFile } from '../app';
-import * as utils from '../utils';
+import { FileTree, FileTreeDir, FileTreeFile, FileType, TabGameFile } from '../app';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
@@ -57,8 +56,8 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
     }
     this.prev_game_file_path = null;
 
-    if (app.current_tab instanceof TabFile && app.current_tab.file instanceof OpenedGameFile) {
-      let full_path = app.current_tab.file.path;
+    if (app.current_tab instanceof TabGameFile) {
+      let full_path = app.current_tab.file_path;
       this.prev_game_file_path = full_path;
 
       this.game_files_section_ref.current!.setState({ is_opened: true });
@@ -108,7 +107,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
             map={this.tr_file_tree_map}
             tree={app.project_tr_files_tree}
             file={app.project_tr_files_tree.root_dir}
-            files_icon="file-earmark-zip"
+            files_type={FileType.TrFile}
             depth={0}
           />
         </ProjectTreeSectionGui>
@@ -122,7 +121,7 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
             map={this.game_file_tree_map}
             tree={app.project_game_files_tree}
             file={app.project_game_files_tree.root_dir}
-            files_icon="file-earmark-text"
+            files_type={FileType.GameFile}
             depth={0}
           />
         </ProjectTreeSectionGui>
@@ -179,7 +178,7 @@ export class ProjectTreeSectionGui extends Inferno.Component<
 export interface FileTreeGuiProps {
   map: Map<string, FileTreeItemGui>;
   tree: FileTree;
-  files_icon: string;
+  files_type: FileType;
   depth: number;
 }
 
@@ -230,7 +229,11 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     if (this.props.file instanceof FileTreeDir) {
       this.setState({ is_opened: !this.state.is_opened });
     } else {
-      app.open_game_file(this.props.file.path, /* triggered_from_file_tree */ true);
+      app.open_file(
+        this.props.files_type,
+        this.props.file.path,
+        /* triggered_from_file_tree */ true,
+      );
     }
   };
 
@@ -239,10 +242,17 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     let is_directory = file instanceof FileTreeDir;
     let { name, path } = file;
     let key = path;
-    if (is_directory) path += '/';
-    let icon = is_directory
-      ? `chevron-${this.state.is_opened ? 'down' : 'right'}`
-      : this.props.files_icon;
+    let icon: string;
+    if (is_directory) {
+      path += '/';
+      icon = `chevron-${this.state.is_opened ? 'down' : 'right'}`;
+    } else if (this.props.files_type === FileType.TrFile) {
+      icon = 'file-earmark-zip';
+    } else if (this.props.files_type === FileType.GameFile) {
+      icon = 'file-earmark-text';
+    } else {
+      throw new Error('unreachable');
+    }
 
     let elements = [
       <button

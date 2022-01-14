@@ -3,7 +3,7 @@ import './EditorTabs.scss';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
-import { EditorTab, OpenedGameFile, OpenedTrFile, TabFile, TabQueue, TabSearch } from '../app';
+import { EditorTab, TabFile, TabGameFile, TabQueue, TabSearch, TabTrFile } from '../app';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui } from './Box';
@@ -69,18 +69,18 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
     if (tab instanceof TabFile) {
       let icon: string;
       let description: string;
-      if (tab.file instanceof OpenedGameFile) {
+      if (tab instanceof TabTrFile) {
         icon = 'file-earmark-zip-fill';
-        description = `GameFile ${tab.file.path}`;
-      } else if (tab.file instanceof OpenedTrFile) {
+        description = `GameFile ${tab.file_path}`;
+      } else if (tab instanceof TabGameFile) {
         icon = 'file-earmark-text-fill';
-        description = `TrFile ${tab.file.path}`;
+        description = `TrFile ${tab.file_path}`;
       } else {
-        throw new Error(`unknown OpenedFile type: ${tab.file.constructor.name}`);
+        throw new Error(`unknown TabFile type: ${tab.constructor.name}`);
       }
 
       // Almost all paths you'll ever see begin with `data/` anyway.
-      let shorter_path = utils.strip_prefix(tab.file.path, 'data/');
+      let shorter_path = utils.strip_prefix(tab.file_path, 'data/');
       // The path shortener was inspired by Vim's pathshorten() function, see
       // <https://neovim.io/doc/user/eval.html#pathshorten()>.
       let display_path = '';
@@ -100,15 +100,15 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
       }
 
       return {
-        key: `file:${tab.file.constructor.name}:${tab.file.path}`,
+        key: `${tab.constructor.name}:${tab.file_path}`,
         icon,
         title: display_path,
         description,
       };
     } else if (tab instanceof TabQueue) {
-      return { key: 'queue', icon: 'journal-bookmark-fill', title: 'Queue' };
+      return { key: tab.constructor.name, icon: 'journal-bookmark-fill', title: 'Queue' };
     } else if (tab instanceof TabSearch) {
-      return { key: 'search', icon: 'search', title: 'Search' };
+      return { key: tab.constructor.name, icon: 'search', title: 'Search' };
     } else {
       throw new Error(`unknown EditorTab type: ${tab.constructor.name}`);
     }
