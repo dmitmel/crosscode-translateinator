@@ -14,13 +14,13 @@ export type Message = RequestMessage | ResponseMessage | ErrorResponseMessage;
 export interface RequestMessage {
   type: 'req';
   id: number;
-  data: RequestMessageType;
+  data: unknown;
 }
 
 export interface ResponseMessage {
   type: 'res';
   id: number;
-  data: ResponseMessageType;
+  data: unknown;
 }
 
 export interface ErrorResponseMessage {
@@ -29,35 +29,29 @@ export interface ErrorResponseMessage {
   message: string;
 }
 
-export type RequestMessageType =
-  | { type: 'Backend/info' }
-  | { type: 'Project/open'; dir: string }
-  | { type: 'Project/close'; project_id: number }
-  | { type: 'Project/get_meta'; project_id: number }
-  | { type: 'Project/list_tr_files'; project_id: number }
-  | { type: 'Project/list_virtual_game_files'; project_id: number }
-  | {
-      type: 'VirtualGameFile/list_fragments';
-      project_id: number;
-      file_path: string;
-      start?: number | null;
-      end?: number | null;
-      select_fields: FieldsSelection;
-    }
-  | {
-      type: 'VirtualGameFile/get_fragment';
-      project_id: number;
-      file_path: string;
-      json_path: string;
-      select_fields: FieldsSelection;
-    };
+type Empty = Record<string, never>;
 
-export type ResponseMessageType =
-  | { type: 'ok' }
-  | { type: 'Backend/info'; implementation_name: string; implementation_version: string }
-  | { type: 'Project/open'; project_id: number }
-  | {
-      type: 'Project/get_meta';
+export interface MessageRegistry {
+  //
+
+  'Backend/info': {
+    request: Empty;
+    response: { implementation_name: string; implementation_version: string };
+  };
+
+  'Project/open': {
+    request: { dir: string };
+    response: { project_id: number };
+  };
+
+  'Project/close': {
+    request: { project_id: number };
+    response: Empty;
+  };
+
+  'Project/get_meta': {
+    request: { project_id: number };
+    response: {
       root_dir: string;
       id: string;
       creation_timestamp: number;
@@ -68,11 +62,54 @@ export type ResponseMessageType =
       translation_locale: string;
       translations_dir: string;
       splitter: string;
-    }
-  | { type: 'Project/list_tr_files'; paths: string[] }
-  | { type: 'Project/list_virtual_game_files'; paths: string[] }
-  | { type: 'VirtualGameFile/list_fragments'; fragments: unknown[][] }
-  | { type: 'VirtualGameFile/get_fragment'; fragment: unknown[] };
+    };
+  };
+
+  'Project/list_tr_files': {
+    request: { project_id: number };
+    response: { paths: string[] };
+  };
+
+  'Project/list_virtual_game_files': {
+    request: { project_id: number };
+    response: { paths: string[] };
+  };
+
+  'VirtualGameFile/list_fragments': {
+    request: {
+      project_id: number;
+      file_path: string;
+      start?: number | null;
+      end?: number | null;
+      select_fields: FieldsSelection;
+    };
+    response: {
+      fragments: unknown[][];
+    };
+  };
+
+  'VirtualGameFile/get_fragment': {
+    request: {
+      project_id: number;
+      file_path: string;
+      json_path: string;
+      select_fields: FieldsSelection;
+    };
+    response: {
+      fragment: unknown[];
+    };
+  };
+
+  //
+}
+
+export type RequestMessageType = {
+  [K in keyof MessageRegistry]: { type: K } & MessageRegistry[K]['request'];
+}[keyof MessageRegistry];
+
+export type ResponseMessageType = {
+  [K in keyof MessageRegistry]: { type: K } & MessageRegistry[K]['response'];
+}[keyof MessageRegistry];
 
 export interface ListedFragmentFields {
   id: string;
@@ -160,7 +197,7 @@ export class Backend {
   private transport: crosslocale_bridge.Backend = null!;
   private state = BackendState.DISCONNECTED;
   private current_request_id = 1;
-  private sent_request_success_callbacks = new Map<number, (data: ResponseMessageType) => void>();
+  private sent_request_success_callbacks = new Map<number, (data: unknown) => void>();
   private sent_request_error_callbacks = new Map<number, (error: Error) => void>();
 
   public event_error = new Event2<[error: Error]>();
@@ -248,7 +285,10 @@ export class Backend {
     }
   }
 
-  public async send_request(data: RequestMessageType): Promise<ResponseMessageType> {
+  public async send_request<K extends keyof MessageRegistry>(
+    type: K,
+    data: MessageRegistry[K]['request'],
+  ): Promise<MessageRegistry[K]['response']> {
     utils.assert(this.state !== BackendState.DISCONNECTED);
 
     this.current_request_id = Math.max(this.current_request_id, 1);
@@ -256,12 +296,13 @@ export class Backend {
     this.current_request_id = utils.u32(this.current_request_id + 1);
 
     try {
-      let response_promise = new Promise<ResponseMessageType>((resolve, reject) => {
+      let response_promise = new Promise<unknown>((resolve, reject) => {
         this.sent_request_success_callbacks.set(id, resolve);
         this.sent_request_error_callbacks.set(id, reject);
       });
-      this.send_message_internal({ type: 'req', id, data });
-      return await response_promise;
+      this.send_message_internal({ type: 'req', id, data: { type, ...data } });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (await response_promise) as any;
     } finally {
       this.sent_request_success_callbacks.delete(id);
       this.sent_request_error_callbacks.delete(id);
@@ -280,16 +321,16 @@ export class Backend {
 
 export class Project {
   public static async open(backend: Backend, dir: string): Promise<Project> {
-    let res = await backend.send_request({ type: 'Project/open', dir });
-    utils.assert(res.type === 'Project/open');
+    let res = await backend.send_request('Project/open', { dir });
     return new Project(backend, dir, res.project_id);
   }
 
   public constructor(public backend: Backend, public dir: string, public id: number) {}
 
   public async get_meta(): Promise<ProjectMeta> {
-    let res = await this.backend.send_request({ type: 'Project/get_meta', project_id: this.id });
-    utils.assert(res.type === 'Project/get_meta');
+    let res = await this.backend.send_request('Project/get_meta', {
+      project_id: this.id,
+    });
     return new ProjectMeta(
       this,
       res.root_dir,
@@ -306,20 +347,16 @@ export class Project {
   }
 
   public async list_tr_file_paths(): Promise<string[]> {
-    let res = await this.backend.send_request({
-      type: 'Project/list_tr_files',
+    let res = await this.backend.send_request('Project/list_tr_files', {
       project_id: this.id,
     });
-    utils.assert(res.type === 'Project/list_tr_files');
     return res.paths;
   }
 
   public async list_game_file_paths(): Promise<string[]> {
-    let res = await this.backend.send_request({
-      type: 'Project/list_virtual_game_files',
+    let res = await this.backend.send_request('Project/list_virtual_game_files', {
       project_id: this.id,
     });
-    utils.assert(res.type === 'Project/list_virtual_game_files');
     return res.paths;
   }
 
@@ -403,15 +440,13 @@ export class VirtualGameFile {
         'flags',
       ],
     };
-    let res = await this.project.backend.send_request({
-      type: 'VirtualGameFile/list_fragments',
+    let res = await this.project.backend.send_request('VirtualGameFile/list_fragments', {
       project_id: this.project.id,
       file_path: this.path,
       start,
       end,
       select_fields,
     });
-    utils.assert(res.type === 'VirtualGameFile/list_fragments');
     return expand_table_data('fragments', res.fragments, select_fields).map((f_raw) => {
       return this.project._create_fragment({
         ...f_raw!,
@@ -441,14 +476,12 @@ export class VirtualGameFile {
         'flags',
       ],
     };
-    let res = await this.project.backend.send_request({
-      type: 'VirtualGameFile/get_fragment',
+    let res = await this.project.backend.send_request('VirtualGameFile/get_fragment', {
       project_id: this.project.id,
       file_path: this.path,
       json_path,
       select_fields,
     });
-    utils.assert(res.type === 'VirtualGameFile/get_fragment');
     let [f_raw] = expand_table_data('fragments', [res.fragment], select_fields);
     return this.project._create_fragment({
       ...f_raw!,
