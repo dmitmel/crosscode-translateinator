@@ -66,38 +66,16 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
     return this.hidden_text_area;
   }
 
-  public ref = Inferno.createRef<HTMLTextAreaElement>();
-
-  public override componentDidMount(): void {
-    let element = this.ref.current;
-    utils.assert(element != null);
-    element.addEventListener('input', this.update_size);
-    window.addEventListener('resize', this.update_size);
-
-    this.update_size();
-  }
-
-  public override componentWillUnmount(): void {
-    let element = this.ref.current;
-    utils.assert(element != null);
-    element.removeEventListener('input', this.update_size);
-    window.removeEventListener('resize', this.update_size);
-  }
-
-  public update_size = (): void => {
-    let real = this.ref.current;
-    utils.assert(real != null);
+  public static compute_text_area_height(real: HTMLTextAreaElement): number {
     let hidden = TextAreaGui.ensure_hidden_text_area();
 
     let real_style = window.getComputedStyle(real);
-    // Here's a constant to prevent typos.
-    const IMPORTANT = 'important';
 
     for (let k of TextAreaGui.MIMICKED_STYLES) {
-      hidden.style.setProperty(k, real_style.getPropertyValue(k), IMPORTANT);
+      hidden.style.setProperty(k, real_style.getPropertyValue(k), 'important');
     }
     for (let [k, v] of Object.entries(TextAreaGui.HIDDEN_TEXT_AREA_STYLES)) {
-      hidden.style.setProperty(k, v, IMPORTANT);
+      hidden.style.setProperty(k, v, 'important');
     }
 
     let total_padding_size =
@@ -108,7 +86,7 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
     const ROW_MEASURING_TEXT = '\u00A0'; // non-breaking whitespace
     hidden.value = ROW_MEASURING_TEXT;
     let row_height = hidden.scrollHeight - total_padding_size;
-    let min_rows = this.props.rows ?? 2; // 2 is the browser default
+    let min_rows = real.rows;
     // TODO: max_rows?
 
     hidden.value = real.value || real.placeholder || ROW_MEASURING_TEXT;
@@ -122,16 +100,40 @@ export class TextAreaGui extends Inferno.Component<TextAreaGuiProps, unknown> {
       // what?
     }
 
-    real.style.setProperty('height', `${height}px`, IMPORTANT);
+    return height;
+  }
+
+  public ref: HTMLTextAreaElement | null = null;
+
+  public override componentDidMount(): void {
+    utils.assert(this.ref != null);
+    this.ref.addEventListener('input', this.update_size);
+    window.addEventListener('resize', this.update_size);
+
+    this.update_size();
+  }
+
+  public override componentWillUnmount(): void {
+    utils.assert(this.ref != null);
+    this.ref.removeEventListener('input', this.update_size);
+    window.removeEventListener('resize', this.update_size);
+  }
+
+  public update_size = (): void => {
+    utils.assert(this.ref != null);
+    let height = TextAreaGui.compute_text_area_height(this.ref);
+    this.ref.style.setProperty('height', `${height}px`, 'important');
+    this.ref.style.setProperty('overflow', 'hidden', 'important');
+  };
+
+  private set_ref = (element: HTMLTextAreaElement | null): void => {
+    this.ref = element;
+    if (element != null) {
+      this.update_size();
+    }
   };
 
   public override render(): JSX.Element {
-    return (
-      <textarea
-        {...this.props}
-        ref={this.ref}
-        style={{ ...this.props.style, overflow: 'hidden' }}
-      />
-    );
+    return <textarea {...this.props} ref={this.set_ref} />;
   }
 }

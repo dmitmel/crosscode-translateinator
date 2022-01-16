@@ -712,6 +712,7 @@ export interface NewTranslationGuiProps {
 
 export interface NewTranslationGuiState {
   text: string;
+  text_area_height: number;
 }
 
 export class NewTranslationGui extends Inferno.Component<
@@ -720,18 +721,24 @@ export class NewTranslationGui extends Inferno.Component<
 > {
   public override state: NewTranslationGuiState = {
     text: '',
+    text_area_height: -1,
   };
 
   private textarea_id: string = utils.new_html_id();
 
   private on_input = (event: Inferno.FormEvent<HTMLTextAreaElement>): void => {
-    this.setState({ text: event.currentTarget.value });
+    let text = event.currentTarget.value;
+    let height = -1;
+    if (text.length > 0) {
+      height = TextAreaGui.compute_text_area_height(event.currentTarget);
+    }
+    this.setState({ text, text_area_height: height });
   };
 
   public override render(): JSX.Element {
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
-        <TextAreaGui
+        <textarea
           id={this.textarea_id}
           name={this.textarea_id}
           value={this.state.text}
@@ -740,6 +747,19 @@ export class NewTranslationGui extends Inferno.Component<
           autoComplete="off"
           spellCheck={false}
           rows={2}
+          // `ref` must be implemented as an anonymous function here (i.e. not
+          // as a bound method) so that it always gets invoked on each render.
+          ref={(element: HTMLTextAreaElement | null): void => {
+            if (element == null) return;
+            let height = this.state.text_area_height;
+            if (height > 0) {
+              element.style.setProperty('height', `${height}px`, 'important');
+              element.style.setProperty('overflow', 'hidden', 'important');
+            } else {
+              element.style.removeProperty('height');
+              element.style.removeProperty('overflow');
+            }
+          }}
         />
         <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
           <BoxItemFillerGui />
