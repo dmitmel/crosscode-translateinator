@@ -19,19 +19,12 @@ export interface EditorGuiProps {
   className?: string;
 }
 
-export interface EditorGuiState {
-  final_filler_height: number;
-}
-
 const FRAGMENT_LIST_LOAD_DISTANCE = 0;
 const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
 const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
 
-export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState> {
+export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
   public override context!: AppMainGuiCtx;
-  public override state: EditorGuiState = {
-    final_filler_height: 0,
-  };
 
   private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
   private fragment_guis_map = new WeakMap<Fragment, FragmentGui>();
@@ -54,9 +47,6 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
       root: this.fragment_list_ref.current!,
     });
     this.fragment_observer_map = new WeakMap();
-
-    window.addEventListener('resize', this.on_window_resize);
-    this.on_window_resize();
   }
 
   public override componentWillUnmount(): void {
@@ -69,33 +59,10 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
     this.fragment_observer.disconnect();
     this.fragment_observer = null;
     this.fragment_observer_map = null;
-
-    window.removeEventListener('resize', this.on_window_resize);
   }
 
-  public override componentDidUpdate(): void {
-    this.on_window_resize();
-  }
-
-  private on_window_resize = (): void => {
-    let { app } = this.context;
-    let final_filler_height = 0;
-    let last_fragment_gui = this.get_fragment_gui_by_index(app.fragment_list_slice_end - 1);
-    if (last_fragment_gui != null) {
-      let container_elem = this.fragment_list_ref.current!;
-      let fragment_elem = last_fragment_gui.root_ref.current!;
-      let fragment_style = window.getComputedStyle(fragment_elem);
-      let fragment_margin_size =
-        parseFloat(fragment_style.marginBottom) + parseFloat(fragment_style.marginTop);
-      final_filler_height =
-        // Different height properties are not a typo here.
-        container_elem.clientHeight - (fragment_elem.offsetHeight + fragment_margin_size);
-    }
-    if (this.state.final_filler_height !== final_filler_height) {
-      this.setState({ final_filler_height });
-    }
-  };
-
+  // TODO: current fragment should be not the first visible one, but the first
+  // fully visible one.
   private on_fragment_intersection_change = (entries: IntersectionObserverEntry[]): void => {
     utils.assert(this.fragment_observer != null);
     utils.assert(this.fragment_observer_map != null);
@@ -266,7 +233,6 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, EditorGuiState>
           scroll
           className="BoxItem-expand FragmentList">
           {fragment_list_contents}
-          <div style={{ height: `${this.state.final_filler_height}px` }} />
         </WrapperGui>
       </BoxGui>
     );
