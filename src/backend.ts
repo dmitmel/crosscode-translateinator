@@ -11,23 +11,30 @@ if (crosslocale_bridge.PROTOCOL_VERSION !== PROTOCOL_VERSION) {
 
 export type Message = RequestMessage | ResponseMessage | ErrorResponseMessage;
 
-export interface RequestMessage {
-  type: 'req';
-  id: number;
-  data: unknown;
+export const enum MessageType {
+  Request = 1,
+  Response = 2,
+  ErrorResponse = 3,
 }
 
-export interface ResponseMessage {
-  type: 'res';
-  id: number;
-  data: unknown;
-}
+export type RequestMessage<M extends keyof MessageRegistry = keyof MessageRegistry> = [
+  type: MessageType.Request,
+  id: number,
+  method: M,
+  data: MessageRegistry[M]['request'],
+];
 
-export interface ErrorResponseMessage {
-  type: 'err';
-  id?: number | null;
-  message: string;
-}
+export type ResponseMessage<M extends keyof MessageRegistry = keyof MessageRegistry> = [
+  type: MessageType.Response,
+  id: number,
+  data: MessageRegistry[M]['response'],
+];
+
+export type ErrorResponseMessage = [
+  type: MessageType.ErrorResponse,
+  id: number | null,
+  message: string,
+];
 
 type Empty = Record<string, never>;
 
@@ -200,7 +207,7 @@ export class Backend {
   private sent_request_success_callbacks = new Map<number, (data: unknown) => void>();
   private sent_request_error_callbacks = new Map<number, (error: Error) => void>();
 
-  public event_error = new Event2<[error: Error]>();
+  public event_error = new Event2<[request_id: number | null, error: Error]>();
   public event_connected = new Event2();
   public event_disconnected = new Event2();
 
@@ -252,25 +259,28 @@ export class Backend {
   private recv_message_internal(text: Buffer): void {
     utils.assert(this.state !== BackendState.DISCONNECTED);
     let message: Message = JSON.parse(text.toString('utf8'));
-    switch (message.type) {
-      case 'req': {
+    let [msg_type] = message;
+    switch (msg_type) {
+      case MessageType.Request: {
         throw new Error('unexpected request from the backend');
       }
 
-      case 'res': {
-        let callback = this.sent_request_success_callbacks.get(message.id);
+      case MessageType.Response: {
+        let [_, msg_id, msg_params] = message as ResponseMessage;
+        let callback = this.sent_request_success_callbacks.get(msg_id);
         if (callback == null) {
           throw new Error('server has sent a response to an unknown message');
         }
-        callback(message.data);
+        callback(msg_params);
         break;
       }
 
-      case 'err': {
-        let error = new Error(message.message);
-        this.event_error.fire(error);
-        if (message.id != null) {
-          let callback = this.sent_request_error_callbacks.get(message.id);
+      case MessageType.ErrorResponse: {
+        let [_, msg_id, err_msg] = message as ErrorResponseMessage;
+        let error = new Error(err_msg);
+        this.event_error.fire(msg_id, error);
+        if (msg_id != null) {
+          let callback = this.sent_request_error_callbacks.get(msg_id);
           if (callback == null) {
             throw new Error('server has sent an error response to an unknown message');
           }
@@ -285,10 +295,10 @@ export class Backend {
     }
   }
 
-  public async send_request<K extends keyof MessageRegistry>(
-    type: K,
-    data: MessageRegistry[K]['request'],
-  ): Promise<MessageRegistry[K]['response']> {
+  public async send_request<M extends keyof MessageRegistry>(
+    method: M,
+    params: MessageRegistry[M]['request'],
+  ): Promise<MessageRegistry[M]['response']> {
     utils.assert(this.state !== BackendState.DISCONNECTED);
 
     this.current_request_id = Math.max(this.current_request_id, 1);
@@ -300,9 +310,8 @@ export class Backend {
         this.sent_request_success_callbacks.set(id, resolve);
         this.sent_request_error_callbacks.set(id, reject);
       });
-      this.send_message_internal({ type: 'req', id, data: { type, ...data } });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (await response_promise) as any;
+      this.send_message_internal([MessageType.Request, id, method, params]);
+      return (await response_promise) as MessageRegistry[M]['response'];
     } finally {
       this.sent_request_success_callbacks.delete(id);
       this.sent_request_error_callbacks.delete(id);
