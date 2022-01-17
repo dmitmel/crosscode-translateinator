@@ -1,10 +1,12 @@
+/* eslint-disable no-cond-assign */
+
 import './Explorer.scss';
 import './Button';
 
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
-import { FileTree, FileTreeDir, FileTreeFile, FileType, TabGameFile } from '../app';
+import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
@@ -13,30 +15,16 @@ import { LabelGui } from './Label';
 export class ExplorerGui extends Inferno.Component<unknown, unknown> {
   public override context!: AppMainGuiCtx;
 
-  public tr_files_section_ref = Inferno.createRef<ExplorerSectionGui>();
-  public game_files_section_ref = Inferno.createRef<ExplorerSectionGui>();
-
-  public prev_tr_file_path: string | null = null;
-  public tr_file_tree_map = new Map<string, TreeItemGui>();
-  public prev_game_file_path: string | null = null;
-  public game_file_tree_map = new Map<string, TreeItemGui>();
-
   public override componentDidMount(): void {
-    this.tr_file_tree_map.clear();
-    this.game_file_tree_map.clear();
     let { app } = this.context;
     app.event_project_opened.on(this.on_project_opened);
     app.event_project_closed.on(this.on_project_closed);
-    app.event_current_tab_change.on(this.on_current_tab_change);
   }
 
   public override componentWillUnmount(): void {
-    this.tr_file_tree_map.clear();
-    this.game_file_tree_map.clear();
     let { app } = this.context;
     app.event_project_opened.off(this.on_project_opened);
     app.event_project_closed.off(this.on_project_closed);
-    app.event_current_tab_change.off(this.on_current_tab_change);
   }
 
   private on_project_opened = (): void => {
@@ -45,49 +33,6 @@ export class ExplorerGui extends Inferno.Component<unknown, unknown> {
 
   private on_project_closed = (): void => {
     this.forceUpdate();
-  };
-
-  private on_current_tab_change = (triggered_from_file_tree: boolean): void => {
-    let { app } = this.context;
-
-    if (this.prev_game_file_path != null) {
-      let prev_tree_item_gui = this.game_file_tree_map.get(this.prev_game_file_path);
-      prev_tree_item_gui?.setState({ is_opened: false });
-    }
-    this.prev_game_file_path = null;
-
-    if (app.current_tab instanceof TabGameFile) {
-      let full_path = app.current_tab.file_path;
-      this.prev_game_file_path = full_path;
-
-      this.game_files_section_ref.current!.setState({ is_opened: true });
-
-      let component_start_index = 0;
-      while (component_start_index < full_path.length) {
-        let separator_index = full_path.indexOf('/', component_start_index);
-        let is_last_component = separator_index < 0;
-        let component_end_index = is_last_component ? full_path.length : separator_index;
-        let component_path = full_path.slice(0, component_end_index);
-
-        let tree_item_gui = this.game_file_tree_map.get(component_path);
-        if (tree_item_gui) {
-          if (!tree_item_gui.state.is_opened) {
-            // Remember that setState is synchronous in Inferno. By the time the
-            // path splitting loop reaches the next iteration, this tree item
-            // component will have already been rendered, and its children will
-            // have already been inserted into our map. For React we would've had
-            // to wait for the callback of setState to be called until resuming
-            // iteration.
-            tree_item_gui.setState({ is_opened: true });
-          }
-          if (is_last_component && !triggered_from_file_tree) {
-            tree_item_gui.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
-          }
-        }
-
-        component_start_index = component_end_index + 1;
-      }
-    }
   };
 
   public override render(): JSX.Element {
@@ -99,30 +44,19 @@ export class ExplorerGui extends Inferno.Component<unknown, unknown> {
           {app.current_project_meta?.translation_locale ?? 'loading...'}]
         </div>
 
-        <ExplorerSectionGui
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ref={this.tr_files_section_ref as any}
-          name="Translation files">
+        <ExplorerSectionGui name="Translation files">
           <TreeViewGui
-            map={this.tr_file_tree_map}
             tree={app.project_tr_files_tree}
-            file={app.project_tr_files_tree.root_dir}
             files_type={FileType.TrFile}
-            depth={0}
+            base_depth={1}
           />
         </ExplorerSectionGui>
 
-        <ExplorerSectionGui
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ref={this.game_files_section_ref as any}
-          name="Game files"
-          default_opened>
+        <ExplorerSectionGui name="Game files" default_opened>
           <TreeViewGui
-            map={this.game_file_tree_map}
             tree={app.project_game_files_tree}
-            file={app.project_game_files_tree.root_dir}
             files_type={FileType.GameFile}
-            depth={0}
+            base_depth={1}
           />
         </ExplorerSectionGui>
       </BoxGui>
@@ -176,76 +110,147 @@ export class ExplorerSectionGui extends Inferno.Component<
 }
 
 export interface TreeViewGuiProps {
-  map: Map<string, TreeItemGui>;
   tree: FileTree;
   files_type: FileType;
-  depth: number;
+  base_depth?: number;
 }
 
-export function TreeViewGui(props: TreeViewGuiProps & { file: FileTreeDir }): JSX.Element {
-  return <>{TreeItemGui.render_children(props, props.file, [])}</>;
-}
-
-export interface TreeItemGuiProps extends TreeViewGuiProps {
-  file: FileTreeFile;
-  default_opened?: boolean;
-}
-
-export interface TreeItemGuiState {
-  is_opened: boolean;
-}
-
-export class TreeItemGui extends Inferno.Component<TreeItemGuiProps, TreeItemGuiState> {
+class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
   public override context!: AppMainGuiCtx;
-  public override state: TreeItemGuiState = {
-    is_opened: this.props.default_opened ?? false,
-  };
 
-  public root_ref = Inferno.createRef<HTMLButtonElement>();
+  public item_guis_map = new Map<string, HTMLButtonElement>();
 
-  public override componentDidMount(): void {
-    this.register_into_container(this.props);
+  public opened_states = new Map<string, boolean>();
+  private next_opened_states = new Map<string, boolean>();
+  public is_opened(path: string): boolean {
+    return this.opened_states.get(path) ?? false;
   }
 
-  public override componentDidUpdate(prev_props: TreeItemGuiProps): void {
-    this.unregister_from_container(prev_props);
-    this.register_into_container(this.props);
+  public current_path: string | null = null;
+  public set_current(path: string | null): void {
+    if (this.current_path != null) {
+      this.opened_states.set(this.current_path, false);
+    }
+
+    this.current_path = path;
+    if (path != null) {
+      let component_start_index = 0;
+      while (component_start_index < path.length) {
+        let separator_index = path.indexOf('/', component_start_index);
+        let is_last_component = separator_index < 0;
+        let component_end_index = is_last_component ? path.length : separator_index;
+        let component_path = path.slice(0, component_end_index);
+        this.opened_states.set(component_path, true);
+        component_start_index = component_end_index + 1;
+      }
+    }
+
+    this.forceUpdate();
+  }
+
+  public override componentDidMount(): void {
+    let { app } = this.context;
+    app.event_current_tab_change.on(this.on_current_tab_change);
+    this.on_current_tab_change(null);
   }
 
   public override componentWillUnmount(): void {
-    this.unregister_from_container(this.props);
-  }
-
-  public register_into_container(props: TreeItemGuiProps): void {
-    props.map.set(props.file.path, this);
-  }
-
-  public unregister_from_container(props: TreeItemGuiProps): void {
-    props.map.delete(props.file.path);
-  }
-
-  private on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
-    if (this.props.file instanceof FileTreeDir) {
-      this.setState({ is_opened: !this.state.is_opened });
+    app.event_current_tab_change.off(this.on_current_tab_change);
+  }
+
+  private on_current_tab_change = (trigger: TabChangeTrigger | null): void => {
+    let { app } = this.context;
+    let tab = app.current_tab;
+    if (tab instanceof TabFile && tab.file_type === this.props.files_type) {
+      // this.should_scroll_into_view = !triggered_from_file_tree;
+      this.set_current(tab.file_path);
+      if (trigger !== TabChangeTrigger.FileTree) {
+        let element = this.item_guis_map.get(tab.file_path);
+        element?.scrollIntoView({ block: 'center', inline: 'center' });
+      }
     } else {
-      app.open_file(
-        this.props.files_type,
-        this.props.file.path,
-        /* triggered_from_file_tree */ true,
-      );
+      this.set_current(null);
     }
   };
 
-  public override render(): JSX.Element[] {
-    let { file } = this.props;
+  private on_item_click = (
+    file: FileTreeFile,
+    _event: Inferno.InfernoMouseEvent<HTMLButtonElement>,
+  ): void => {
+    let { app } = this.context;
+    if (file instanceof FileTreeDir) {
+      this.opened_states.set(file.path, !this.is_opened(file.path));
+      this.forceUpdate();
+    } else {
+      app.open_file(this.props.files_type, file.path, TabChangeTrigger.FileTree);
+    }
+  };
+
+  public override render(): JSX.Element {
+    this.current_item_index = 0;
+    this.next_opened_states.clear();
+
+    let elements: JSX.Element[] = [];
+    this.render_items(this.props.tree.root_dir, this.props.base_depth ?? 0, 0, elements);
+
+    let prev_opened_states = this.opened_states;
+    this.opened_states = this.next_opened_states;
+    prev_opened_states.clear();
+    this.next_opened_states = prev_opened_states;
+
+    return <>{elements}</>;
+  }
+
+  private current_item_index = 0;
+  private render_items(
+    dir: FileTreeDir,
+    depth: number,
+    visible_start_index: number,
+    out_elements: JSX.Element[],
+  ): void {
+    let files: FileTreeFile[] = [];
+
+    // TODO: sorting
+
+    for (let path of dir.children) {
+      let subdir: FileTreeDir | undefined;
+      let file: FileTreeFile | undefined;
+
+      if ((subdir = this.props.tree.dirs.get(path)) != null) {
+        if (this.current_item_index >= visible_start_index) {
+          out_elements.push(this.render_item(subdir, depth));
+        }
+        this.current_item_index++;
+        if (this.is_opened(subdir.path)) {
+          this.render_items(subdir, depth + 1, visible_start_index, out_elements);
+        }
+      } else if ((file = this.props.tree.files.get(path)) != null) {
+        files.push(file);
+      } else {
+        throw new Error(`Unknown file: ${path}`);
+      }
+    }
+
+    for (let file of files) {
+      if (this.current_item_index >= visible_start_index) {
+        out_elements.push(this.render_item(file, depth));
+      }
+      this.current_item_index++;
+    }
+  }
+
+  private render_item(file: FileTreeFile, depth: number): JSX.Element {
     let is_directory = file instanceof FileTreeDir;
-    let { name, path } = file;
-    let key = path;
+
+    let is_opened = this.is_opened(file.path);
+    this.next_opened_states.set(file.path, is_opened);
+
     let icon: string;
+    let label = file.path;
     if (is_directory) {
-      path += '/';
-      icon = `chevron-${this.state.is_opened ? 'down' : 'right'}`;
+      label += '/';
+      icon = `chevron-${is_opened ? 'down' : 'right'}`;
     } else if (this.props.files_type === FileType.TrFile) {
       icon = 'file-earmark-zip';
     } else if (this.props.files_type === FileType.GameFile) {
@@ -254,64 +259,33 @@ export class TreeItemGui extends Inferno.Component<TreeItemGuiProps, TreeItemGui
       throw new Error('unreachable');
     }
 
-    let elements = [
+    return (
       <button
-        key={key}
-        ref={this.root_ref}
+        key={file.path}
+        ref={(element: HTMLButtonElement | null): void => {
+          if (element != null) {
+            this.item_guis_map.set(file.path, element);
+          } else {
+            this.item_guis_map.delete(file.path);
+          }
+        }}
         type="button"
         className={cc('block', 'TreeItem', {
-          'TreeItem-current': !is_directory && this.state.is_opened,
+          'TreeItem-current': !is_directory && is_opened,
         })}
-        style={{ '--TreeItem-depth': this.props.depth }}
-        title={path}
+        style={{ '--TreeItem-depth': depth }}
+        title={label}
         tabIndex={0}
-        onClick={this.on_click}>
+        onClick={Inferno.linkEvent(file, this.on_item_click)}>
         {
           // Note that a nested div for enabling ellipsis is necessary,
           // otherwise the tree item shrinks when the enclosing list begins
           // overflowing.
         }
         <LabelGui block ellipsis>
-          <IconGui icon={icon} /> {name}
+          <IconGui icon={icon} /> {this.current_item_index}: {file.name}
         </LabelGui>
-      </button>,
-    ];
-
-    if (this.state.is_opened && this.props.file instanceof FileTreeDir) {
-      TreeItemGui.render_children(this.props, this.props.file, elements);
-    }
-    return elements;
-  }
-
-  public static render_children(
-    props: TreeViewGuiProps,
-    dir: FileTreeDir,
-    out_elements: JSX.Element[],
-  ): JSX.Element[] {
-    let dir_elements: JSX.Element[] = [];
-    let file_elements: JSX.Element[] = [];
-
-    for (let path of dir.children) {
-      let child: FileTreeFile | undefined;
-      let dest_elements: JSX.Element[];
-
-      /* eslint-disable no-cond-assign */
-      if ((child = props.tree.dirs.get(path)) != null) {
-        dest_elements = dir_elements;
-      } else if ((child = props.tree.files.get(path)) != null) {
-        dest_elements = file_elements;
-      } else {
-        throw new Error(`Unknown file: ${path}`);
-      }
-      /* eslint-enable no-cond-assign */
-
-      dest_elements.push(
-        <TreeItemGui {...props} key={child.path} file={child} depth={props.depth + 1} />,
-      );
-    }
-
-    out_elements.push(...dir_elements);
-    out_elements.push(...file_elements);
-    return out_elements;
+      </button>
+    );
   }
 }

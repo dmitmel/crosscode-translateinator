@@ -68,17 +68,17 @@ export class AppMain {
 
   public current_tab_index = 0;
   public current_tab: EditorTab | null = this.opened_tabs[this.current_tab_index];
-  public event_current_tab_change = new Event2<[triggered_from_file_tree: boolean]>();
+  public event_current_tab_change = new Event2<[trigger: TabChangeTrigger | null]>();
   private current_tab_loading_promise: Promise<void> | null = null;
 
-  public set_current_tab_index(index: number, triggered_from_file_tree = false): void {
+  public set_current_tab_index(index: number, trigger: TabChangeTrigger | null = null): void {
     utils.assert(Number.isSafeInteger(index));
     index = this.clamp_tab_index(index);
     if (this.current_tab_index !== index) {
       this.current_tab_index = index;
       let tab = this.opened_tabs[this.current_tab_index];
       this.current_tab = tab;
-      this.event_current_tab_change.fire(triggered_from_file_tree);
+      this.event_current_tab_change.fire(trigger);
 
       // TODO: handle cancellation, the current tab being closed, etc etc
       this.current_tab_loading_promise = (async () => {
@@ -106,7 +106,7 @@ export class AppMain {
   //   return new TabTrFile(this, path);
   // }
 
-  public open_file(ft: FileType, path: string, triggered_from_file_tree = false): void {
+  public open_file(ft: FileType, path: string, trigger: TabChangeTrigger | null = null): void {
     let index = this.opened_tabs.findIndex(
       (tab) => tab instanceof TabFile && tab.file_type === ft && tab.file_path === path,
     );
@@ -123,7 +123,7 @@ export class AppMain {
       this.opened_tabs.push(tab);
       this.event_tab_opened.fire(tab, index);
     }
-    this.set_current_tab_index(index, triggered_from_file_tree);
+    this.set_current_tab_index(index, trigger);
   }
 
   public close_tab(index: number): void {
@@ -190,6 +190,11 @@ export class AppMain {
       this.received_fragments_timer_id = Number(timer);
     }
   }
+}
+
+export enum TabChangeTrigger {
+  FileTree,
+  TabList,
 }
 
 export abstract class EditorTab {
