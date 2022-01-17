@@ -6,7 +6,7 @@ import { AppMain } from '../app';
 import * as gui from '../gui';
 import { BoxGui } from './Box';
 import { EditorGui } from './Editor';
-import { ProjectTreeGui } from './ProjectTree';
+import { ExplorerGui } from './Explorer';
 import { StatusBarGui } from './StatusBar';
 
 export interface AppMainGuiCtx {
@@ -75,7 +75,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
       <div className="App">
         <BoxGui className="App-MainLayout" orientation="vertical">
           <BoxGui orientation="horizontal" className="BoxItem-expand">
-            <ProjectTreeGui />
+            <ExplorerGui />
             <EditorGui className="BoxItem-expand" />
           </BoxGui>
           <StatusBarGui />

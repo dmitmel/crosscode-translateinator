@@ -1,4 +1,4 @@
-import './ProjectTree.scss';
+import './Explorer.scss';
 import './Button';
 
 import cc from 'clsx';
@@ -10,16 +10,16 @@ import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 
-export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
+export class ExplorerGui extends Inferno.Component<unknown, unknown> {
   public override context!: AppMainGuiCtx;
 
-  public tr_files_section_ref = Inferno.createRef<ProjectTreeSectionGui>();
-  public game_files_section_ref = Inferno.createRef<ProjectTreeSectionGui>();
+  public tr_files_section_ref = Inferno.createRef<ExplorerSectionGui>();
+  public game_files_section_ref = Inferno.createRef<ExplorerSectionGui>();
 
   public prev_tr_file_path: string | null = null;
-  public tr_file_tree_map = new Map<string, FileTreeItemGui>();
+  public tr_file_tree_map = new Map<string, TreeItemGui>();
   public prev_game_file_path: string | null = null;
-  public game_file_tree_map = new Map<string, FileTreeItemGui>();
+  public game_file_tree_map = new Map<string, TreeItemGui>();
 
   public override componentDidMount(): void {
     this.tr_file_tree_map.clear();
@@ -93,57 +93,57 @@ export class ProjectTreeGui extends Inferno.Component<unknown, unknown> {
   public override render(): JSX.Element {
     let { app } = this.context;
     return (
-      <BoxGui orientation="vertical" className="ProjectTree">
-        <div className="ProjectTree-Header">
+      <BoxGui orientation="vertical" className="Explorer">
+        <div className="Explorer-Header">
           <IconGui icon={null} /> PROJECT [
           {app.current_project_meta?.translation_locale ?? 'loading...'}]
         </div>
 
-        <ProjectTreeSectionGui
+        <ExplorerSectionGui
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ref={this.tr_files_section_ref as any}
           name="Translation files">
-          <FileTreeGui
+          <TreeViewGui
             map={this.tr_file_tree_map}
             tree={app.project_tr_files_tree}
             file={app.project_tr_files_tree.root_dir}
             files_type={FileType.TrFile}
             depth={0}
           />
-        </ProjectTreeSectionGui>
+        </ExplorerSectionGui>
 
-        <ProjectTreeSectionGui
+        <ExplorerSectionGui
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ref={this.game_files_section_ref as any}
           name="Game files"
           default_opened>
-          <FileTreeGui
+          <TreeViewGui
             map={this.game_file_tree_map}
             tree={app.project_game_files_tree}
             file={app.project_game_files_tree.root_dir}
             files_type={FileType.GameFile}
             depth={0}
           />
-        </ProjectTreeSectionGui>
+        </ExplorerSectionGui>
       </BoxGui>
     );
   }
 }
 
-export interface ProjectTreeSectionGuiProps {
+export interface ExplorerSectionGuiProps {
   name: string;
   default_opened?: boolean;
 }
 
-export interface ProjectTreeSectionGuiState {
+export interface ExplorerSectionGuiState {
   is_opened: boolean;
 }
 
-export class ProjectTreeSectionGui extends Inferno.Component<
-  ProjectTreeSectionGuiProps,
-  ProjectTreeSectionGuiState
+export class ExplorerSectionGui extends Inferno.Component<
+  ExplorerSectionGuiProps,
+  ExplorerSectionGuiState
 > {
-  public override state: ProjectTreeSectionGuiState = {
+  public override state: ExplorerSectionGuiState = {
     is_opened: this.props.default_opened ?? false,
   };
 
@@ -156,14 +156,14 @@ export class ProjectTreeSectionGui extends Inferno.Component<
     return (
       <BoxGui
         orientation="vertical"
-        className={cc('ProjectTreeSection', {
-          'ProjectTreeSection-opened': is_opened,
+        className={cc('ExplorerSection', {
+          'ExplorerSection-opened': is_opened,
           'BoxItem-expand': is_opened,
         })}>
         <div>
           <button
             type="button"
-            className="block ProjectTreeSection-Name ProjectTreeItem"
+            className="block ExplorerSection-Name TreeItem"
             tabIndex={0}
             onClick={this.on_name_click}>
             <IconGui icon={`chevron-${is_opened ? 'down' : 'right'}`} /> {this.props.name}
@@ -175,29 +175,29 @@ export class ProjectTreeSectionGui extends Inferno.Component<
   }
 }
 
-export interface FileTreeGuiProps {
-  map: Map<string, FileTreeItemGui>;
+export interface TreeViewGuiProps {
+  map: Map<string, TreeItemGui>;
   tree: FileTree;
   files_type: FileType;
   depth: number;
 }
 
-export function FileTreeGui(props: FileTreeGuiProps & { file: FileTreeDir }): JSX.Element {
-  return <>{FileTreeItemGui.render_children(props, props.file, [])}</>;
+export function TreeViewGui(props: TreeViewGuiProps & { file: FileTreeDir }): JSX.Element {
+  return <>{TreeItemGui.render_children(props, props.file, [])}</>;
 }
 
-export interface FileTreeItemGuiProps extends FileTreeGuiProps {
+export interface TreeItemGuiProps extends TreeViewGuiProps {
   file: FileTreeFile;
   default_opened?: boolean;
 }
 
-export interface FileTreeItemGuiState {
+export interface TreeItemGuiState {
   is_opened: boolean;
 }
 
-export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, FileTreeItemGuiState> {
+export class TreeItemGui extends Inferno.Component<TreeItemGuiProps, TreeItemGuiState> {
   public override context!: AppMainGuiCtx;
-  public override state: FileTreeItemGuiState = {
+  public override state: TreeItemGuiState = {
     is_opened: this.props.default_opened ?? false,
   };
 
@@ -207,7 +207,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     this.register_into_container(this.props);
   }
 
-  public override componentDidUpdate(prev_props: FileTreeItemGuiProps): void {
+  public override componentDidUpdate(prev_props: TreeItemGuiProps): void {
     this.unregister_from_container(prev_props);
     this.register_into_container(this.props);
   }
@@ -216,11 +216,11 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     this.unregister_from_container(this.props);
   }
 
-  public register_into_container(props: FileTreeItemGuiProps): void {
+  public register_into_container(props: TreeItemGuiProps): void {
     props.map.set(props.file.path, this);
   }
 
-  public unregister_from_container(props: FileTreeItemGuiProps): void {
+  public unregister_from_container(props: TreeItemGuiProps): void {
     props.map.delete(props.file.path);
   }
 
@@ -259,10 +259,10 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
         key={key}
         ref={this.root_ref}
         type="button"
-        className={cc('block', 'ProjectTreeItem', {
-          'ProjectTreeItem-current': !is_directory && this.state.is_opened,
+        className={cc('block', 'TreeItem', {
+          'TreeItem-current': !is_directory && this.state.is_opened,
         })}
-        style={{ '--ProjectTreeItem-depth': this.props.depth }}
+        style={{ '--TreeItem-depth': this.props.depth }}
         title={path}
         tabIndex={0}
         onClick={this.on_click}>
@@ -278,13 +278,13 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
     ];
 
     if (this.state.is_opened && this.props.file instanceof FileTreeDir) {
-      FileTreeItemGui.render_children(this.props, this.props.file, elements);
+      TreeItemGui.render_children(this.props, this.props.file, elements);
     }
     return elements;
   }
 
   public static render_children(
-    props: FileTreeGuiProps,
+    props: TreeViewGuiProps,
     dir: FileTreeDir,
     out_elements: JSX.Element[],
   ): JSX.Element[] {
@@ -306,7 +306,7 @@ export class FileTreeItemGui extends Inferno.Component<FileTreeItemGuiProps, Fil
       /* eslint-enable no-cond-assign */
 
       dest_elements.push(
-        <FileTreeItemGui {...props} key={child.path} file={child} depth={props.depth + 1} />,
+        <TreeItemGui {...props} key={child.path} file={child} depth={props.depth + 1} />,
       );
     }
 

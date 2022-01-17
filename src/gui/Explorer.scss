@@ -1,0 +1,43 @@
+@import '../common.scss';
+
+@include app-styles {
+  .Explorer {
+    background-color: $color-Explorer;
+    min-width: 300px;
+    max-width: 300px;
+  }
+
+  .Explorer-Header {
+    padding: ($spacing * 2) $spacing;
+    color: $color-EditorTab-active-fg;
+  }
+
+  .ExplorerSection:not(:last-child) {
+    border-bottom: 1px solid rgba(#ffffff, 0.2);
+  }
+
+  .ExplorerSection-Name {
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: calc(15em / 16);
+  }
+
+  .TreeItem {
+    padding: $spacing;
+    padding-left: calc(#{$spacing} + var(--TreeItem-depth, 0) * #{$spacing} * 2.5);
+    cursor: pointer;
+
+    &:hover {
+      background-color: $color-TreeItem-hover;
+    }
+
+    &.TreeItem-current {
+      background-color: $color-TreeItem-current;
+    }
+
+    &:focus {
+      background-color: $color-TreeItem-focus;
+      outline: none;
+    }
+  }
+}
