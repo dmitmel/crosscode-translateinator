@@ -116,7 +116,7 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
 }
 
 export interface EditorTabGuiDisplayProps {
-  icon?: string;
+  icon: string;
   title: string;
   description?: string;
 }
@@ -158,7 +158,7 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
     app.set_current_tab_index(this.props.index);
   };
 
-  public on_close_click = (event: Inferno.InfernoMouseEvent<SVGSVGElement>): void => {
+  public on_close_click = (event: Inferno.InfernoMouseEvent<HTMLSpanElement>): void => {
     event.stopPropagation();
     let { app } = this.context;
     app.close_tab(this.props.index);

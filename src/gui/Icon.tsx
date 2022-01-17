@@ -1,55 +1,34 @@
 import './Icon.scss';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 
-import icons_obj from '../icons_list.json';
-import * as utils from '../utils';
-
-let icons_map = new Map<string, string>();
-for (let k in icons_obj) {
-  if (utils.has_key(icons_obj, k)) {
-    icons_map.set(k, icons_obj[k]);
-  }
-}
-
-export interface IconGuiProps extends SVGAttributes<SVGSVGElement> {
-  inner_ref?: Inferno.Ref<SVGSVGElement>;
-  icon: string | null | undefined;
-  size?: number | string;
-  title?: string;
+export interface IconGuiProps extends HTMLAttributes<HTMLSpanElement> {
+  inner_ref?: Inferno.Ref<HTMLSpanElement>;
+  icon: string | null;
 }
 
 export function IconGui({
   inner_ref,
   icon,
-  size,
-  title,
   className,
   class: _class,
   ...rest
 }: IconGuiProps): JSX.Element {
-  let icon_xml = '';
-  if (title != null) {
-    icon_xml += `<title>${utils.escape_html(title)}</title>`;
-  }
-  if (icon != null) {
-    icon_xml += icons_map.get(icon) ?? '';
-  }
-
-  size ??= '1em';
+  let valid_icon = icon != null && /^[a-z0-9-]+$/.test(icon);
   return (
-    <svg
+    <span
       ref={inner_ref}
-      xmlns="http://www.w3.org/2000/svg"
-      xmlnsXlink="http://www.w3.org/1999/xlink"
-      width={size}
-      height={size}
-      fill="currentColor"
-      viewBox="0 0 16 16"
-      className={cc(className, 'Icon', icon != null ? `Icon-${icon}` : null)}
+      role="img"
+      className={cc(
+        className,
+        'Icon',
+        'bi',
+        valid_icon ? `Icon-${icon}` : 'IconBlank',
+        valid_icon ? `bi-${icon}` : null,
+      )}
       {...rest}
-      dangerouslySetInnerHTML={{ __html: icon_xml }}
     />
   );
 }
@@ -67,7 +46,7 @@ export function IconlikeTextGui({
   ...rest
 }: IconlikeTextGuiProps): JSX.Element {
   return (
-    <span ref={inner_ref} className={cc(className, 'IconlikeText')} {...rest}>
+    <span ref={inner_ref} role="img" className={cc(className, 'IconlikeText')} {...rest}>
       {icon}
     </span>
   );

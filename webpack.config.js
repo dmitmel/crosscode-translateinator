@@ -30,7 +30,7 @@ module.exports = (_env, { mode }) => ({
     path: paths.join(__dirname, 'target', mode),
     filename: '[name].js?[contenthash]',
     chunkFilename: '[name].chunk.js?[contenthash]',
-    assetModuleFilename: 'assets/[file]?[contenthash]',
+    assetModuleFilename: '[base]?[contenthash]',
   },
 
   resolve: {
@@ -85,16 +85,6 @@ module.exports = (_env, { mode }) => ({
                 outputStyle: mode === 'production' ? 'compressed' : 'expanded',
               },
             },
-          },
-        ],
-      },
-
-      {
-        test: /\.json$/,
-        include: [require.resolve('./src/icons_list.json')],
-        use: [
-          {
-            loader: './bootstrap-icons-loader',
           },
         ],
       },
