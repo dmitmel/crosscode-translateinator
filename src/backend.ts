@@ -41,22 +41,22 @@ type Empty = Record<string, never>;
 export interface MessageRegistry {
   //
 
-  'Backend/info': {
+  get_backend_info: {
     request: Empty;
     response: { implementation_name: string; implementation_version: string };
   };
 
-  'Project/open': {
+  open_project: {
     request: { dir: string };
     response: { project_id: number };
   };
 
-  'Project/close': {
+  close_project: {
     request: { project_id: number };
     response: Empty;
   };
 
-  'Project/get_meta': {
+  get_project_meta: {
     request: { project_id: number };
     response: {
       root_dir: string;
@@ -72,38 +72,29 @@ export interface MessageRegistry {
     };
   };
 
-  'Project/list_tr_files': {
-    request: { project_id: number };
-    response: { paths: string[] };
-  };
-
-  'Project/list_virtual_game_files': {
-    request: { project_id: number };
-    response: { paths: string[] };
-  };
-
-  'VirtualGameFile/list_fragments': {
+  list_files: {
     request: {
       project_id: number;
-      file_path: string;
-      start?: number | null;
-      end?: number | null;
+      file_type: 'tr_file' | 'game_file';
+    };
+    response: {
+      paths: string[];
+    };
+  };
+
+  query_fragments: {
+    request: {
+      project_id: number;
+      from_tr_file?: string | null;
+      from_game_file?: string | null;
+      slice_start?: number | null;
+      slice_end?: number | null;
+      json_paths?: string[] | null;
       select_fields: FieldsSelection;
+      only_count?: boolean | null;
     };
     response: {
       fragments: unknown[][];
-    };
-  };
-
-  'VirtualGameFile/get_fragment': {
-    request: {
-      project_id: number;
-      file_path: string;
-      json_path: string;
-      select_fields: FieldsSelection;
-    };
-    response: {
-      fragment: unknown[];
     };
   };
 
@@ -330,14 +321,14 @@ export class Backend {
 
 export class Project {
   public static async open(backend: Backend, dir: string): Promise<Project> {
-    let res = await backend.send_request('Project/open', { dir });
+    let res = await backend.send_request('open_project', { dir });
     return new Project(backend, dir, res.project_id);
   }
 
   public constructor(public backend: Backend, public dir: string, public id: number) {}
 
   public async get_meta(): Promise<ProjectMeta> {
-    let res = await this.backend.send_request('Project/get_meta', {
+    let res = await this.backend.send_request('get_project_meta', {
       project_id: this.id,
     });
     return new ProjectMeta(
@@ -356,15 +347,17 @@ export class Project {
   }
 
   public async list_tr_file_paths(): Promise<string[]> {
-    let res = await this.backend.send_request('Project/list_tr_files', {
+    let res = await this.backend.send_request('list_files', {
       project_id: this.id,
+      file_type: 'tr_file',
     });
     return res.paths;
   }
 
   public async list_game_file_paths(): Promise<string[]> {
-    let res = await this.backend.send_request('Project/list_virtual_game_files', {
+    let res = await this.backend.send_request('list_files', {
       project_id: this.id,
+      file_type: 'game_file',
     });
     return res.paths;
   }
@@ -449,11 +442,11 @@ export class VirtualGameFile {
         'flags',
       ],
     };
-    let res = await this.project.backend.send_request('VirtualGameFile/list_fragments', {
+    let res = await this.project.backend.send_request('query_fragments', {
       project_id: this.project.id,
-      file_path: this.path,
-      start,
-      end,
+      from_game_file: this.path,
+      slice_start: start,
+      slice_end: end,
       select_fields,
     });
     return expand_table_data('fragments', res.fragments, select_fields).map((f_raw) => {
@@ -485,13 +478,13 @@ export class VirtualGameFile {
         'flags',
       ],
     };
-    let res = await this.project.backend.send_request('VirtualGameFile/get_fragment', {
+    let res = await this.project.backend.send_request('query_fragments', {
       project_id: this.project.id,
-      file_path: this.path,
-      json_path,
+      from_game_file: this.path,
+      json_paths: [json_path],
       select_fields,
     });
-    let [f_raw] = expand_table_data('fragments', [res.fragment], select_fields);
+    let [f_raw] = expand_table_data('fragments', res.fragments, select_fields);
     return this.project._create_fragment({
       ...f_raw!,
       game_file_path: this.path,
