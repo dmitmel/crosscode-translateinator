@@ -86,10 +86,7 @@ export class AppMain {
         await tab.loaded_promise;
         let list = await tab.list_fragments();
         this.current_tab_loading_promise = null;
-        if (this.current_tab_index === this.opened_tabs.indexOf(tab)) {
-          this.current_fragment_list = list;
-          this.event_fragment_list_update.fire();
-        }
+        tab.notify_fragment_list_update(list);
       })();
     }
   }
@@ -209,6 +206,13 @@ export abstract class EditorTab {
 
   // TODO: check that the returned list has exactly the requested size
   public abstract list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]>;
+
+  public notify_fragment_list_update(new_list: Fragment[]): void {
+    if (this.app.current_tab_index === this.app.opened_tabs.indexOf(this)) {
+      this.app.current_fragment_list = new_list;
+      this.app.event_fragment_list_update.fire();
+    }
+  }
 }
 
 export interface FragmentFromGame {
@@ -221,11 +225,12 @@ export class TabQueue extends EditorTab {
   public static readonly MAX_SIZE: number = 200;
 
   public fragments: Fragment[] = [];
+  public fragments_rev: Fragment[] = [];
 
   public async push_fragments_from_game(list: FragmentFromGame[]): Promise<void> {
     list = list.slice(); // backup the list before any asynchronousity happens
     let fragments_by_file_path = new Map<string, number[]>();
-    let fetched_list: Array<Fragment | undefined> = new Array(list.length);
+    let fetched_list: Array<Fragment | null> = new Array(list.length);
     for (let i = 0, len = list.length; i < len; i++) {
       utils.map_set_default(fragments_by_file_path, list[i].file_path, []).push(i);
     }
@@ -245,38 +250,27 @@ export class TabQueue extends EditorTab {
   }
 
   public push_fragments(list: Fragment[]): void {
-    let queue = this.fragments;
-    if (queue.length + list.length > TabQueue.MAX_SIZE) {
-      queue.splice(0, queue.length + list.length - TabQueue.MAX_SIZE);
+    let dedup_filter: (f: Fragment) => boolean = (_) => true;
+    if (list.length === 1) {
+      // The fast path:
+      let f1 = list[0];
+      dedup_filter = (f2) => f2.id !== f1.id;
+    } else if (list.length > 1) {
+      let ids = new Set<string>();
+      for (let f1 of list) ids.add(f1.id);
+      dedup_filter = (f2) => !ids.has(f2.id);
     }
-    let start = Math.max(0, list.length - TabQueue.MAX_SIZE);
-    for (let i = start, len = list.length; i < len; i++) {
-      queue.push(list[i]);
-    }
-    if (this.app.current_tab_index === this.app.opened_tabs.indexOf(this)) {
-      this.app.current_fragment_list = this.list_fragments_(0, this.fragments.length);
-      this.app.event_fragment_list_update.fire();
-    }
+    this.fragments = this.fragments.filter(dedup_filter).concat(list).slice(-TabQueue.MAX_SIZE);
+    this.fragments_rev = this.fragments.slice().reverse();
+    this.notify_fragment_list_update(this.fragments_rev.slice());
   }
 
   public override is_closeable(): boolean {
     return false;
   }
 
-  private list_fragments_(start: number, end: number): Fragment[] {
-    let list = this.fragments;
-    start ??= 0;
-    let len = list.length;
-    end ??= len;
-    let result: Fragment[] = [];
-    for (let i = end; i > start; i--) {
-      result.push(list[i - 1]);
-    }
-    return result;
-  }
-
   public list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
-    return Promise.resolve(this.list_fragments_(start ?? 0, end ?? this.fragments.length));
+    return Promise.resolve(this.fragments_rev.slice(start ?? 0, end ?? this.fragments_rev.length));
   }
 }
 

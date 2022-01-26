@@ -457,7 +457,7 @@ export class VirtualGameFile {
     });
   }
 
-  public async get_fragment(json_path: string): Promise<Fragment> {
+  public async get_fragment(json_path: string): Promise<Fragment | null> {
     let select_fields: FieldsSelection = {
       fragments: [
         'id',
@@ -485,8 +485,9 @@ export class VirtualGameFile {
       select_fields,
     });
     let [f_raw] = expand_table_data('fragments', res.fragments, select_fields);
+    if (f_raw == null) return null;
     return this.project._create_fragment({
-      ...f_raw!,
+      ...f_raw,
       game_file_path: this.path,
       json_path,
     });
