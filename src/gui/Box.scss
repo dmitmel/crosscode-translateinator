@@ -70,5 +70,9 @@
     &.Wrapper-scroll {
       overflow-y: auto;
     }
+
+    &.Wrapper-expand {
+      height: 100%;
+    }
   }
 }

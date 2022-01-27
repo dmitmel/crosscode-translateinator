@@ -72,12 +72,14 @@ export interface WrapperGuiProps extends HTMLAttributes<HTMLDivElement> {
   inner_ref?: Inferno.Ref<HTMLDivElement>;
   scroll?: boolean;
   allow_overflow?: boolean;
+  expand?: boolean;
 }
 
 export function WrapperGui({
   inner_ref,
   scroll,
   allow_overflow,
+  expand,
   className,
   class: _class,
   children,
@@ -89,6 +91,7 @@ export function WrapperGui({
       className={cc(className, 'Wrapper', {
         'Wrapper-scroll': scroll,
         'Wrapper-allow-overflow': allow_overflow,
+        'Wrapper-expand': expand,
       })}
       {...rest}>
       {children}

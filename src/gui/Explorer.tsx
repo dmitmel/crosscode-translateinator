@@ -4,12 +4,11 @@ import './Button';
 import cc from 'clsx';
 import * as Inferno from 'inferno';
 import * as React from 'react';
-import { default as AutoSizerGui } from 'react-virtualized-auto-sizer';
 import * as ReactWindow from 'react-window';
 
 import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
 import { AppMainGuiCtx } from './AppMain';
-import { BoxGui } from './Box';
+import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 
@@ -122,8 +121,15 @@ export interface PreparedTreeItem {
   depth: number;
 }
 
-class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
+export interface TreeViewGuiState {
+  list_height: number;
+}
+
+class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> {
   public override context!: AppMainGuiCtx;
+  public override state: TreeViewGuiState = {
+    list_height: -1,
+  };
 
   public list_ref = Inferno.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
   public item_indexes_map = new Map<string, number>();
@@ -156,13 +162,22 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
     this.forceUpdate();
   }
 
+  private resize_observer: ResizeObserver | null = null;
+  private resize_observer_target = Inferno.createRef<HTMLDivElement>();
+
   public override componentDidMount(): void {
+    this.resize_observer = new ResizeObserver(this.resize_observer_callback);
+    this.resize_observer.observe(this.resize_observer_target.current!, { box: 'border-box' });
+
     let { app } = this.context;
     app.event_current_tab_change.on(this.on_current_tab_change);
     this.on_current_tab_change(null);
   }
 
   public override componentWillUnmount(): void {
+    this.resize_observer!.disconnect();
+    this.resize_observer = null;
+
     let { app } = this.context;
     app.event_current_tab_change.off(this.on_current_tab_change);
   }
@@ -200,7 +215,26 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
     }
   };
 
+  private resize_observer_callback = (entries: ResizeObserverEntry[]): void => {
+    for (let entry of entries) {
+      if (entry.target === this.resize_observer_target.current) {
+        let list_height = entry.contentRect.height;
+        this.setState((prev_state) =>
+          prev_state.list_height !== list_height ? { list_height } : null,
+        );
+      }
+    }
+  };
+
   public override render(): JSX.Element {
+    return (
+      <WrapperGui inner_ref={this.resize_observer_target} expand>
+        {this.state.list_height >= 0 ? this.render_list() : null}
+      </WrapperGui>
+    );
+  }
+
+  private render_list(): JSX.Element {
     this.next_opened_states.clear();
     this.item_indexes_map.clear();
 
@@ -213,22 +247,16 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
     this.next_opened_states = prev_opened_states;
 
     return (
-      <AutoSizerGui
-        children={({ width, height }) => {
-          return (
-            <ReactWindow.FixedSizeList
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ref={this.list_ref as any}
-              width={width}
-              height={height}
-              itemSize={30}
-              itemData={items}
-              itemCount={items.length}
-              itemKey={(index, data) => data[index].file.path}
-              children={this.render_list_item}
-            />
-          );
-        }}
+      <ReactWindow.FixedSizeList
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ref={this.list_ref as any}
+        width={'100%'}
+        height={this.state.list_height}
+        itemSize={30}
+        itemData={items}
+        itemCount={items.length}
+        itemKey={(index, data) => data[index].file.path}
+        children={this.render_list_item}
       />
     );
   }
