@@ -13,6 +13,8 @@ settings:
     allowModules:
       - ultimate-crosscode-typedefs
       - crosscode-localization-engine
+      - react
+      - react-dom
 
 rules:
   func-names: off

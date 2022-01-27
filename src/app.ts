@@ -337,13 +337,16 @@ export class TabTrFile extends TabFile {
 export class FileTree {
   public static readonly ROOT_DIR = '';
 
-  public readonly dirs = new Map<string, FileTreeDir>();
   public readonly files = new Map<string, FileTreeFile>();
 
   public get root_dir(): FileTreeDir {
-    let root_dir = this.dirs.get(FileTree.ROOT_DIR);
-    utils.assert(root_dir != null);
+    let root_dir = this.files.get(FileTree.ROOT_DIR);
+    utils.assert(root_dir instanceof FileTreeDir);
     return root_dir;
+  }
+
+  public get_file(path: string): FileTreeFile | undefined {
+    return this.files.get(path);
   }
 
   public constructor() {
@@ -351,11 +354,9 @@ export class FileTree {
   }
 
   public clear(): void {
-    this.dirs.clear();
     this.files.clear();
-
     let root_dir = new FileTreeDir(FileTree.ROOT_DIR);
-    this.dirs.set(root_dir.path, root_dir);
+    this.files.set(root_dir.path, root_dir);
   }
 
   public add_paths(paths: string[]): void {
@@ -375,12 +376,14 @@ export class FileTree {
           let file = new FileTreeFile(component_path);
           this.files.set(component_path, file);
         } else {
-          let dir = this.dirs.get(component_path);
-          if (dir == null) {
-            dir = new FileTreeDir(component_path);
-            this.dirs.set(dir.path, dir);
+          let maybe_dir = this.files.get(component_path);
+          if (!(maybe_dir instanceof FileTreeDir)) {
+            let dir = new FileTreeDir(component_path);
+            this.files.set(dir.path, dir);
+            parent_dir = dir;
+          } else {
+            parent_dir = maybe_dir;
           }
-          parent_dir = dir;
         }
       }
     }

@@ -37,6 +37,8 @@ module.exports = (_env, { mode }) => ({
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
     alias: {
       inferno: `inferno/${mode === 'production' ? 'index' : 'dist/index.dev'}.esm.js`,
+      react: 'inferno-compat',
+      'react-dom': 'inferno-compat',
     },
   },
 

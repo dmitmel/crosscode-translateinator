@@ -1,14 +1,15 @@
-/* eslint-disable no-cond-assign */
-
 import './Explorer.scss';
 import './Button';
 
 import cc from 'clsx';
 import * as Inferno from 'inferno';
+import * as React from 'react';
+import { default as AutoSizerGui } from 'react-virtualized-auto-sizer';
+import * as ReactWindow from 'react-window';
 
 import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
 import { AppMainGuiCtx } from './AppMain';
-import { BoxGui, WrapperGui } from './Box';
+import { BoxGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 
@@ -103,7 +104,7 @@ export class ExplorerSectionGui extends Inferno.Component<
             <IconGui icon={`chevron-${is_opened ? 'down' : 'right'}`} /> {this.props.name}
           </button>
         </div>
-        {is_opened ? <WrapperGui scroll>{this.props.children}</WrapperGui> : null}
+        {is_opened ? this.props.children : null}
       </BoxGui>
     );
   }
@@ -115,10 +116,17 @@ export interface TreeViewGuiProps {
   base_depth?: number;
 }
 
+export interface PreparedTreeItem {
+  file: FileTreeFile;
+  is_opened: boolean;
+  depth: number;
+}
+
 class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
   public override context!: AppMainGuiCtx;
 
-  public item_guis_map = new Map<string, HTMLButtonElement>();
+  public list_ref = Inferno.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
+  public item_indexes_map = new Map<string, number>();
 
   public opened_states = new Map<string, boolean>();
   private next_opened_states = new Map<string, boolean>();
@@ -163,16 +171,21 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
     let { app } = this.context;
     let tab = app.current_tab;
     if (tab instanceof TabFile && tab.file_type === this.props.files_type) {
-      // this.should_scroll_into_view = !triggered_from_file_tree;
       this.set_current(tab.file_path);
       if (trigger !== TabChangeTrigger.FileTree) {
-        let element = this.item_guis_map.get(tab.file_path);
-        element?.scrollIntoView({ block: 'center', inline: 'center' });
+        this.scroll_to_file(tab.file_path);
       }
     } else {
       this.set_current(null);
     }
   };
+
+  public scroll_to_file(path: string): void {
+    let index = this.item_indexes_map.get(path);
+    if (index != null) {
+      this.list_ref.current?.scrollToItem(index, 'smart');
+    }
+  }
 
   private on_item_click = (
     file: FileTreeFile,
@@ -188,44 +201,76 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
   };
 
   public override render(): JSX.Element {
-    this.current_item_index = 0;
     this.next_opened_states.clear();
+    this.item_indexes_map.clear();
 
-    let elements: JSX.Element[] = [];
-    this.render_items(this.props.tree.root_dir, this.props.base_depth ?? 0, 0, elements);
+    let items: PreparedTreeItem[] = [];
+    this.prepare_items(this.props.tree.root_dir, this.props.base_depth ?? 0, items);
 
     let prev_opened_states = this.opened_states;
     this.opened_states = this.next_opened_states;
     prev_opened_states.clear();
     this.next_opened_states = prev_opened_states;
 
-    return <>{elements}</>;
+    return (
+      <AutoSizerGui
+        children={({ width, height }) => {
+          return (
+            <ReactWindow.FixedSizeList
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ref={this.list_ref as any}
+              width={width}
+              height={height}
+              itemSize={30}
+              itemData={items}
+              itemCount={items.length}
+              itemKey={(index, data) => data[index].file.path}
+              children={this.render_list_item}
+            />
+          );
+        }}
+      />
+    );
   }
 
-  private current_item_index = 0;
-  private render_items(
-    dir: FileTreeDir,
-    depth: number,
-    visible_start_index: number,
-    out_elements: JSX.Element[],
-  ): void {
+  // This can't be an anonymous function because the virtual list library
+  // passes it as the first argument to `React.createElement`, to handle both
+  // class and functional components. However, this means that if the function
+  // is defined anonymously in the JSX where the list component is used, on
+  // every render a different instance of it will be created, and this would
+  // make React/Inferno think that a completely different component is used for
+  // list items every time, causing the whole list to be re-rendered even if no
+  // items actually change.
+  private render_list_item: React.ComponentType<
+    ReactWindow.ListChildComponentProps<PreparedTreeItem[]>
+  > = ({ index, style, data }) => {
+    let item = data[index];
+    return (
+      <TreeItemGui
+        style={style as CSSProperties}
+        file_type={this.props.files_type}
+        file={item.file}
+        is_opened={item.is_opened}
+        depth={item.depth}
+        index={index}
+        on_click={Inferno.linkEvent(item.file, this.on_item_click)}
+      />
+    ) as React.ReactElement;
+  };
+
+  private prepare_items(dir: FileTreeDir, depth: number, out_items: PreparedTreeItem[]): void {
     let files: FileTreeFile[] = [];
 
     // TODO: sorting
 
     for (let path of dir.children) {
-      let subdir: FileTreeDir | undefined;
-      let file: FileTreeFile | undefined;
-
-      if ((subdir = this.props.tree.dirs.get(path)) != null) {
-        if (this.current_item_index >= visible_start_index) {
-          out_elements.push(this.render_item(subdir, depth));
+      let file: FileTreeFile | undefined = this.props.tree.get_file(path);
+      if (file instanceof FileTreeDir) {
+        out_items.push(this.prepare_item(file, depth, out_items.length));
+        if (this.is_opened(file.path)) {
+          this.prepare_items(file, depth + 1, out_items);
         }
-        this.current_item_index++;
-        if (this.is_opened(subdir.path)) {
-          this.render_items(subdir, depth + 1, visible_start_index, out_elements);
-        }
-      } else if ((file = this.props.tree.files.get(path)) != null) {
+      } else if (file != null) {
         files.push(file);
       } else {
         throw new Error(`Unknown file: ${path}`);
@@ -233,59 +278,62 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, unknown> {
     }
 
     for (let file of files) {
-      if (this.current_item_index >= visible_start_index) {
-        out_elements.push(this.render_item(file, depth));
-      }
-      this.current_item_index++;
+      out_items.push(this.prepare_item(file, depth, out_items.length));
     }
   }
 
-  private render_item(file: FileTreeFile, depth: number): JSX.Element {
-    let is_directory = file instanceof FileTreeDir;
-
+  private prepare_item(file: FileTreeFile, depth: number, index: number): PreparedTreeItem {
     let is_opened = this.is_opened(file.path);
     this.next_opened_states.set(file.path, is_opened);
-
-    let icon: string;
-    let label = file.path;
-    if (is_directory) {
-      label += '/';
-      icon = `chevron-${is_opened ? 'down' : 'right'}`;
-    } else if (this.props.files_type === FileType.TrFile) {
-      icon = 'file-earmark-zip';
-    } else if (this.props.files_type === FileType.GameFile) {
-      icon = 'file-earmark-text';
-    } else {
-      throw new Error('unreachable');
-    }
-
-    return (
-      <button
-        key={file.path}
-        ref={(element: HTMLButtonElement | null): void => {
-          if (element != null) {
-            this.item_guis_map.set(file.path, element);
-          } else {
-            this.item_guis_map.delete(file.path);
-          }
-        }}
-        type="button"
-        className={cc('block', 'TreeItem', {
-          'TreeItem-current': !is_directory && is_opened,
-        })}
-        style={{ '--TreeItem-depth': depth }}
-        title={label}
-        tabIndex={0}
-        onClick={Inferno.linkEvent(file, this.on_item_click)}>
-        {
-          // Note that a nested div for enabling ellipsis is necessary,
-          // otherwise the tree item shrinks when the enclosing list begins
-          // overflowing.
-        }
-        <LabelGui block ellipsis>
-          <IconGui icon={icon} /> {this.current_item_index}: {file.name}
-        </LabelGui>
-      </button>
-    );
+    this.item_indexes_map.set(file.path, index);
+    return { file, is_opened, depth };
   }
+}
+
+export interface TreeItemGuiProps {
+  file_type: FileType;
+  file: FileTreeFile;
+  is_opened: boolean;
+  depth: number;
+  index: number;
+  on_click: Inferno.MouseEventHandler<HTMLButtonElement>;
+  style?: CSSProperties;
+}
+
+export function TreeItemGui(props: TreeItemGuiProps): JSX.Element {
+  let is_directory = props.file instanceof FileTreeDir;
+
+  let icon: string;
+  let label = props.file.path;
+  if (is_directory) {
+    label += '/';
+    icon = `chevron-${props.is_opened ? 'down' : 'right'}`;
+  } else if (props.file_type === FileType.TrFile) {
+    icon = 'file-earmark-zip';
+  } else if (props.file_type === FileType.GameFile) {
+    icon = 'file-earmark-text';
+  } else {
+    throw new Error('unreachable');
+  }
+
+  return (
+    <button
+      type="button"
+      className={cc('block', 'TreeItem', {
+        'TreeItem-current': !is_directory && props.is_opened,
+      })}
+      style={{ ...props.style, '--TreeItem-depth': props.depth }}
+      title={label}
+      tabIndex={0}
+      onClick={props.on_click}>
+      {
+        // Note that a nested div for enabling ellipsis is necessary,
+        // otherwise the tree item shrinks when the enclosing list begins
+        // overflowing.
+      }
+      <LabelGui block ellipsis>
+        <IconGui icon={icon} /> {props.file.name}
+      </LabelGui>
+    </button>
+  );
 }
