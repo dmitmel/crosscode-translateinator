@@ -3,10 +3,9 @@ import './Button';
 
 import cc from 'clsx';
 import * as Inferno from 'inferno';
-import * as React from 'react';
-import * as ReactWindow from 'react-window';
 
 import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
+import * as ReactWindow from '../vendor/react-window';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
@@ -255,8 +254,10 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
         itemSize={30}
         itemData={items}
         itemCount={items.length}
-        itemKey={(index, data) => data[index].file.path}
-        children={this.render_list_item}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        itemKey={((index: number, data: PreparedTreeItem[]) => data[index].file.path) as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        children={this.render_list_item as any}
       />
     );
   }
@@ -269,13 +270,13 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
   // make React/Inferno think that a completely different component is used for
   // list items every time, causing the whole list to be re-rendered even if no
   // items actually change.
-  private render_list_item: React.ComponentType<
-    ReactWindow.ListChildComponentProps<PreparedTreeItem[]>
+  private render_list_item: Inferno.StatelessComponent<
+    ReactWindow.RenderComponentProps<PreparedTreeItem[]>
   > = ({ index, style, data }) => {
     let item = data[index];
     return (
       <TreeItemGui
-        style={style as CSSProperties}
+        style={style}
         file_type={this.props.files_type}
         file={item.file}
         is_opened={item.is_opened}
@@ -283,7 +284,7 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
         index={index}
         on_click={Inferno.linkEvent(item.file, this.on_item_click)}
       />
-    ) as React.ReactElement;
+    );
   };
 
   private prepare_items(dir: FileTreeDir, depth: number, out_items: PreparedTreeItem[]): void {

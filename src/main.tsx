@@ -1,6 +1,6 @@
 import './uncaught_exception';
 import './main.scss';
-import './inferno-compat';
+import './vendor/inferno-compat';
 
 import * as Inferno from 'inferno';
 
