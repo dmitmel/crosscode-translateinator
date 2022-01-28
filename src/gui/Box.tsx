@@ -1,10 +1,10 @@
 import './Box.scss';
 
 import cc from 'clsx';
-import * as Inferno from 'inferno';
+import * as preact from 'preact';
 
-export interface BoxGuiProps extends HTMLAttributes<HTMLDivElement> {
-  inner_ref?: Inferno.Ref<HTMLDivElement>;
+export interface BoxGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {
+  inner_ref?: preact.Ref<HTMLDivElement>;
   orientation: 'vertical' | 'horizontal';
   inline?: boolean;
   reverse_children?: boolean;
@@ -27,7 +27,7 @@ export function BoxGui({
   class: _class,
   children,
   ...rest
-}: BoxGuiProps): JSX.Element {
+}: BoxGuiProps): preact.VNode {
   return (
     <div
       ref={inner_ref}
@@ -50,8 +50,8 @@ export function BoxGui({
   );
 }
 
-export interface BoxItemFillerGuiProps extends HTMLAttributes<HTMLDivElement> {
-  inner_ref?: Inferno.Ref<HTMLDivElement>;
+export interface BoxItemFillerGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {
+  inner_ref?: preact.Ref<HTMLDivElement>;
 }
 
 export function BoxItemFillerGui({
@@ -60,7 +60,7 @@ export function BoxItemFillerGui({
   class: _class,
   children,
   ...rest
-}: BoxItemFillerGuiProps): JSX.Element {
+}: BoxItemFillerGuiProps): preact.VNode {
   return (
     <div ref={inner_ref} className={cc(className, 'BoxItem-expand')} {...rest}>
       {children}
@@ -68,8 +68,8 @@ export function BoxItemFillerGui({
   );
 }
 
-export interface WrapperGuiProps extends HTMLAttributes<HTMLDivElement> {
-  inner_ref?: Inferno.Ref<HTMLDivElement>;
+export interface WrapperGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {
+  inner_ref?: preact.Ref<HTMLDivElement>;
   scroll?: boolean;
   allow_overflow?: boolean;
   expand?: boolean;
@@ -84,7 +84,7 @@ export function WrapperGui({
   class: _class,
   children,
   ...rest
-}: WrapperGuiProps): JSX.Element {
+}: WrapperGuiProps): preact.VNode {
   return (
     <div
       ref={inner_ref}

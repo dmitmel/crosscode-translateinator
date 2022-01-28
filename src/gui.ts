@@ -1,7 +1,3 @@
-import * as Inferno from 'inferno';
-
-export type ComponentProps<P> = P & { children?: Inferno.InfernoNode };
-
 /// Idea taken from <https://github.com/libsdl-org/SDL/blob/bd06538778102f72bad8393ef07da5a1ec444217/include/SDL_keycode.h#L324-L347>
 export enum KeyMod {
   None = 0,

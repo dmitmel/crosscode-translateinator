@@ -1,7 +1,7 @@
 import './EditorTabs.scss';
 
 import cc from 'clsx';
-import * as Inferno from 'inferno';
+import * as preact from 'preact';
 
 import { EditorTab, TabFile, TabGameFile, TabQueue, TabSearch, TabTrFile } from '../app';
 import * as utils from '../utils';
@@ -13,7 +13,7 @@ export interface EditorTabListGuiProps {
   className?: string;
 }
 
-export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, unknown> {
+export class EditorTabListGui extends preact.Component<EditorTabListGuiProps, unknown> {
   public override context!: AppMainGuiCtx;
   private map = new WeakMap<EditorTab, EditorTabGui>();
   private prev_opened_tab_index = 0;
@@ -53,7 +53,7 @@ export class EditorTabListGui extends Inferno.Component<EditorTabListGuiProps, u
     new_tab!.root_ref.current!.scrollIntoView({ block: 'center', inline: 'center' });
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { app } = this.context;
     return (
       <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
@@ -127,10 +127,10 @@ export interface EditorTabGuiProps extends EditorTabGuiDisplayProps {
   tab: EditorTab;
 }
 
-export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> {
+export class EditorTabGui extends preact.Component<EditorTabGuiProps, unknown> {
   public override context!: AppMainGuiCtx;
 
-  public root_ref = Inferno.createRef<HTMLButtonElement>();
+  public root_ref = preact.createRef<HTMLButtonElement>();
 
   public override componentDidMount(): void {
     this.register_into_container(this.props);
@@ -153,18 +153,18 @@ export class EditorTabGui extends Inferno.Component<EditorTabGuiProps, unknown> 
     props.map.delete(props.tab);
   }
 
-  public on_click = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+  public on_click = (_event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
     app.set_current_tab_index(this.props.index);
   };
 
-  public on_close_click = (event: Inferno.InfernoMouseEvent<HTMLSpanElement>): void => {
+  public on_close_click = (event: preact.JSX.TargetedMouseEvent<HTMLSpanElement>): void => {
     event.stopPropagation();
     let { app } = this.context;
     app.close_tab(this.props.index);
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { app } = this.context;
     return (
       <button

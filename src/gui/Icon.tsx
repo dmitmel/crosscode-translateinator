@@ -2,10 +2,10 @@ import './Icon.scss';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 import cc from 'clsx';
-import * as Inferno from 'inferno';
+import * as preact from 'preact';
 
-export interface IconGuiProps extends HTMLAttributes<HTMLSpanElement> {
-  inner_ref?: Inferno.Ref<HTMLSpanElement>;
+export interface IconGuiProps extends Omit<preact.JSX.HTMLAttributes<HTMLSpanElement>, 'icon'> {
+  inner_ref?: preact.Ref<HTMLSpanElement>;
   icon: string | null;
 }
 
@@ -15,7 +15,7 @@ export function IconGui({
   className,
   class: _class,
   ...rest
-}: IconGuiProps): JSX.Element {
+}: IconGuiProps): preact.VNode {
   let valid_icon = icon != null && /^[a-z0-9-]+$/.test(icon);
   return (
     <span
@@ -33,8 +33,9 @@ export function IconGui({
   );
 }
 
-export interface IconlikeTextGuiProps extends HTMLAttributes<HTMLSpanElement> {
-  inner_ref?: Inferno.Ref<HTMLSpanElement>;
+export interface IconlikeTextGuiProps
+  extends Omit<preact.JSX.HTMLAttributes<HTMLSpanElement>, 'icon'> {
+  inner_ref?: preact.Ref<HTMLSpanElement>;
   icon: string;
 }
 
@@ -44,7 +45,7 @@ export function IconlikeTextGui({
   className,
   class: _class,
   ...rest
-}: IconlikeTextGuiProps): JSX.Element {
+}: IconlikeTextGuiProps): preact.VNode {
   return (
     <span ref={inner_ref} role="img" className={cc(className, 'IconlikeText')} {...rest}>
       {icon}

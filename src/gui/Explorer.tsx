@@ -2,7 +2,7 @@ import './Explorer.scss';
 import './Button';
 
 import cc from 'clsx';
-import * as Inferno from 'inferno';
+import * as preact from 'preact';
 
 import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
 import * as ReactWindow from '../vendor/react-window';
@@ -11,7 +11,7 @@ import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 
-export class ExplorerGui extends Inferno.Component<unknown, unknown> {
+export class ExplorerGui extends preact.Component<unknown, unknown> {
   public override context!: AppMainGuiCtx;
 
   public override componentDidMount(): void {
@@ -34,7 +34,7 @@ export class ExplorerGui extends Inferno.Component<unknown, unknown> {
     this.forceUpdate();
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { app } = this.context;
     return (
       <BoxGui orientation="vertical" className="Explorer">
@@ -72,7 +72,7 @@ export interface ExplorerSectionGuiState {
   is_opened: boolean;
 }
 
-export class ExplorerSectionGui extends Inferno.Component<
+export class ExplorerSectionGui extends preact.Component<
   ExplorerSectionGuiProps,
   ExplorerSectionGuiState
 > {
@@ -84,7 +84,7 @@ export class ExplorerSectionGui extends Inferno.Component<
     this.setState({ is_opened: !this.state.is_opened });
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { is_opened } = this.state;
     return (
       <BoxGui
@@ -124,13 +124,13 @@ export interface TreeViewGuiState {
   list_height: number;
 }
 
-class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> {
+class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
   public override context!: AppMainGuiCtx;
   public override state: TreeViewGuiState = {
     list_height: -1,
   };
 
-  public list_ref = Inferno.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
+  public list_ref = preact.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
   public item_indexes_map = new Map<string, number>();
 
   public opened_states = new Map<string, boolean>();
@@ -162,7 +162,7 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
   }
 
   private resize_observer: ResizeObserver | null = null;
-  private resize_observer_target = Inferno.createRef<HTMLDivElement>();
+  private resize_observer_target = preact.createRef<HTMLDivElement>();
 
   public override componentDidMount(): void {
     this.resize_observer = new ResizeObserver(this.resize_observer_callback);
@@ -203,7 +203,7 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
 
   private on_item_click = (
     file: FileTreeFile,
-    _event: Inferno.InfernoMouseEvent<HTMLButtonElement>,
+    _event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>,
   ): void => {
     let { app } = this.context;
     if (file instanceof FileTreeDir) {
@@ -225,7 +225,7 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
     }
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     return (
       <WrapperGui inner_ref={this.resize_observer_target} expand>
         {this.state.list_height >= 0 ? this.render_list() : null}
@@ -233,7 +233,7 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
     );
   }
 
-  private render_list(): JSX.Element {
+  private render_list(): preact.VNode {
     this.next_opened_states.clear();
     this.item_indexes_map.clear();
 
@@ -267,10 +267,10 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
   // class and functional components. However, this means that if the function
   // is defined anonymously in the JSX where the list component is used, on
   // every render a different instance of it will be created, and this would
-  // make React/Inferno think that a completely different component is used for
-  // list items every time, causing the whole list to be re-rendered even if no
+  // make React think that a completely different component is used for list
+  // items every time, causing the whole list to be re-rendered even if no
   // items actually change.
-  private render_list_item: Inferno.StatelessComponent<
+  private render_list_item: preact.ComponentType<
     ReactWindow.RenderComponentProps<PreparedTreeItem[]>
   > = ({ index, style, data }) => {
     let item = data[index];
@@ -282,7 +282,7 @@ class TreeViewGui extends Inferno.Component<TreeViewGuiProps, TreeViewGuiState> 
         is_opened={item.is_opened}
         depth={item.depth}
         index={index}
-        on_click={Inferno.linkEvent(item.file, this.on_item_click)}
+        on_click={(event) => this.on_item_click(item.file, event)}
       />
     );
   };
@@ -325,11 +325,11 @@ export interface TreeItemGuiProps {
   is_opened: boolean;
   depth: number;
   index: number;
-  on_click: Inferno.MouseEventHandler<HTMLButtonElement>;
-  style?: CSSProperties;
+  on_click: preact.JSX.MouseEventHandler<HTMLButtonElement>;
+  style?: preact.JSX.CSSProperties;
 }
 
-export function TreeItemGui(props: TreeItemGuiProps): JSX.Element {
+export function TreeItemGui(props: TreeItemGuiProps): preact.VNode {
   let is_directory = props.file instanceof FileTreeDir;
 
   let icon: string;

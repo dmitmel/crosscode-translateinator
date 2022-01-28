@@ -1,11 +1,11 @@
 import './Button.scss';
 
 import cc from 'clsx';
+import * as preact from 'preact';
 
-import * as gui from '../gui';
 import { IconGui, IconGuiProps } from './Icon';
 
-interface IconButtonGuiProps extends HTMLAttributes<HTMLButtonElement> {
+interface IconButtonGuiProps extends Omit<preact.JSX.HTMLAttributes<HTMLButtonElement>, 'icon'> {
   icon: string | null;
   icon_props?: IconGuiProps;
 }
@@ -16,7 +16,7 @@ export function IconButtonGui({
   className,
   class: _class,
   ...element_props
-}: gui.ComponentProps<IconButtonGuiProps>): JSX.Element {
+}: IconButtonGuiProps): preact.VNode {
   return (
     <button type="button" tabIndex={0} className={cc(className, 'IconButton')} {...element_props}>
       <IconGui icon={icon} {...icon_props} />

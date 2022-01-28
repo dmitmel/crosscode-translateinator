@@ -36,9 +36,8 @@ module.exports = (_env, { mode }) => ({
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
     alias: {
-      inferno: `inferno/${mode === 'production' ? 'index' : 'dist/index.dev'}.esm.js`,
-      react: 'inferno-compat',
-      'react-dom': 'inferno-compat',
+      react: 'preact/compat',
+      'react-dom': 'preact/compat',
     },
   },
 
@@ -48,19 +47,6 @@ module.exports = (_env, { mode }) => ({
         test: /\.(?:js|ts)x?$/,
         include: paths.join(__dirname, 'src'),
         use: [
-          {
-            loader: 'babel-loader',
-            options: {
-              plugins: [
-                // I wish ts-transform-inferno was stable enough, but alas, it
-                // requires monkey-patches to fix the issue with duplicate
-                // imports (see commit history) and for some reason prevents
-                // type annotations written inside the JSX from being removed
-                // by the compiler, so instead we rely on Babel.
-                ['babel-plugin-inferno', { imports: true }],
-              ],
-            },
-          },
           {
             loader: 'ts-loader',
           },

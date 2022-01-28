@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-undefined */
 
-import * as Inferno from 'inferno';
-import { createElement, PureComponent } from 'inferno-compat';
 import memoizeOne from 'memoize-one';
+import * as preact from 'preact';
+import { PureComponent } from 'preact/compat';
 
 // Animation frame based implementation of setTimeout.
 // Inspired by Joe Lambert, https://gist.github.com/joelambert/1002116#file-requesttimeout-js
@@ -42,15 +43,13 @@ export type ScrollToAlign = 'auto' | 'smart' | 'center' | 'start' | 'end';
 
 type itemSize = number | ((index: number) => number);
 
-type InfernoComponentType<P> = Inferno.IComponentConstructor<P> | Inferno.StatelessComponent<P>;
-
 export interface RenderComponentProps<T> {
   data: T;
   index: number;
   isScrolling?: boolean;
-  style: CSSProperties;
+  style: preact.JSX.CSSProperties;
 }
-export type RenderComponent<T> = InfernoComponentType<RenderComponentProps<T>>;
+export type RenderComponent<T> = preact.ComponentType<RenderComponentProps<T>>;
 
 type ScrollDirection = 'forward' | 'backward';
 
@@ -66,21 +65,23 @@ type onScrollCallback = (event: {
   scrollUpdateWasRequested: boolean;
 }) => void;
 
-type ScrollEvent = Inferno.InfernoUIEvent<Element>;
+type ScrollEvent = preact.JSX.TargetedUIEvent<Element>;
 interface ItemStyleCache {
-  [index: number]: CSSProperties;
+  [index: number]: preact.JSX.CSSProperties;
 }
 
 interface OuterProps {
-  children?: Inferno.InfernoNode;
+  children?: preact.ComponentChildren;
+  ref?: preact.Ref<any>;
   className: string | void;
   onScroll: (event: ScrollEvent) => void;
-  style: Record<string, unknown>;
+  style: preact.JSX.CSSProperties;
 }
 
 interface InnerProps {
-  children?: Inferno.InfernoNode;
-  style: Record<string, unknown>;
+  children?: preact.ComponentChildren;
+  ref?: preact.Ref<any>;
+  style: preact.JSX.CSSProperties;
 }
 
 export interface Props<T> {
@@ -88,18 +89,18 @@ export interface Props<T> {
   className?: string;
   height: number;
   initialScrollOffset?: number;
-  innerRef?: Inferno.Ref;
-  innerElementType?: string | InfernoComponentType<InnerProps>;
+  innerRef?: preact.Ref<any>;
+  innerElementType?: string | preact.ComponentType<InnerProps>;
   itemCount: number;
   itemData: T;
-  itemKey?: (index: number, data: T) => Inferno.Key;
+  itemKey?: (index: number, data: T) => preact.Key;
   itemSize: itemSize;
   onItemsRendered?: onItemsRenderedCallback;
   onScroll?: onScrollCallback;
-  outerRef?: Inferno.Ref;
-  outerElementType?: string | InfernoComponentType<OuterProps>;
+  outerRef?: preact.Ref<any>;
+  outerElementType?: string | preact.ComponentType<OuterProps>;
   overscanCount?: number;
-  style?: CSSProperties;
+  style?: preact.JSX.CSSProperties;
   useIsScrolling?: boolean;
   width: number | string;
 }
@@ -113,7 +114,7 @@ interface State {
 
 const IS_SCROLLING_DEBOUNCE_INTERVAL = 150;
 
-const defaultItemKey = (index: number, _data: unknown): Inferno.Key => index;
+const defaultItemKey = (index: number, _data: unknown): preact.Key => index;
 
 export abstract class BaseList<T> extends PureComponent<Props<T>, State> {
   private _outerRef: Element | null = null;
@@ -199,7 +200,7 @@ export abstract class BaseList<T> extends PureComponent<Props<T>, State> {
     }
   }
 
-  public override render(): Inferno.InfernoNode {
+  public override render(): preact.VNode {
     const {
       children,
       className,
@@ -222,7 +223,7 @@ export abstract class BaseList<T> extends PureComponent<Props<T>, State> {
     if (itemCount > 0) {
       for (let index = startIndex; index <= stopIndex; index++) {
         items.push(
-          createElement(children, {
+          preact.createElement(children, {
             data: itemData,
             key: itemKey!(index, itemData),
             index,
@@ -237,7 +238,13 @@ export abstract class BaseList<T> extends PureComponent<Props<T>, State> {
     // So their actual sizes (if variable) are taken into consideration.
     const estimatedTotalSize = this.getEstimatedTotalSize();
 
-    return createElement(
+    let createElement2 = preact.createElement as <T>(
+      type: string | preact.ComponentType<T>,
+      props: T,
+      ...children: preact.ComponentChildren[]
+    ) => preact.VNode<any>;
+
+    return createElement2(
       outerElementType ?? 'div',
       {
         className,
@@ -253,7 +260,7 @@ export abstract class BaseList<T> extends PureComponent<Props<T>, State> {
           ...style,
         },
       },
-      createElement(innerElementType ?? 'div', {
+      createElement2(innerElementType ?? 'div', {
         children: items,
         ref: innerRef,
         style: {
@@ -325,14 +332,14 @@ export abstract class BaseList<T> extends PureComponent<Props<T>, State> {
   // So that pure component sCU will prevent re-renders.
   // We maintain this cache, and pass a style prop rather than index,
   // So that List can clear cached styles and force item re-render if necessary.
-  private _getItemStyle = (index: number): CSSProperties => {
+  private _getItemStyle = (index: number): preact.JSX.CSSProperties => {
     const { itemSize } = this.props;
 
     const itemStyleCache = this._getItemStyleCache(
       this.shouldResetStyleCacheOnItemSizeChange && itemSize,
     );
 
-    let style: CSSProperties;
+    let style: preact.JSX.CSSProperties;
     if (itemStyleCache.hasOwnProperty(index)) {
       style = itemStyleCache[index];
     } else {

@@ -1,7 +1,7 @@
 import './Editor.scss';
 
 import cc from 'clsx';
-import * as Inferno from 'inferno';
+import * as preact from 'preact';
 
 import { Fragment, Translation } from '../backend';
 import * as gui from '../gui';
@@ -23,10 +23,10 @@ const FRAGMENT_LIST_LOAD_DISTANCE = 0;
 const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
 const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
 
-export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
+export class EditorGui extends preact.Component<EditorGuiProps, unknown> {
   public override context!: AppMainGuiCtx;
 
-  private fragment_list_ref = Inferno.createRef<HTMLDivElement>();
+  private fragment_list_ref = preact.createRef<HTMLDivElement>();
   private fragment_guis_map = new WeakMap<Fragment, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
@@ -195,10 +195,10 @@ export class EditorGui extends Inferno.Component<EditorGuiProps, unknown> {
     }
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { app } = this.context;
 
-    let fragment_list_contents: JSX.Element[] = [];
+    let fragment_list_contents: preact.VNode[] = [];
 
     if (app.current_fragment_list.length > 0) {
       let start = app.fragment_list_slice_start;
@@ -248,7 +248,7 @@ export interface FragmentListToolbarGuiState {
   filter_value: string;
 }
 
-export class FragmentListToolbarGui extends Inferno.Component<
+export class FragmentListToolbarGui extends preact.Component<
   FragmentListToolbarGuiProps,
   FragmentListToolbarGuiState
 > {
@@ -260,8 +260,8 @@ export class FragmentListToolbarGui extends Inferno.Component<
 
   public static readonly FRAGMENT_PAGINATION_JUMP = 10;
 
-  private jump_pos_input_ref = Inferno.createRef<HTMLInputElement>();
-  private filter_input_ref = Inferno.createRef<HTMLInputElement>();
+  private jump_pos_input_ref = preact.createRef<HTMLInputElement>();
+  private filter_input_ref = preact.createRef<HTMLInputElement>();
 
   public override componentDidMount(): void {
     let { app } = this.context;
@@ -279,11 +279,11 @@ export class FragmentListToolbarGui extends Inferno.Component<
     this.setState({ jump_pos_value: (app.current_fragment_index + 1).toString() });
   };
 
-  private on_jump_pos_input = (event: Inferno.FormEvent<HTMLInputElement>): void => {
+  private on_jump_pos_input = (event: preact.JSX.TargetedEvent<HTMLInputElement>): void => {
     this.setState({ jump_pos_value: event.currentTarget.value });
   };
 
-  private on_jump_pos_submit = (event: Inferno.FormEvent<HTMLFormElement>): void => {
+  private on_jump_pos_submit = (event: preact.JSX.TargetedEvent<HTMLFormElement>): void => {
     event.preventDefault();
     let { app } = this.context;
     let jump_pos = parseInt(this.state.jump_pos_value, 10);
@@ -291,14 +291,14 @@ export class FragmentListToolbarGui extends Inferno.Component<
     app.set_current_fragment_index(jump_pos - 1, /* jump */ true);
   };
 
-  private on_jump_pos_unfocus = (_event: Inferno.FocusEvent<HTMLInputElement>): void => {
+  private on_jump_pos_unfocus = (_event: preact.JSX.TargetedFocusEvent<HTMLInputElement>): void => {
     let { app } = this.context;
     this.setState({ jump_pos_value: app.current_fragment_index.toString() });
   };
 
   private on_jump_button_click = (
     jump_type: 'first' | 'back_many' | 'back_one' | 'fwd_one' | 'fwd_many' | 'last',
-    _event: Inferno.InfernoMouseEvent<HTMLButtonElement>,
+    _event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>,
   ): void => {
     let { app } = this.context;
     let jump_pos = app.current_fragment_index;
@@ -316,13 +316,13 @@ export class FragmentListToolbarGui extends Inferno.Component<
     app.set_current_fragment_index(jump_pos, /* jump */ true);
   };
 
-  private on_filter_submit = (_event: Inferno.FormEvent<HTMLFormElement>): void => {};
+  private on_filter_submit = (_event: preact.JSX.TargetedEvent<HTMLFormElement>): void => {};
 
-  private on_filter_input = (event: Inferno.FormEvent<HTMLInputElement>): void => {
+  private on_filter_input = (event: preact.JSX.TargetedEvent<HTMLInputElement>): void => {
     this.setState({ filter_value: event.currentTarget.value });
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { app } = this.context;
     let fragment_count = app.current_fragment_list.length;
     let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
@@ -335,17 +335,17 @@ export class FragmentListToolbarGui extends Inferno.Component<
           <IconButtonGui
             icon="chevron-bar-left"
             title="First"
-            onClick={Inferno.linkEvent('first', this.on_jump_button_click)}
+            onClick={(event) => this.on_jump_button_click('first', event)}
           />
           <IconButtonGui
             icon="chevron-double-left"
             title={`Back by ${long_jump}`}
-            onClick={Inferno.linkEvent('back_many', this.on_jump_button_click)}
+            onClick={(event) => this.on_jump_button_click('back_many', event)}
           />
           <IconButtonGui
             icon="chevron-left"
             title="Previous"
-            onClick={Inferno.linkEvent('back_one', this.on_jump_button_click)}
+            onClick={(event) => this.on_jump_button_click('back_one', event)}
           />
           <form onSubmit={this.on_jump_pos_submit}>
             <input
@@ -370,17 +370,17 @@ export class FragmentListToolbarGui extends Inferno.Component<
           <IconButtonGui
             icon="chevron-right"
             title="Next"
-            onClick={Inferno.linkEvent('fwd_one', this.on_jump_button_click)}
+            onClick={(event) => this.on_jump_button_click('fwd_one', event)}
           />
           <IconButtonGui
             icon="chevron-double-right"
             title={`Forward by ${long_jump}`}
-            onClick={Inferno.linkEvent('fwd_many', this.on_jump_button_click)}
+            onClick={(event) => this.on_jump_button_click('fwd_many', event)}
           />
           <IconButtonGui
             icon="chevron-bar-right"
             title="Last"
-            onClick={Inferno.linkEvent('last', this.on_jump_button_click)}
+            onClick={(event) => this.on_jump_button_click('last', event)}
           />
           <BoxItemFillerGui />
           <form onSubmit={this.on_filter_submit}>
@@ -411,9 +411,9 @@ export interface FragmentGuiProps {
   intersection_observer_map: WeakMap<Element, FragmentGui> | null;
 }
 
-export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
+export class FragmentGui extends preact.Component<FragmentGuiProps, unknown> {
   public override context!: AppMainGuiCtx;
-  public root_ref = Inferno.createRef<HTMLDivElement>();
+  public root_ref = preact.createRef<HTMLDivElement>();
   public is_visible = false;
 
   private on_file_path_component_click = (component_path: string): void => {
@@ -424,7 +424,9 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     console.log('search', this.props.fragment.game_file_path, component_path);
   };
 
-  private on_copy_original_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+  private on_copy_original_text = (
+    _event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>,
+  ): void => {
     nw.Clipboard.get().set(this.props.fragment.original_text);
   };
 
@@ -461,7 +463,7 @@ export class FragmentGui extends Inferno.Component<FragmentGuiProps, unknown> {
     props.map.delete(props.fragment);
   }
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { app } = this.context;
     let { fragment } = this.props;
     return (
@@ -540,7 +542,7 @@ export interface FragmentPathGuiState {
   clickable: boolean;
 }
 
-export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, FragmentPathGuiState> {
+export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, FragmentPathGuiState> {
   public override context!: AppMainGuiCtx;
   public override state: FragmentPathGuiState = {
     clickable: false,
@@ -558,12 +560,12 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
     app.event_global_key_modifiers_change.off(this.on_keymod_event);
   }
 
-  private on_mouse_hover = (_event: Inferno.InfernoMouseEvent<HTMLElement>): void => {
+  private on_mouse_hover = (_event: preact.JSX.TargetedMouseEvent<HTMLElement>): void => {
     this.is_mouse_over = true;
     this.update_clickable_state();
   };
 
-  private on_mouse_hover_end = (_event: Inferno.InfernoMouseEvent<HTMLElement>): void => {
+  private on_mouse_hover_end = (_event: preact.JSX.TargetedMouseEvent<HTMLElement>): void => {
     this.is_mouse_over = false;
     this.update_clickable_state();
   };
@@ -582,18 +584,18 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
 
   private on_link_click = (
     component_path: string,
-    event: Inferno.InfernoMouseEvent<HTMLAnchorElement>,
+    event: preact.JSX.TargetedMouseEvent<HTMLAnchorElement>,
   ): void => {
     event.preventDefault();
     this.props.on_click?.(component_path);
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let full_path = this.props.path;
-    let children: Inferno.InfernoNode = full_path;
+    let children: preact.ComponentChildren = full_path;
 
     if (this.state.clickable) {
-      let links: JSX.Element[] = [];
+      let links: preact.VNode[] = [];
 
       let component_start_index = 0;
       while (component_start_index < full_path.length) {
@@ -606,7 +608,7 @@ export class FragmentPathGui extends Inferno.Component<FragmentPathGuiProps, Fra
           <a
             key={component_path}
             href=""
-            onClick={Inferno.linkEvent(component_path, this.on_link_click)}>
+            onClick={(event) => this.on_link_click(component_path, event)}>
             {component}
           </a>,
         );
@@ -635,12 +637,12 @@ export interface TranslationGuiProps {
   translation: Translation;
 }
 
-export class TranslationGui extends Inferno.Component<TranslationGuiProps, unknown> {
-  private on_copy_text = (_event: Inferno.InfernoMouseEvent<HTMLButtonElement>): void => {
+export class TranslationGui extends preact.Component<TranslationGuiProps, unknown> {
+  private on_copy_text = (_event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>): void => {
     nw.Clipboard.get().set(this.props.translation.text);
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     let { translation } = this.props;
 
     return (
@@ -681,7 +683,7 @@ export interface NewTranslationGuiState {
   text_area_height: number;
 }
 
-export class NewTranslationGui extends Inferno.Component<
+export class NewTranslationGui extends preact.Component<
   NewTranslationGuiProps,
   NewTranslationGuiState
 > {
@@ -692,7 +694,7 @@ export class NewTranslationGui extends Inferno.Component<
 
   private textarea_id: string = utils.new_html_id();
 
-  private on_input = (event: Inferno.FormEvent<HTMLTextAreaElement>): void => {
+  private on_input = (event: preact.JSX.TargetedEvent<HTMLTextAreaElement>): void => {
     let text = event.currentTarget.value;
     let height = -1;
     if (text.length > 0) {
@@ -701,7 +703,7 @@ export class NewTranslationGui extends Inferno.Component<
     this.setState({ text, text_area_height: height });
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
         <textarea

@@ -1,6 +1,6 @@
 import './AppMain.scss';
 
-import * as Inferno from 'inferno';
+import * as preact from 'preact';
 
 import { AppMain } from '../app';
 import * as gui from '../gui';
@@ -13,7 +13,7 @@ export interface AppMainGuiCtx {
   app: AppMain;
 }
 
-export class AppMainGui extends Inferno.Component<unknown, unknown> {
+export class AppMainGui extends preact.Component<unknown, unknown> {
   public inner = new AppMain();
 
   public override getChildContext(): AppMainGuiCtx {
@@ -70,7 +70,7 @@ export class AppMainGui extends Inferno.Component<unknown, unknown> {
     }
   };
 
-  public override render(): JSX.Element {
+  public override render(): preact.VNode {
     return (
       <div className="App">
         <BoxGui className="App-MainLayout" orientation="vertical">

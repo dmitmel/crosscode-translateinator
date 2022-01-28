@@ -1,5 +1,6 @@
+import * as preact from 'preact';
+
 import * as crosscode_markup from '../crosscode_markup';
-import * as gui from '../gui';
 
 export const WHITESPACE_COLOR = '#666666';
 export const SPECIAL_ESCAPES_COLOR = '#66ccdd';
@@ -12,9 +13,9 @@ export interface FancyTextGuiProps {
   children: string;
 }
 
-export function FancyTextGui(props: gui.ComponentProps<FancyTextGuiProps>): JSX.Element {
+export function FancyTextGui(props: FancyTextGuiProps): preact.VNode {
   let source_text = props.children;
-  let token_elements: JSX.Element[] = [];
+  let token_elements: preact.VNode[] = [];
 
   let tokens_iterable: Iterable<crosscode_markup.Token> = props.highlight_crosscode_markup
     ? crosscode_markup.lex(source_text)
@@ -40,14 +41,14 @@ export function FancyTextGui(props: gui.ComponentProps<FancyTextGuiProps>): JSX.
       current_color = crosscode_markup.FONT_COLORS.get(token.data);
     }
 
-    let token_style: CSSProperties = {};
+    let token_style: preact.JSX.CSSProperties = {};
     let token_color = token.type === 'LITERAL_TEXT' ? current_color : SPECIAL_ESCAPES_COLOR;
     if (token_color != null) token_style.color = token_color;
 
     let token_key = `token;${token.type};${token.start_index};${token.end_index}`;
 
     let text_slice = source_text.slice(token.start_index, token.end_index);
-    let text_elements: Array<JSX.Element | string> = [];
+    let text_elements: Array<preact.VNode | string> = [];
 
     if (props.highlight_newlines) {
       let line_start_index = 0;
