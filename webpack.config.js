@@ -14,6 +14,7 @@ module.exports = (_env, { mode }) => ({
 
   entry: {
     main: [
+      mode === 'development' ? 'preact/debug' : 'preact/devtools',
       './src/main',
       'crosscode-localization-engine/build/Release/crosslocale.node',
       `crosscode-localization-engine/build/Release/${
