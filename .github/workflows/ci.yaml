@@ -73,8 +73,8 @@ jobs:
           yarn link ultimate-crosscode-typedefs crosscode-localization-engine
           yarn install --frozen-lockfile
 
-      # - name: Check
-      #   run: yarn run check
+      - name: Check
+        run: yarn run check
 
       - name: Build
         run: yarn run build
