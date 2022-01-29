@@ -3,9 +3,10 @@ import './Button';
 
 import cc from 'clsx';
 import * as preact from 'preact';
+import * as React from 'react';
+import * as ReactWindow from 'react-window';
 
 import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
-import * as ReactWindow from '../vendor/react-window';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
@@ -245,19 +246,19 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
     prev_opened_states.clear();
     this.next_opened_states = prev_opened_states;
 
+    let FixedSizeList = ReactWindow.FixedSizeList as preact.ComponentClass<
+      ReactWindow.FixedSizeListProps<PreparedTreeItem[]>
+    >;
     return (
-      <ReactWindow.FixedSizeList
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ref={this.list_ref as any}
+      <FixedSizeList
+        ref={this.list_ref}
         width={'100%'}
         height={this.state.list_height}
         itemSize={30}
         itemData={items}
         itemCount={items.length}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        itemKey={((index: number, data: PreparedTreeItem[]) => data[index].file.path) as any}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        children={this.render_list_item as any}
+        itemKey={(index, data) => data[index].file.path}
+        children={this.render_list_item}
       />
     );
   }
@@ -270,13 +271,13 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
   // make React think that a completely different component is used for list
   // items every time, causing the whole list to be re-rendered even if no
   // items actually change.
-  private render_list_item: preact.ComponentType<
-    ReactWindow.RenderComponentProps<PreparedTreeItem[]>
+  private render_list_item: React.ComponentType<
+    ReactWindow.ListChildComponentProps<PreparedTreeItem[]>
   > = ({ index, style, data }) => {
     let item = data[index];
     return (
       <TreeItemGui
-        style={style}
+        style={style as preact.JSX.CSSProperties}
         file_type={this.props.files_type}
         file={item.file}
         is_opened={item.is_opened}
