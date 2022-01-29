@@ -1,4 +1,5 @@
 import * as preact from 'preact';
+import * as preact_compat from 'preact/compat';
 
 import * as crosscode_markup from '../crosscode_markup';
 
@@ -13,7 +14,9 @@ export interface FancyTextGuiProps {
   children: string;
 }
 
-export function FancyTextGui(props: FancyTextGuiProps): preact.VNode {
+export const FancyTextGui = preact_compat.memo(function FancyTextGui(
+  props: FancyTextGuiProps,
+): preact.VNode {
   let source_text = props.children;
   let token_elements: preact.VNode[] = [];
 
@@ -88,4 +91,4 @@ export function FancyTextGui(props: FancyTextGuiProps): preact.VNode {
   }
 
   return <>{token_elements}</>;
-}
+});
