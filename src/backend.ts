@@ -216,12 +216,12 @@ export class Backend {
 
   private async run_message_receiver_loop(): Promise<void> {
     while (true) {
-      let message: Message;
+      let message: Buffer;
       try {
-        message = await new Promise<Message>((resolve, reject) => {
+        message = await new Promise<Buffer>((resolve, reject) => {
           this.transport.recv_message((err, message) => {
             if (err != null) reject(err);
-            else resolve(message as Message);
+            else resolve(message);
           });
         });
       } catch (e) {
@@ -242,11 +242,13 @@ export class Backend {
 
   private send_message_internal(message: Message): void {
     utils.assert(this.state !== BackendState.DISCONNECTED);
-    this.transport.send_message(message);
+    let text = JSON.stringify(message);
+    this.transport.send_message(Buffer.from(text, 'utf8'));
   }
 
-  private recv_message_internal(message: Message): void {
+  private recv_message_internal(text: Buffer): void {
     utils.assert(this.state !== BackendState.DISCONNECTED);
+    let message: Message = JSON.parse(text.toString('utf8'));
     let [msg_type] = message;
     switch (msg_type) {
       case MessageType.Request: {
