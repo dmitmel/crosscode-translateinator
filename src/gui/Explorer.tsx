@@ -2,19 +2,44 @@ import './Explorer.scss';
 import './Button';
 
 import cc from 'clsx';
+import Immutable from 'immutable';
 import * as preact from 'preact';
 import * as React from 'react';
 import * as ReactWindow from 'react-window';
 
-import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
+import {
+  FileTree,
+  FileTreeDir,
+  FileTreeFile,
+  FileType,
+  ProjectMetaRoData,
+  TabChangeTrigger,
+  TabFile,
+} from '../app';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 
-export class ExplorerGui extends preact.Component<unknown, unknown> {
+export interface ExplorerGuiProps {
+  className?: string;
+}
+
+export interface ExplorerGuiState {
+  readonly project_meta: ProjectMetaRoData | null;
+}
+
+export class ExplorerGui extends preact.Component<ExplorerGuiProps, ExplorerGuiState> {
   public override context!: AppMainGuiCtx;
+  public override state: ExplorerGuiState = {
+    project_meta: this.copy_project_meta(),
+  };
+
+  private copy_project_meta(): ProjectMetaRoData | null {
+    let { app } = this.context;
+    return app.current_project_meta?.get_render_data() ?? null;
+  }
 
   public override componentDidMount(): void {
     let { app } = this.context;
@@ -29,25 +54,25 @@ export class ExplorerGui extends preact.Component<unknown, unknown> {
   }
 
   private on_project_opened = (): void => {
-    this.forceUpdate();
+    this.setState({ project_meta: this.copy_project_meta() });
   };
 
   private on_project_closed = (): void => {
-    this.forceUpdate();
+    this.setState({ project_meta: this.copy_project_meta() });
   };
 
   public override render(): preact.VNode {
     let { app } = this.context;
     return (
-      <BoxGui orientation="vertical" className="Explorer">
+      <BoxGui orientation="vertical" className={cc(this.props.className, 'Explorer')}>
         <div className="Explorer-Header">
           <IconGui icon={null} /> PROJECT [
-          {app.current_project_meta?.translation_locale ?? 'loading...'}]
+          {this.state.project_meta?.translation_locale ?? 'loading...'}]
         </div>
 
         <ExplorerSectionGui name="Translation files">
           <TreeViewGui
-            tree={app.project_tr_files_tree}
+            tree_ref={app.project_tr_files_tree}
             files_type={FileType.TrFile}
             base_depth={1}
           />
@@ -55,7 +80,7 @@ export class ExplorerGui extends preact.Component<unknown, unknown> {
 
         <ExplorerSectionGui name="Game files" default_opened>
           <TreeViewGui
-            tree={app.project_game_files_tree}
+            tree_ref={app.project_game_files_tree}
             files_type={FileType.GameFile}
             base_depth={1}
           />
@@ -71,7 +96,7 @@ export interface ExplorerSectionGuiProps {
 }
 
 export interface ExplorerSectionGuiState {
-  is_opened: boolean;
+  readonly is_opened: boolean;
 }
 
 export class ExplorerSectionGui extends preact.Component<
@@ -111,7 +136,7 @@ export class ExplorerSectionGui extends preact.Component<
 }
 
 export interface TreeViewGuiProps {
-  tree: FileTree;
+  tree_ref: FileTree;
   files_type: FileType;
   base_depth?: number;
 }
@@ -123,40 +148,23 @@ export interface PreparedTreeItem {
 }
 
 export interface TreeViewGuiState {
-  list_height: number;
+  readonly list_height: number;
+  readonly current_path: string | null;
+  readonly tree_data: FileTree;
+  readonly opened_states: Immutable.Map<string, boolean>;
 }
 
-class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
+export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
   public override context!: AppMainGuiCtx;
   public override state: TreeViewGuiState = {
     list_height: -1,
+    current_path: null,
+    tree_data: this.props.tree_ref.get_render_data(),
+    opened_states: Immutable.Map(),
   };
 
   public list_ref = preact.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
   public item_indexes_map = new Map<string, number>();
-
-  public opened_states = new Map<string, boolean>();
-  private next_opened_states = new Map<string, boolean>();
-  public is_opened(path: string): boolean {
-    return this.opened_states.get(path) ?? false;
-  }
-
-  public current_path: string | null = null;
-  public set_current(path: string | null): void {
-    if (this.current_path != null) {
-      this.opened_states.set(this.current_path, false);
-    }
-
-    this.current_path = path;
-    if (path != null) {
-      for (let component of utils.split_iter(path, '/')) {
-        let component_path = path.slice(0, component.end);
-        this.opened_states.set(component_path, true);
-      }
-    }
-
-    this.forceUpdate();
-  }
 
   private resize_observer: ResizeObserver | null = null;
   private resize_observer_target = preact.createRef<HTMLDivElement>();
@@ -167,7 +175,8 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
 
     let { app } = this.context;
     app.event_current_tab_change.on(this.on_current_tab_change);
-    this.on_current_tab_change(null);
+    app.event_project_opened.on(this.on_file_tree_updated);
+    app.event_project_closed.on(this.on_file_tree_updated);
   }
 
   public override componentWillUnmount(): void {
@@ -176,19 +185,44 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
 
     let { app } = this.context;
     app.event_current_tab_change.off(this.on_current_tab_change);
+    app.event_project_opened.off(this.on_file_tree_updated);
+    app.event_project_closed.off(this.on_file_tree_updated);
+  }
+
+  public set_current(path: string | null, callback?: () => void): void {
+    this.setState(({ opened_states, current_path }) => {
+      opened_states = opened_states.withMutations((opened_states) => {
+        if (current_path != null) {
+          opened_states.set(current_path, false);
+        }
+        current_path = path;
+        if (path != null) {
+          for (let component of utils.split_iter(path, '/')) {
+            let component_path = path.slice(0, component.end);
+            opened_states.set(component_path, true);
+          }
+        }
+      });
+      return { opened_states, current_path };
+    }, callback);
   }
 
   private on_current_tab_change = (trigger: TabChangeTrigger | null): void => {
     let { app } = this.context;
     let tab = app.current_tab;
+    let file_path: string | null = null;
     if (tab instanceof TabFile && tab.file_type === this.props.files_type) {
-      this.set_current(tab.file_path);
-      if (trigger !== TabChangeTrigger.FileTree) {
-        this.scroll_to_file(tab.file_path);
-      }
-    } else {
-      this.set_current(null);
+      file_path = tab.file_path;
     }
+    this.set_current(file_path, () => {
+      if (trigger !== TabChangeTrigger.FileTree && file_path != null) {
+        this.scroll_to_file(file_path);
+      }
+    });
+  };
+
+  private on_file_tree_updated = (): void => {
+    this.setState({ tree_data: this.props.tree_ref.get_render_data() });
   };
 
   public scroll_to_file(path: string): void {
@@ -203,11 +237,13 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
     _event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>,
   ): void => {
     let { app } = this.context;
+    let file_path = file.path;
     if (file instanceof FileTreeDir) {
-      this.opened_states.set(file.path, !this.is_opened(file.path));
-      this.forceUpdate();
+      this.setState(({ opened_states }) => ({
+        opened_states: opened_states.set(file_path, !opened_states.get(file_path)),
+      }));
     } else {
-      app.open_file(this.props.files_type, file.path, TabChangeTrigger.FileTree);
+      app.open_file(this.props.files_type, file_path, TabChangeTrigger.FileTree);
     }
   };
 
@@ -215,9 +251,7 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
     for (let entry of entries) {
       if (entry.target === this.resize_observer_target.current) {
         let list_height = entry.contentRect.height;
-        this.setState((prev_state) =>
-          prev_state.list_height !== list_height ? { list_height } : null,
-        );
+        this.setState((state) => (state.list_height !== list_height ? { list_height } : null));
       }
     }
   };
@@ -231,16 +265,9 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
   }
 
   private render_list(): preact.VNode {
-    this.next_opened_states.clear();
-    this.item_indexes_map.clear();
-
     let items: PreparedTreeItem[] = [];
-    this.prepare_items(this.props.tree.root_dir, this.props.base_depth ?? 0, items);
-
-    let prev_opened_states = this.opened_states;
-    this.opened_states = this.next_opened_states;
-    prev_opened_states.clear();
-    this.next_opened_states = prev_opened_states;
+    this.item_indexes_map.clear();
+    this.prepare_items(this.state.tree_data.root_dir, this.props.base_depth ?? 0, items);
 
     let FixedSizeList = ReactWindow.FixedSizeList as preact.ComponentClass<
       ReactWindow.FixedSizeListProps<PreparedTreeItem[]>
@@ -290,16 +317,16 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
     // TODO: sorting
 
     for (let path of dir.children) {
-      let file: FileTreeFile | undefined = this.props.tree.get_file(path);
+      let file: FileTreeFile | undefined = this.state.tree_data.get_file(path);
       if (file instanceof FileTreeDir) {
         out_items.push(this.prepare_item(file, depth, out_items.length));
-        if (this.is_opened(file.path)) {
+        if (this.state.opened_states.get(file.path)) {
           this.prepare_items(file, depth + 1, out_items);
         }
       } else if (file != null) {
         files.push(file);
       } else {
-        throw new Error(`Unknown file: ${path}`);
+        throw new Error(`Broken file tree structure, file not found: ${path}`);
       }
     }
 
@@ -309,10 +336,8 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
   }
 
   private prepare_item(file: FileTreeFile, depth: number, index: number): PreparedTreeItem {
-    let is_opened = this.is_opened(file.path);
-    this.next_opened_states.set(file.path, is_opened);
     this.item_indexes_map.set(file.path, index);
-    return { file, is_opened, depth };
+    return { file, is_opened: this.state.opened_states.get(file.path) ?? false, depth };
   }
 }
 

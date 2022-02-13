@@ -109,6 +109,24 @@ export type ResponseMessageType = {
   [K in keyof MessageRegistry]: { type: K } & MessageRegistry[K]['response'];
 }[keyof MessageRegistry];
 
+export interface FieldsSelectionFilter<F> {
+  except?: Array<keyof F> | null;
+}
+
+export function fields_selection<F>(
+  base_fields: ReadonlyArray<keyof F>,
+  options: FieldsSelectionFilter<F>,
+): ReadonlyArray<keyof F> {
+  let fields = base_fields.slice();
+  if (options.except != null) {
+    for (let field of options.except) {
+      let idx = fields.indexOf(field);
+      if (idx >= 0) fields.splice(idx, 1);
+    }
+  }
+  return base_fields;
+}
+
 export interface ListedFragmentFields {
   id: string;
   tr_file_path: string;
@@ -122,6 +140,21 @@ export interface ListedFragmentFields {
   comments: ListedCommentFields[];
 }
 
+export namespace ListedFragmentFields {
+  export const ALL: ReadonlyArray<keyof ListedFragmentFields> = [
+    'id',
+    'tr_file_path',
+    'game_file_path',
+    'json_path',
+    'lang_uid',
+    'description',
+    'original_text',
+    'flags',
+    'translations',
+    'comments',
+  ];
+}
+
 export interface ListedTranslationFields {
   id: string;
   author_username: string;
@@ -132,6 +165,18 @@ export interface ListedTranslationFields {
   flags: string[];
 }
 
+export namespace ListedTranslationFields {
+  export const ALL: ReadonlyArray<keyof ListedTranslationFields> = [
+    'id',
+    'author_username',
+    'editor_username',
+    'creation_timestamp',
+    'modification_timestamp',
+    'text',
+    'flags',
+  ];
+}
+
 export interface ListedCommentFields {
   id: string;
   author_username: string;
@@ -139,6 +184,17 @@ export interface ListedCommentFields {
   creation_timestamp: number;
   modification_timestamp: number;
   text: string;
+}
+
+export namespace ListedCommentFields {
+  export const ALL: ReadonlyArray<keyof ListedCommentFields> = [
+    'id',
+    'author_username',
+    'editor_username',
+    'creation_timestamp',
+    'modification_timestamp',
+    'text',
+  ];
 }
 
 export interface TableDataTypes {
@@ -316,212 +372,4 @@ export class Backend {
 
     this.event_disconnected.fire();
   }
-}
-
-export class Project {
-  public static async open(backend: Backend, dir: string): Promise<Project> {
-    let res = await backend.send_request('open_project', { dir });
-    return new Project(backend, dir, res.project_id);
-  }
-
-  public constructor(public backend: Backend, public dir: string, public id: number) {}
-
-  public async get_meta(): Promise<ProjectMeta> {
-    let res = await this.backend.send_request('get_project_meta', {
-      project_id: this.id,
-    });
-    return new ProjectMeta(
-      this,
-      res.root_dir,
-      res.id,
-      new Date(res.creation_timestamp * 1000),
-      new Date(res.modification_timestamp * 1000),
-      res.game_version,
-      res.original_locale,
-      res.reference_locales,
-      res.translation_locale,
-      res.translations_dir,
-      res.splitter,
-    );
-  }
-
-  public async list_tr_file_paths(): Promise<string[]> {
-    let res = await this.backend.send_request('list_files', {
-      project_id: this.id,
-      file_type: 'tr_file',
-    });
-    return res.paths;
-  }
-
-  public async list_game_file_paths(): Promise<string[]> {
-    let res = await this.backend.send_request('list_files', {
-      project_id: this.id,
-      file_type: 'game_file',
-    });
-    return res.paths;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/require-await
-  public async get_virtual_game_file(path: string): Promise<VirtualGameFile> {
-    return new VirtualGameFile(this, path);
-  }
-
-  public _create_fragment(f_raw: ListedFragmentFields): Fragment {
-    let f = new Fragment(
-      this,
-      f_raw.id,
-      f_raw.tr_file_path,
-      f_raw.game_file_path,
-      f_raw.json_path,
-      f_raw.lang_uid,
-      f_raw.description,
-      f_raw.original_text,
-      new Set(f_raw.flags),
-      [],
-      [],
-    );
-    f.translations = f_raw.translations.map((tr_raw) => {
-      return new Translation(
-        f,
-        tr_raw.id,
-        tr_raw.author_username,
-        tr_raw.editor_username,
-        new Date(tr_raw.creation_timestamp * 1000),
-        new Date(tr_raw.modification_timestamp * 1000),
-        tr_raw.text,
-        new Set(tr_raw.flags),
-      );
-    });
-    return f;
-  }
-}
-
-export class ProjectMeta {
-  public constructor(
-    public project: Project,
-    public root_dir: string,
-    public id: string,
-    public creation_timestamp: Date,
-    public modification_timestamp: Date,
-    public game_version: string,
-    public original_locale: string,
-    public reference_locales: string[],
-    public translation_locale: string,
-    public translations_dir: string,
-    public splitter: string,
-  ) {}
-}
-
-export class TrFile {
-  public constructor(public project: Project, public path: string) {}
-}
-
-export class VirtualGameFile {
-  public constructor(public project: Project, public path: string) {}
-
-  public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
-    let select_fields: FieldsSelection = {
-      fragments: [
-        'id',
-        'tr_file_path',
-        'json_path',
-        'lang_uid',
-        'description',
-        'original_text',
-        'flags',
-        'translations',
-      ],
-      translations: [
-        'id',
-        'author_username',
-        'editor_username',
-        'creation_timestamp',
-        'modification_timestamp',
-        'text',
-        'flags',
-      ],
-    };
-    let res = await this.project.backend.send_request('query_fragments', {
-      project_id: this.project.id,
-      from_game_file: this.path,
-      slice_start: start,
-      slice_end: end,
-      select_fields,
-    });
-    return expand_table_data('fragments', res.fragments, select_fields).map((f_raw) => {
-      return this.project._create_fragment({
-        ...f_raw!,
-        game_file_path: this.path,
-      });
-    });
-  }
-
-  public async get_fragment(json_path: string): Promise<Fragment | null> {
-    let select_fields: FieldsSelection = {
-      fragments: [
-        'id',
-        'tr_file_path',
-        'lang_uid',
-        'description',
-        'original_text',
-        'flags',
-        'translations',
-      ],
-      translations: [
-        'id',
-        'author_username',
-        'editor_username',
-        'creation_timestamp',
-        'modification_timestamp',
-        'text',
-        'flags',
-      ],
-    };
-    let res = await this.project.backend.send_request('query_fragments', {
-      project_id: this.project.id,
-      from_game_file: this.path,
-      json_paths: [json_path],
-      select_fields,
-    });
-    let [f_raw] = expand_table_data('fragments', res.fragments, select_fields);
-    if (f_raw == null) return null;
-    return this.project._create_fragment({
-      ...f_raw,
-      game_file_path: this.path,
-      json_path,
-    });
-  }
-}
-
-export class Fragment {
-  public constructor(
-    public project: Project,
-    public id: string,
-    public tr_file_path: string,
-    public game_file_path: string,
-    public json_path: string,
-    public lang_uid: number,
-    public description: string[],
-    public original_text: string,
-    public flags: Set<string>,
-    public translations: Translation[],
-    public comments: Comment[],
-  ) {}
-
-  public has_lang_uid(): boolean {
-    return this.lang_uid !== 0;
-  }
-}
-
-export class Translation {
-  public constructor(
-    public fragment: Fragment,
-    public id: string,
-    public author_username: string,
-    public editor_username: string,
-    public creation_timestamp: Date,
-    public modification_timestamp: Date,
-    public text: string,
-    public flags: Set<string>,
-  ) {}
 }

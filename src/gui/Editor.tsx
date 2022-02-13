@@ -3,7 +3,7 @@ import './Editor.scss';
 import cc from 'clsx';
 import * as preact from 'preact';
 
-import { Fragment, Translation } from '../backend';
+import { FragmentRoData, TranslationRoData } from '../app';
 import * as gui from '../gui';
 import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
@@ -19,21 +19,41 @@ export interface EditorGuiProps {
   className?: string;
 }
 
-const FRAGMENT_LIST_LOAD_DISTANCE = 0;
-const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
-const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
+export interface EditorGuiState {
+  readonly fragment_list: readonly FragmentRoData[];
+  readonly fragment_list_slice_start: number;
+  readonly fragment_list_slice_end: number;
+  readonly current_fragment_index: number;
+}
 
-export class EditorGui extends preact.Component<EditorGuiProps, unknown> {
+export const FRAGMENT_LIST_LOAD_DISTANCE = 0;
+export const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
+export const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
+
+export class EditorGui extends preact.Component<EditorGuiProps, EditorGuiState> {
   public override context!: AppMainGuiCtx;
+  public override state: EditorGuiState = this.get_fragment_list_state();
+
+  private get_fragment_list_state(): EditorGuiState {
+    let { app } = this.context;
+    let start = app.fragment_list_slice_start;
+    let end = app.fragment_list_slice_end;
+    return {
+      fragment_list_slice_start: start,
+      fragment_list_slice_end: end,
+      fragment_list: app.current_fragment_list.map((f) => f.get_render_data()),
+      current_fragment_index: app.current_fragment_index,
+    };
+  }
 
   private fragment_list_ref = preact.createRef<HTMLDivElement>();
-  private fragment_guis_map = new WeakMap<Fragment, FragmentGui>();
+  private fragment_guis_map = new WeakMap<FragmentRoData, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
   private visible_fragments = new Set<FragmentGui>();
 
   public get_fragment_gui_by_index(index: number): FragmentGui | undefined {
-    return this.fragment_guis_map.get(this.context.app.current_fragment_list[index]);
+    return this.fragment_guis_map.get(this.state.fragment_list[index]);
   }
 
   public override componentDidMount(): void {
@@ -177,51 +197,44 @@ export class EditorGui extends preact.Component<EditorGuiProps, unknown> {
   };
 
   private on_fragment_list_update = (): void => {
-    this.forceUpdate();
+    this.setState(this.get_fragment_list_state());
   };
 
-  private previous_fragment_index = 0;
   private on_current_fragment_change = (jump: boolean): void => {
     let { app } = this.context;
-
-    let previous_fragment_gui = this.get_fragment_gui_by_index(this.previous_fragment_index);
-    previous_fragment_gui?.forceUpdate();
-    this.previous_fragment_index = app.current_fragment_index;
-    let current_fragment_gui = this.get_fragment_gui_by_index(app.current_fragment_index);
-    current_fragment_gui?.forceUpdate();
-
-    if (jump) {
-      current_fragment_gui?.root_ref.current!.scrollIntoView();
-    }
+    let { current_fragment_index } = app;
+    this.setState({ current_fragment_index }, () => {
+      let current_fragment_gui = this.get_fragment_gui_by_index(current_fragment_index);
+      if (jump) {
+        current_fragment_gui!.root_ref.current!.scrollIntoView();
+      }
+    });
   };
 
   public override render(): preact.VNode {
-    let { app } = this.context;
-
     let fragment_list_contents: preact.VNode[] = [];
 
-    if (app.current_fragment_list.length > 0) {
-      let start = app.fragment_list_slice_start;
-      let end = app.fragment_list_slice_end;
-      for (let i = start; i < end; i++) {
-        let fragment = app.current_fragment_list[i];
-        if (fragment == null) continue;
-        if (i > start) {
-          fragment_list_contents.push(
-            <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
-          );
-        }
+    let len = this.state.fragment_list.length;
+    let start = utils.clamp(this.state.fragment_list_slice_start, 0, len);
+    let end = utils.clamp(this.state.fragment_list_slice_end, 0, len);
+    for (let i = start; i < end; i++) {
+      let fragment = this.state.fragment_list[i];
+      if (i > start) {
         fragment_list_contents.push(
-          <FragmentGui
-            key={fragment.id}
-            index={i}
-            fragment={fragment}
-            map={this.fragment_guis_map}
-            intersection_observer={this.fragment_observer}
-            intersection_observer_map={this.fragment_observer_map}
-          />,
+          <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
         );
       }
+      fragment_list_contents.push(
+        <FragmentGui
+          key={fragment.id}
+          index={i}
+          is_current={i === this.state.current_fragment_index}
+          fragment={fragment}
+          map={this.fragment_guis_map}
+          intersection_observer={this.fragment_observer}
+          intersection_observer_map={this.fragment_observer_map}
+        />,
+      );
     }
 
     return (
@@ -244,8 +257,9 @@ export interface FragmentListToolbarGuiProps {
 }
 
 export interface FragmentListToolbarGuiState {
-  jump_pos_value: string;
-  filter_value: string;
+  readonly jump_pos_value: string;
+  readonly filter_value: string;
+  readonly fragment_count: number;
 }
 
 export class FragmentListToolbarGui extends preact.Component<
@@ -256,6 +270,7 @@ export class FragmentListToolbarGui extends preact.Component<
   public override state: FragmentListToolbarGuiState = {
     jump_pos_value: '0',
     filter_value: '',
+    fragment_count: this.context.app.current_fragment_list.length,
   };
 
   public static readonly FRAGMENT_PAGINATION_JUMP = 10;
@@ -265,11 +280,13 @@ export class FragmentListToolbarGui extends preact.Component<
 
   public override componentDidMount(): void {
     let { app } = this.context;
+    app.event_fragment_list_update.on(this.on_fragment_list_update);
     app.event_current_fragment_change.on(this.on_current_fragment_change);
   }
 
   public override componentWillUnmount(): void {
     let { app } = this.context;
+    app.event_fragment_list_update.off(this.on_fragment_list_update);
     app.event_current_fragment_change.off(this.on_current_fragment_change);
   }
 
@@ -277,6 +294,11 @@ export class FragmentListToolbarGui extends preact.Component<
     this.jump_pos_input_ref.current!.blur();
     let { app } = this.context;
     this.setState({ jump_pos_value: (app.current_fragment_index + 1).toString() });
+  };
+
+  private on_fragment_list_update = (): void => {
+    let { app } = this.context;
+    this.setState({ fragment_count: app.current_fragment_list.length });
   };
 
   private on_jump_pos_input = (event: preact.JSX.TargetedEvent<HTMLInputElement>): void => {
@@ -323,8 +345,6 @@ export class FragmentListToolbarGui extends preact.Component<
   };
 
   public override render(): preact.VNode {
-    let { app } = this.context;
-    let fragment_count = app.current_fragment_list.length;
     let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
     return (
       <WrapperGui className={cc('FragmentListToolbar', this.props.className)}>
@@ -356,16 +376,16 @@ export class FragmentListToolbarGui extends preact.Component<
               onInput={this.on_jump_pos_input}
               onBlur={this.on_jump_pos_unfocus}
               value={this.state.jump_pos_value}
-              min={Math.min(1, fragment_count)}
-              max={fragment_count}
-              disabled={fragment_count === 0}
+              min={Math.min(1, this.state.fragment_count)}
+              max={this.state.fragment_count}
+              disabled={this.state.fragment_count === 0}
               title="Jump to..."
               autoComplete="off"
             />
           </form>
           <IconlikeTextGui icon="/" />
           <LabelGui selectable title="Total fragments">
-            {fragment_count}
+            {this.state.fragment_count}
           </LabelGui>
           <IconButtonGui
             icon="chevron-right"
@@ -405,8 +425,9 @@ export class FragmentListToolbarGui extends preact.Component<
 export interface FragmentGuiProps {
   className?: string;
   index: number;
-  fragment: Fragment;
-  map: WeakMap<Fragment, FragmentGui>;
+  is_current: boolean;
+  fragment: FragmentRoData;
+  map: WeakMap<FragmentRoData, FragmentGui>;
   intersection_observer: IntersectionObserver | null;
   intersection_observer_map: WeakMap<Element, FragmentGui> | null;
 }
@@ -464,14 +485,13 @@ export class FragmentGui extends preact.Component<FragmentGuiProps, unknown> {
   }
 
   public override render(): preact.VNode {
-    let { app } = this.context;
     let { fragment } = this.props;
     return (
       <WrapperGui
         inner_ref={this.root_ref}
         allow_overflow
         className={cc(this.props.className, 'Fragment', {
-          'Fragment-current': this.props.index === app.current_fragment_index,
+          'Fragment-current': this.props.is_current,
         })}>
         <BoxGui
           orientation="horizontal"
@@ -539,7 +559,7 @@ export interface FragmentPathGuiProps {
 }
 
 export interface FragmentPathGuiState {
-  clickable: boolean;
+  readonly clickable: boolean;
 }
 
 export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, FragmentPathGuiState> {
@@ -577,9 +597,7 @@ export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, Frag
 
   private update_clickable_state(): void {
     let clickable = this.is_mouse_over && this.is_ctrl_pressed;
-    if (this.state.clickable !== clickable) {
-      this.setState({ clickable });
-    }
+    this.setState((state) => (state.clickable !== clickable ? { clickable } : null));
   }
 
   private on_link_click = (
@@ -628,7 +646,7 @@ export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, Frag
 }
 
 export interface TranslationGuiProps {
-  translation: Translation;
+  translation: TranslationRoData;
 }
 
 export class TranslationGui extends preact.Component<TranslationGuiProps, unknown> {
@@ -669,12 +687,12 @@ export class TranslationGui extends preact.Component<TranslationGuiProps, unknow
 }
 
 export interface NewTranslationGuiProps {
-  fragment: Fragment;
+  fragment: FragmentRoData;
 }
 
 export interface NewTranslationGuiState {
-  text: string;
-  text_area_height: number;
+  readonly text: string;
+  readonly text_area_height: number;
 }
 
 export class NewTranslationGui extends preact.Component<

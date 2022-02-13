@@ -30,10 +30,10 @@ export function assert(condition: boolean): asserts condition {
   }
 }
 
-let current_react_id = 0;
+let current_gui_id = 0;
 export function new_gui_id(): number {
-  let n = current_react_id;
-  current_react_id++;
+  let n = current_gui_id;
+  current_gui_id++;
   return n;
 }
 
@@ -104,4 +104,12 @@ export function* split_iter(str: string, sep: string): Generator<SplitIterResult
     index++;
     start = end + 1;
   } while (start < str.length);
+}
+
+export function array_remove<T>(array: T[], element: T): number {
+  let index = array.indexOf(element);
+  if (index >= 0) {
+    array.splice(index, 1);
+  }
+  return index;
 }
