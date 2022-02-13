@@ -84,19 +84,13 @@ export class EditorTabListGui extends preact.Component<EditorTabListGuiProps, un
       // The path shortener was inspired by Vim's pathshorten() function, see
       // <https://neovim.io/doc/user/eval.html#pathshorten()>.
       let display_path = '';
-      let component_start = 0;
-      while (component_start < shorter_path.length) {
-        let separator_index = shorter_path.indexOf('/', component_start);
-        let is_last_component = separator_index < 0;
-        let component_end = is_last_component ? shorter_path.length : separator_index;
-        let component = shorter_path.slice(component_start, component_end);
-        if (is_last_component) {
-          display_path += component;
+      for (let component of utils.split_iter(shorter_path, '/')) {
+        if (component.is_last) {
+          display_path += shorter_path.slice(component.start, component.end);
         } else {
-          display_path += component.charAt(0);
+          display_path += shorter_path.charAt(component.start);
           display_path += '/';
         }
-        component_start = component_end + 1;
       }
 
       return {

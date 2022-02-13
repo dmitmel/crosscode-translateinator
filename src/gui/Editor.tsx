@@ -596,25 +596,19 @@ export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, Frag
 
     if (this.state.clickable) {
       let links: preact.VNode[] = [];
-
-      let component_start_index = 0;
-      while (component_start_index < full_path.length) {
-        let separator_index = full_path.indexOf('/', component_start_index);
-        let component_end_index = separator_index < 0 ? full_path.length : separator_index + 1;
-        let component = full_path.slice(component_start_index, component_end_index);
-        let component_path = full_path.slice(0, component_end_index);
+      for (let component of utils.split_iter(full_path, '/')) {
+        let component_full_path = full_path.slice(0, component.end + 1);
+        let component_path = full_path.slice(component.start, component.end + 1);
         links.push(
           // An empty href is required for focus to work on the links.
           <a
-            key={component_path}
+            key={component_full_path}
             href=""
-            onClick={(event) => this.on_link_click(component_path, event)}>
-            {component}
+            onClick={(event) => this.on_link_click(component_full_path, event)}>
+            {component_path}
           </a>,
         );
-        component_start_index = component_end_index;
       }
-
       children = links;
     }
 

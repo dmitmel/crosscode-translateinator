@@ -75,3 +75,33 @@ export function group_by<T, K>(arr: T[], fn: (value: T, index: number) => K): Ma
   }
   return result;
 }
+
+export interface SplitIterResult {
+  index: number;
+  start: number;
+  end: number;
+  is_last: boolean;
+}
+
+export function* split_iter(str: string, sep: string): Generator<SplitIterResult> {
+  let result: SplitIterResult = {
+    index: 0,
+    start: 0,
+    end: 0,
+    is_last: true,
+  };
+  let start = 0;
+  let index = 0;
+  do {
+    let end = str.indexOf(sep, start);
+    let is_last = end < 0;
+    if (is_last) end = str.length;
+    result.index = index;
+    result.start = start;
+    result.end = end;
+    result.is_last = is_last;
+    yield result;
+    index++;
+    start = end + 1;
+  } while (start < str.length);
+}

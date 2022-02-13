@@ -7,6 +7,7 @@ import * as React from 'react';
 import * as ReactWindow from 'react-window';
 
 import { FileTree, FileTreeDir, FileTreeFile, FileType, TabChangeTrigger, TabFile } from '../app';
+import * as utils from '../utils';
 import { AppMainGuiCtx } from './AppMain';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
@@ -148,14 +149,9 @@ class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
 
     this.current_path = path;
     if (path != null) {
-      let component_start_index = 0;
-      while (component_start_index < path.length) {
-        let separator_index = path.indexOf('/', component_start_index);
-        let is_last_component = separator_index < 0;
-        let component_end_index = is_last_component ? path.length : separator_index;
-        let component_path = path.slice(0, component_end_index);
+      for (let component of utils.split_iter(path, '/')) {
+        let component_path = path.slice(0, component.end);
         this.opened_states.set(component_path, true);
-        component_start_index = component_end_index + 1;
       }
     }
 

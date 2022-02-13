@@ -363,16 +363,10 @@ export class FileTree {
     for (let path of paths) {
       let parent_dir = this.root_dir;
 
-      let component_start = 0;
-      while (component_start < path.length) {
-        let sep_index = path.indexOf('/', component_start);
-        let is_last = sep_index < 0;
-        let component_end = is_last ? path.length : sep_index;
-        let component_path = path.slice(0, component_end);
-        component_start = component_end + 1;
-
+      for (let component of utils.split_iter(path, '/')) {
+        let component_path = path.slice(0, component.end);
         parent_dir.children.add(component_path);
-        if (is_last) {
+        if (component.is_last) {
           let file = new FileTreeFile(component_path);
           this.files.set(component_path, file);
         } else {
