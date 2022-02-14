@@ -27,12 +27,12 @@ export interface ExplorerGuiProps {
 }
 
 export interface ExplorerGuiState {
-  readonly project_meta: ProjectMetaRoData | null;
+  project_meta: ProjectMetaRoData | null;
 }
 
 export class ExplorerGui extends preact.Component<ExplorerGuiProps, ExplorerGuiState> {
   public override context!: AppMainGuiCtx;
-  public override state: ExplorerGuiState = {
+  public override state: Readonly<ExplorerGuiState> = {
     project_meta: this.copy_project_meta(),
   };
 
@@ -96,14 +96,14 @@ export interface ExplorerSectionGuiProps {
 }
 
 export interface ExplorerSectionGuiState {
-  readonly is_opened: boolean;
+  is_opened: boolean;
 }
 
 export class ExplorerSectionGui extends preact.Component<
   ExplorerSectionGuiProps,
   ExplorerSectionGuiState
 > {
-  public override state: ExplorerSectionGuiState = {
+  public override state: Readonly<ExplorerSectionGuiState> = {
     is_opened: this.props.default_opened ?? false,
   };
 
@@ -148,15 +148,15 @@ export interface PreparedTreeItem {
 }
 
 export interface TreeViewGuiState {
-  readonly list_height: number;
-  readonly current_path: string | null;
-  readonly tree_data: FileTree;
-  readonly opened_states: Immutable.Map<string, boolean>;
+  list_height: number;
+  current_path: string | null;
+  tree_data: FileTree;
+  opened_states: Immutable.Map<string, boolean>;
 }
 
 export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
   public override context!: AppMainGuiCtx;
-  public override state: TreeViewGuiState = {
+  public override state: Readonly<TreeViewGuiState> = {
     list_height: -1,
     current_path: null,
     tree_data: this.props.tree_ref.get_render_data(),

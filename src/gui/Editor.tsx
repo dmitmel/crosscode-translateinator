@@ -20,10 +20,10 @@ export interface EditorGuiProps {
 }
 
 export interface EditorGuiState {
-  readonly fragment_list: readonly FragmentRoData[];
-  readonly fragment_list_slice_start: number;
-  readonly fragment_list_slice_end: number;
-  readonly current_fragment_index: number;
+  fragment_list: readonly FragmentRoData[];
+  fragment_list_slice_start: number;
+  fragment_list_slice_end: number;
+  current_fragment_index: number;
 }
 
 export const FRAGMENT_LIST_LOAD_DISTANCE = 0;
@@ -32,9 +32,15 @@ export const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
 
 export class EditorGui extends preact.Component<EditorGuiProps, EditorGuiState> {
   public override context!: AppMainGuiCtx;
-  public override state: EditorGuiState = this.get_fragment_list_state();
+  public override state: Readonly<EditorGuiState> = {
+    fragment_list: [],
+    fragment_list_slice_start: 0,
+    fragment_list_slice_end: 0,
+    current_fragment_index: 0,
+    ...this.get_fragment_list_state(),
+  };
 
-  private get_fragment_list_state(): EditorGuiState {
+  private get_fragment_list_state(): Partial<EditorGuiState> {
     let { app } = this.context;
     let start = app.fragment_list_slice_start;
     let end = app.fragment_list_slice_end;
@@ -257,9 +263,9 @@ export interface FragmentListToolbarGuiProps {
 }
 
 export interface FragmentListToolbarGuiState {
-  readonly jump_pos_value: string;
-  readonly filter_value: string;
-  readonly fragment_count: number;
+  jump_pos_value: string;
+  filter_value: string;
+  fragment_count: number;
 }
 
 export class FragmentListToolbarGui extends preact.Component<
@@ -267,7 +273,7 @@ export class FragmentListToolbarGui extends preact.Component<
   FragmentListToolbarGuiState
 > {
   public override context!: AppMainGuiCtx;
-  public override state: FragmentListToolbarGuiState = {
+  public override state: Readonly<FragmentListToolbarGuiState> = {
     jump_pos_value: '0',
     filter_value: '',
     fragment_count: this.context.app.current_fragment_list.length,
@@ -559,12 +565,12 @@ export interface FragmentPathGuiProps {
 }
 
 export interface FragmentPathGuiState {
-  readonly clickable: boolean;
+  clickable: boolean;
 }
 
 export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, FragmentPathGuiState> {
   public override context!: AppMainGuiCtx;
-  public override state: FragmentPathGuiState = {
+  public override state: Readonly<FragmentPathGuiState> = {
     clickable: false,
   };
   private is_mouse_over = false;
@@ -691,15 +697,15 @@ export interface NewTranslationGuiProps {
 }
 
 export interface NewTranslationGuiState {
-  readonly text: string;
-  readonly text_area_height: number;
+  text: string;
+  text_area_height: number;
 }
 
 export class NewTranslationGui extends preact.Component<
   NewTranslationGuiProps,
   NewTranslationGuiState
 > {
-  public override state: NewTranslationGuiState = {
+  public override state: Readonly<NewTranslationGuiState> = {
     text: '',
     text_area_height: -1,
   };

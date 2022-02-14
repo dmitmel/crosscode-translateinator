@@ -21,8 +21,8 @@ export interface EditorTabListGuiProps {
 }
 
 export interface EditorTabListGuiState {
-  readonly current_tab_index: number;
-  readonly opened_tabs: readonly BaseTabRoData[];
+  current_tab_index: number;
+  opened_tabs: readonly BaseTabRoData[];
 }
 
 export class EditorTabListGui extends preact.Component<
@@ -30,7 +30,7 @@ export class EditorTabListGui extends preact.Component<
   EditorTabListGuiState
 > {
   public override context!: AppMainGuiCtx;
-  public override state: EditorTabListGuiState = {
+  public override state: Readonly<EditorTabListGuiState> = {
     current_tab_index: this.context.app.current_tab_index,
     opened_tabs: this.context.app.opened_tabs.map((tab) => tab.get_render_data()),
   };

@@ -184,7 +184,7 @@ export abstract class BaseAppObject<T extends object> {
   protected render_data_changetick = -1;
   protected render_data_cached: T | undefined;
 
-  public mark_updated(): void {
+  public mark_changed(): void {
     this.changetick += 1;
   }
 
@@ -399,14 +399,14 @@ export class FileTree extends BaseAppObject<FileTree> {
   }
 
   public clear(): void {
-    this.mark_updated();
+    this.mark_changed();
     this.files.clear();
     let root_dir = new FileTreeDir(FileTree.ROOT_DIR);
     this.files.set(root_dir.path, root_dir);
   }
 
   public set_paths(paths: Iterable<string>): void {
-    this.mark_updated();
+    this.mark_changed();
     this.clear();
 
     for (let path of paths) {
