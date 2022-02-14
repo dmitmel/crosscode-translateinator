@@ -29,9 +29,9 @@ module.exports = (_env, { mode }) => ({
   target: 'nwjs0.35',
   output: {
     path: paths.join(__dirname, 'target', mode),
-    filename: '[name].js?[contenthash]',
-    chunkFilename: '[name].chunk.js?[contenthash]',
-    assetModuleFilename: '[base]?[contenthash]',
+    filename: '[name].js',
+    chunkFilename: '[name].chunk.js',
+    assetModuleFilename: '[base]',
   },
 
   resolve: {
@@ -97,12 +97,12 @@ module.exports = (_env, { mode }) => ({
     new CleanWebpackPlugin(),
 
     new MiniCssExtractPlugin({
-      filename: '[name].css?[contenthash]',
-      chunkFilename: '[name].chunk.css?[contenthash]',
+      filename: '[name].css',
+      chunkFilename: '[name].chunk.css',
     }),
 
     new HtmlWebpackPlugin({
-      filename: '[name].html?[contenthash]',
+      filename: '[name].html',
       template: 'src/main.html',
       inject: 'body',
       scriptLoading: 'blocking',
