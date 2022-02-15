@@ -1,37 +1,35 @@
-@import '../common.scss';
+@import '../theme.scss';
 
-@include app-styles {
-  textarea,
-  input {
-    // reset the browser styles
-    font-family: unset;
-    font-size: unset;
-    line-height: unset;
-    border: unset;
+textarea,
+input {
+  // reset the browser styles
+  font-family: unset;
+  font-size: unset;
+  line-height: unset;
+  border: unset;
 
-    display: block;
-    width: 100%;
-    resize: none;
-    overflow: hidden;
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
 
-    padding: $spacing;
-    background-color: $color-TextArea-bg;
-    color: $color-TextArea-fg;
+  padding: $spacing;
+  background-color: $color-TextArea-bg;
+  color: $color-TextArea-fg;
 
-    &::placeholder {
-      color: $color-TextArea-placeholder-fg;
-    }
+  &::placeholder {
+    color: $color-TextArea-placeholder-fg;
   }
+}
 
-  // Taken from <https://stackoverflow.com/a/4298216/12005228>
-  input {
-    &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    &[type='number'] {
-      -moz-appearance: textfield; /* Firefox */
-    }
+// Taken from <https://stackoverflow.com/a/4298216/12005228>
+input {
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  &[type='number'] {
+    -moz-appearance: textfield; /* Firefox */
   }
 }

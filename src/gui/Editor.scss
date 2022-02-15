@@ -1,92 +1,90 @@
-@import '../common.scss';
+@import '../theme.scss';
 
-@include app-styles {
-  .Editor {
-    background-color: $color-Editor;
+.Editor {
+  background-color: $color-Editor;
+}
+
+.FragmentListToolbar {
+  padding: $spacing * 2;
+  border-bottom: 1px solid #3c3c3c;
+}
+
+.FragmentListToolbar-Pagination {
+  > * {
+    padding: $spacing * calc(2 / 3);
   }
 
-  .FragmentListToolbar {
-    padding: $spacing * 2;
-    border-bottom: 1px solid #3c3c3c;
+  .FragmentListToolbar-JumpInput {
+    text-align: right;
+    // This should be enough considering that CC in total contains 42k fragments
+    $digits: 5;
+    width: calc(#{$spacing * 2} + #{$digits * 1ch});
   }
 
-  .FragmentListToolbar-Pagination {
-    > * {
-      padding: $spacing * calc(2 / 3);
-    }
+  .FragmentListToolbar-Filter {
+    width: 200px;
+  }
+}
 
-    .FragmentListToolbar-JumpInput {
-      text-align: right;
-      // This should be enough considering that CC in total contains 42k fragments
-      $digits: 5;
-      width: calc(#{$spacing * 2} + #{$digits * 1ch});
-    }
+.FragmentList {
+  $spacing-FragmentList: $spacing * 3;
+  padding: 0 $spacing-FragmentList;
+  > .Fragment {
+    padding: $spacing-FragmentList 0;
+  }
+  > .Fragment:last-child {
+    // <https://stackoverflow.com/a/31343927>
+    height: 100%;
+  }
+}
 
-    .FragmentListToolbar-Filter {
-      width: 200px;
+.Fragment {
+  font-size: calc(18em / 16);
+
+  $spacing-Fragment: $spacing;
+
+  .Fragment-TextBlock {
+    white-space: pre-wrap;
+    background-color: #252526;
+    padding: $spacing-Fragment;
+  }
+
+  > *:not(:last-child) {
+    margin-bottom: $spacing-Fragment;
+  }
+
+  .Fragment-Columns > *:not(:last-child) {
+    margin-right: $spacing-Fragment;
+  }
+
+  .Fragment-Location > *:not(:last-child) {
+    margin-right: 1em;
+  }
+
+  .Fragment-Location > .Fragment-Index {
+    margin-left: auto;
+  }
+
+  &.Fragment-current .Fragment-Index {
+    color: #73c991;
+    .IconlikeText {
+      color: inherit;
     }
   }
 
-  .FragmentList {
-    $spacing-FragmentList: $spacing * 3;
-    padding: 0 $spacing-FragmentList;
-    > .Fragment {
-      padding: $spacing-FragmentList 0;
-    }
-    > .Fragment:last-child {
-      // <https://stackoverflow.com/a/31343927>
-      height: 100%;
-    }
+  .Fragment-Translations > *:not(:last-child) {
+    margin-bottom: $spacing-Fragment;
   }
 
-  .Fragment {
-    font-size: calc(18em / 16);
-
-    $spacing-Fragment: $spacing;
-
-    .Fragment-TextBlock {
-      white-space: pre-wrap;
-      background-color: #252526;
-      padding: $spacing-Fragment;
-    }
-
-    > *:not(:last-child) {
-      margin-bottom: $spacing-Fragment;
-    }
-
-    .Fragment-Columns > *:not(:last-child) {
-      margin-right: $spacing-Fragment;
-    }
-
-    .Fragment-Location > *:not(:last-child) {
-      margin-right: 1em;
-    }
-
-    .Fragment-Location > .Fragment-Index {
-      margin-left: auto;
-    }
-
-    &.Fragment-current .Fragment-Index {
-      color: #73c991;
-      .IconlikeText {
-        color: inherit;
+  .Fragment-Translation {
+    > .Fragment-Buttons {
+      > span:not(:last-child) {
+        margin-right: 1em;
       }
     }
+  }
 
-    .Fragment-Translations > *:not(:last-child) {
-      margin-bottom: $spacing-Fragment;
-    }
-
-    .Fragment-Translation {
-      > .Fragment-Buttons {
-        > span:not(:last-child) {
-          margin-right: 1em;
-        }
-      }
-    }
-
-    .Fragment-Description {
-      font-family: monospace;
-    }
+  .Fragment-Description {
+    font-family: monospace;
   }
 }

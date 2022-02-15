@@ -1,18 +1,16 @@
-@import '../common.scss';
+@import '../theme.scss';
 
-@include app-styles {
-  .Icon {
-    display: inline-block;
-    // vertical-align: text-bottom;
-  }
+.Icon {
+  display: inline-block;
+  // vertical-align: text-bottom;
+}
 
-  .IconBlank {
-    width: 1em;
-  }
+.IconBlank {
+  width: 1em;
+}
 
-  .Icon,
-  .IconlikeText {
-    color: $color-Icon-fg;
-    user-select: none;
-  }
+.Icon,
+.IconlikeText {
+  color: $color-Icon-fg;
+  user-select: none;
 }

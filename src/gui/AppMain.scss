@@ -1,6 +1,6 @@
-@import '../common.scss';
+@import '../theme.scss';
 
-@include app-styles {
+.App {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -11,91 +11,91 @@
   text-overflow: ellipsis;
   color: $color-fg;
   user-select: none;
+}
 
-  ::selection {
-    // <https://stackoverflow.com/a/22751702/12005228>
-    // <https://stackoverflow.com/a/14970961/12005228>
-    background-color: rgba($color-selection-bg, 0.99);
+::selection {
+  // <https://stackoverflow.com/a/22751702/12005228>
+  // <https://stackoverflow.com/a/14970961/12005228>
+  background-color: rgba($color-selection-bg, 0.99);
+}
+
+.App-MainLayout {
+  width: 100%;
+  height: 100%;
+}
+
+*:focus {
+  outline-color: $color-focus-outline;
+  outline-width: 1px;
+  outline-style: solid;
+  outline-offset: -1px;
+}
+
+a {
+  color: $color-Link-fg;
+  text-decoration: none;
+  &:hover {
+    color: $color-Link-fg-hover;
+    text-decoration: underline;
   }
+}
 
-  .App-MainLayout {
-    width: 100%;
-    height: 100%;
+hr {
+  margin: unset;
+  height: $spacing;
+  background-color: rgba(#ffffff, 0.1);
+  border: unset;
+}
+
+// See:
+// <https://webkit.org/blog/363/styling-scrollbars/>
+// <https://davidwalsh.name/custom-scrollbars>
+// <https://gist.github.com/IceCreamYou/cd517596e5847a88e2bb0a091da43fb4>
+// <https://stackoverflow.com/q/8632410/12005228>
+// <https://css-tricks.com/scrollbars-on-hover/>
+// <https://css-tricks.com/custom-scrollbars-in-webkit/>
+// <https://css-tricks.com/almanac/properties/s/scrollbar/>
+::-webkit-scrollbar {
+  width: $scrollbar-size;
+  height: $scrollbar-size;
+  border-style: solid;
+  border-color: $color-scrollbar-border;
+}
+
+// Neither margin nor padding can be used on the scrollbar thumb, let's abuse
+// border width instead.
+::-webkit-scrollbar,
+::-webkit-scrollbar-thumb {
+  &:vertical {
+    border-width: 0 $scrollbar-border;
   }
-
-  *:focus {
-    outline-color: $color-focus-outline;
-    outline-width: 1px;
-    outline-style: solid;
-    outline-offset: -1px;
+  &:horizontal {
+    border-width: $scrollbar-border 0;
   }
+}
 
-  a {
-    color: $color-Link-fg;
-    text-decoration: none;
-    &:hover {
-      color: $color-Link-fg-hover;
-      text-decoration: underline;
-    }
+::-webkit-scrollbar-thumb {
+  border-style: solid;
+  border-color: transparent;
+  // This is also necessary to make the emulated margin hack work:
+  background-clip: padding-box;
+
+  background-color: $color-scrollbar-slider-bg;
+  &:hover {
+    background-color: $color-scrollbar-slider-bg-hover;
   }
-
-  hr {
-    margin: unset;
-    height: $spacing;
-    background-color: rgba(#ffffff, 0.1);
-    border: unset;
+  &:active {
+    background-color: $color-scrollbar-slider-bg-active;
   }
+}
 
-  // See:
-  // <https://webkit.org/blog/363/styling-scrollbars/>
-  // <https://davidwalsh.name/custom-scrollbars>
-  // <https://gist.github.com/IceCreamYou/cd517596e5847a88e2bb0a091da43fb4>
-  // <https://stackoverflow.com/q/8632410/12005228>
-  // <https://css-tricks.com/scrollbars-on-hover/>
-  // <https://css-tricks.com/custom-scrollbars-in-webkit/>
-  // <https://css-tricks.com/almanac/properties/s/scrollbar/>
-  ::-webkit-scrollbar {
-    width: $scrollbar-size;
-    height: $scrollbar-size;
-    border-style: solid;
-    border-color: $color-scrollbar-border;
-  }
+::-webkit-scrollbar-corner {
+  background-color: $color-scrollbar-border;
+}
 
-  // Neither margin nor padding can be used on the scrollbar thumb, let's abuse
-  // border width instead.
-  ::-webkit-scrollbar,
-  ::-webkit-scrollbar-thumb {
-    &:vertical {
-      border-width: 0 $scrollbar-border;
-    }
-    &:horizontal {
-      border-width: $scrollbar-border 0;
-    }
-  }
-
-  ::-webkit-scrollbar-thumb {
-    border-style: solid;
-    border-color: transparent;
-    // This is also necessary to make the emulated margin hack work:
-    background-clip: padding-box;
-
-    background-color: $color-scrollbar-slider-bg;
-    &:hover {
-      background-color: $color-scrollbar-slider-bg-hover;
-    }
-    &:active {
-      background-color: $color-scrollbar-slider-bg-active;
-    }
-  }
-
-  ::-webkit-scrollbar-corner {
-    background-color: $color-scrollbar-border;
-  }
-
-  input[type='search']::-webkit-search-cancel-button,
-  input[type='search']::-webkit-search-decoration,
-  input[type='search']::-webkit-search-results-button,
-  input[type='search']::-webkit-search-results-decoration {
-    -webkit-appearance: none;
-  }
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-results-button,
+input[type='search']::-webkit-search-results-decoration {
+  -webkit-appearance: none;
 }

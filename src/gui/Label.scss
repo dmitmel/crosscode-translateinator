@@ -1,20 +1,18 @@
-@import '../common.scss';
+@import '../theme.scss';
 
-@include app-styles {
-  .Label-block {
-    display: block;
-  }
+.Label-block {
+  display: block;
+}
 
-  .Label-ellipsis {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.Label-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  .Label-selectable {
-    user-select: text;
-  }
+.Label-selectable {
+  user-select: text;
+}
 
-  .Label-preserve-whitespace {
-    white-space: pre-wrap;
-  }
+.Label-preserve-whitespace {
+  white-space: pre-wrap;
 }

@@ -1,39 +1,37 @@
-@import '../common.scss';
+@import '../theme.scss';
 
-@include app-styles {
-  .EditorTabList {
-    background-color: $color-EditorTabList;
+.EditorTabList {
+  background-color: $color-EditorTabList;
+}
+
+.EditorTab {
+  padding: $spacing * 2;
+  color: $color-EditorTab-inactive-fg;
+  background-color: $color-EditorTab-inactive;
+  cursor: pointer;
+
+  &.EditorTab-active {
+    color: $color-EditorTab-active-fg;
+    background-color: $color-EditorTab-active;
   }
 
-  .EditorTab {
-    padding: $spacing * 2;
-    color: $color-EditorTab-inactive-fg;
-    background-color: $color-EditorTab-inactive;
-    cursor: pointer;
+  .Icon {
+    color: inherit;
+  }
 
-    &.EditorTab-active {
-      color: $color-EditorTab-active-fg;
-      background-color: $color-EditorTab-active;
+  $close-normal-scale: 1.5;
+  $close-pressed-scale: $close-normal-scale * 1.2;
+  > .EditorTab-Close {
+    transform: scale($close-normal-scale);
+    opacity: 0.3;
+  }
+  &.EditorTab-closeable > .EditorTab-Close {
+    opacity: unset;
+    &:hover {
+      color: #f48771;
     }
-
-    .Icon {
-      color: inherit;
-    }
-
-    $close-normal-scale: 1.5;
-    $close-pressed-scale: $close-normal-scale * 1.2;
-    > .EditorTab-Close {
-      transform: scale($close-normal-scale);
-      opacity: 0.3;
-    }
-    &.EditorTab-closeable > .EditorTab-Close {
-      opacity: unset;
-      &:hover {
-        color: #f48771;
-      }
-      &:active {
-        transform: scale($close-pressed-scale);
-      }
+    &:active {
+      transform: scale($close-pressed-scale);
     }
   }
 }

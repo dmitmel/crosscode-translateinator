@@ -1,78 +1,76 @@
-@import '../common.scss';
+@import '../theme.scss';
 
-@include app-styles {
-  .Box {
-    display: flex;
-    .Box-inline {
-      display: inline-flex;
+.Box {
+  display: flex;
+  .Box-inline {
+    display: inline-flex;
+  }
+
+  > .BoxItem-expand {
+    flex-grow: 1;
+  }
+
+  &.Box-orientation-horizontal {
+    flex-direction: row;
+    &.Box-reverse-children {
+      flex-direction: row-reverse;
+    }
+
+    &:not(.Box-allow-overflow) {
+      overflow-x: hidden;
+    }
+    &.Box-scroll {
+      overflow-x: auto;
     }
 
     > .BoxItem-expand {
-      flex-grow: 1;
-    }
-
-    &.Box-orientation-horizontal {
-      flex-direction: row;
-      &.Box-reverse-children {
-        flex-direction: row-reverse;
-      }
-
-      &:not(.Box-allow-overflow) {
-        overflow-x: hidden;
-      }
-      &.Box-scroll {
-        overflow-x: auto;
-      }
-
-      > .BoxItem-expand {
-        width: 0;
-      }
-    }
-
-    &.Box-orientation-vertical {
-      flex-direction: column;
-      &.Box-reverse-children {
-        flex-direction: column-reverse;
-      }
-
-      &:not(.Box-allow-overflow) {
-        overflow-y: hidden;
-      }
-      &.Box-scroll {
-        overflow-y: auto;
-      }
-
-      > .BoxItem-expand {
-        height: 0;
-      }
-    }
-
-    flex-wrap: nowrap;
-    &.Box-allow-wrapping {
-      flex-wrap: wrap;
-    }
-
-    @each $align-items in auto, flex-start, flex-end, center, baseline, stretch {
-      &.Box-align-items-#{$align-items} {
-        align-items: $align-items;
-      }
+      width: 0;
     }
   }
 
-  .Wrapper {
-    display: block;
-    max-width: 100%;
-    // max-height: 100%;
+  &.Box-orientation-vertical {
+    flex-direction: column;
+    &.Box-reverse-children {
+      flex-direction: column-reverse;
+    }
 
-    &:not(.Wrapper-allow-overflow) {
+    &:not(.Box-allow-overflow) {
       overflow-y: hidden;
     }
-    &.Wrapper-scroll {
+    &.Box-scroll {
       overflow-y: auto;
     }
 
-    &.Wrapper-expand {
-      height: 100%;
+    > .BoxItem-expand {
+      height: 0;
     }
+  }
+
+  flex-wrap: nowrap;
+  &.Box-allow-wrapping {
+    flex-wrap: wrap;
+  }
+
+  @each $align-items in auto, flex-start, flex-end, center, baseline, stretch {
+    &.Box-align-items-#{$align-items} {
+      align-items: $align-items;
+    }
+  }
+}
+
+.Wrapper {
+  display: block;
+  max-width: 100%;
+  // max-height: 100%;
+
+  &:not(.Wrapper-allow-overflow) {
+    overflow-y: hidden;
+  }
+  &.Wrapper-scroll {
+    overflow-y: auto;
+  }
+
+  &.Wrapper-expand {
+    height: 100%;
   }
 }
