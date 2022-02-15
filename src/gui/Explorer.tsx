@@ -258,7 +258,7 @@ export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiS
 
   public override render(): preact.VNode {
     return (
-      <WrapperGui inner_ref={this.resize_observer_target} expand>
+      <WrapperGui ref={this.resize_observer_target} expand>
         {this.state.list_height >= 0 ? this.render_list() : null}
       </WrapperGui>
     );

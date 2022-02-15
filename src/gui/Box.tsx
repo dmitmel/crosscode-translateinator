@@ -2,9 +2,9 @@ import './Box.scss';
 
 import cc from 'clsx';
 import * as preact from 'preact';
+import * as preact_compat from 'preact/compat';
 
 export interface BoxGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {
-  inner_ref?: preact.Ref<HTMLDivElement>;
   orientation: 'vertical' | 'horizontal';
   inline?: boolean;
   reverse_children?: boolean;
@@ -14,23 +14,25 @@ export interface BoxGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {
   align_items?: 'auto' | 'flex-start' | 'flex-end' | 'center' | 'baseline' | 'stretch';
 }
 
-export function BoxGui({
-  inner_ref,
-  orientation,
-  inline,
-  reverse_children,
-  scroll,
-  allow_overflow,
-  allow_wrapping,
-  align_items,
-  className,
-  class: _class,
-  children,
-  ...rest
-}: BoxGuiProps): preact.VNode {
+export const BoxGui = preact_compat.forwardRef(function BoxGui(
+  {
+    orientation,
+    inline,
+    reverse_children,
+    scroll,
+    allow_overflow,
+    allow_wrapping,
+    align_items,
+    className,
+    class: _class,
+    children,
+    ...rest
+  }: BoxGuiProps,
+  ref: preact.Ref<HTMLDivElement>,
+): preact.VNode {
   return (
     <div
-      ref={inner_ref}
+      ref={ref}
       className={cc(
         className,
         'Box',
@@ -48,46 +50,34 @@ export function BoxGui({
       {children}
     </div>
   );
-}
+});
 
-export interface BoxItemFillerGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {
-  inner_ref?: preact.Ref<HTMLDivElement>;
-}
+export interface BoxItemFillerGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {}
 
-export function BoxItemFillerGui({
-  inner_ref,
-  className,
-  class: _class,
-  children,
-  ...rest
-}: BoxItemFillerGuiProps): preact.VNode {
+export const BoxItemFillerGui = preact_compat.forwardRef(function BoxItemFillerGui(
+  { className, class: _class, children, ...rest }: BoxItemFillerGuiProps,
+  ref: preact.Ref<HTMLDivElement>,
+): preact.VNode {
   return (
-    <div ref={inner_ref} className={cc(className, 'BoxItem-expand')} {...rest}>
+    <div ref={ref} className={cc(className, 'BoxItem-expand')} {...rest}>
       {children}
     </div>
   );
-}
+});
 
 export interface WrapperGuiProps extends preact.JSX.HTMLAttributes<HTMLDivElement> {
-  inner_ref?: preact.Ref<HTMLDivElement>;
   scroll?: boolean;
   allow_overflow?: boolean;
   expand?: boolean;
 }
 
-export function WrapperGui({
-  inner_ref,
-  scroll,
-  allow_overflow,
-  expand,
-  className,
-  class: _class,
-  children,
-  ...rest
-}: WrapperGuiProps): preact.VNode {
+export const WrapperGui = preact_compat.forwardRef(function WrapperGui(
+  { scroll, allow_overflow, expand, className, class: _class, children, ...rest }: WrapperGuiProps,
+  ref: preact.Ref<HTMLDivElement>,
+): preact.VNode {
   return (
     <div
-      ref={inner_ref}
+      ref={ref}
       className={cc(className, 'Wrapper', {
         'Wrapper-scroll': scroll,
         'Wrapper-allow-overflow': allow_overflow,
@@ -97,4 +87,4 @@ export function WrapperGui({
       {children}
     </div>
   );
-}
+});

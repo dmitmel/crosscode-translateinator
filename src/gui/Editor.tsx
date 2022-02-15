@@ -256,7 +256,7 @@ export class FragmentListGui extends preact.Component<FragmentListGuiProps, Frag
 
     return (
       <WrapperGui
-        inner_ref={this.root_ref}
+        ref={this.root_ref}
         scroll
         className={cc(this.props.className, 'BoxItem-expand', 'FragmentList')}>
         {contents}
@@ -501,7 +501,7 @@ export class FragmentGui extends preact.Component<FragmentGuiProps, unknown> {
     let { fragment } = this.props;
     return (
       <WrapperGui
-        inner_ref={this.root_ref}
+        ref={this.root_ref}
         allow_overflow
         className={cc(this.props.className, 'Fragment', {
           'Fragment-current': this.props.is_current,
