@@ -19,47 +19,61 @@ export interface EditorGuiProps {
   className?: string;
 }
 
-export interface EditorGuiState {
-  fragment_list: readonly FragmentRoData[];
-  fragment_list_slice_start: number;
-  fragment_list_slice_end: number;
-  current_fragment_index: number;
+export function EditorGui(props: EditorGuiProps): preact.VNode {
+  return (
+    <BoxGui orientation="vertical" className={cc(props.className, 'Editor')}>
+      <EditorTabListGui />
+      <FragmentListToolbarGui />
+      <FragmentListGui />
+    </BoxGui>
+  );
+}
+
+export interface FragmentListGuiProps {
+  className?: string;
+}
+
+export interface FragmentListGuiState {
+  list: readonly FragmentRoData[];
+  slice_start: number;
+  slice_end: number;
+  current_index: number;
 }
 
 export const FRAGMENT_LIST_LOAD_DISTANCE = 0;
 export const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
 export const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
 
-export class EditorGui extends preact.Component<EditorGuiProps, EditorGuiState> {
+export class FragmentListGui extends preact.Component<FragmentListGuiProps, FragmentListGuiState> {
   public override context!: AppMainGuiCtx;
-  public override state: Readonly<EditorGuiState> = {
-    fragment_list: [],
-    fragment_list_slice_start: 0,
-    fragment_list_slice_end: 0,
-    current_fragment_index: 0,
-    ...this.get_fragment_list_state(),
+  public override state: Readonly<FragmentListGuiState> = {
+    list: [],
+    slice_start: 0,
+    slice_end: 0,
+    current_index: 0,
+    ...this.copy_state_from_app(),
   };
 
-  private get_fragment_list_state(): Partial<EditorGuiState> {
+  private copy_state_from_app(): Partial<FragmentListGuiState> {
     let { app } = this.context;
     let start = app.fragment_list_slice_start;
     let end = app.fragment_list_slice_end;
     return {
-      fragment_list_slice_start: start,
-      fragment_list_slice_end: end,
-      fragment_list: app.current_fragment_list.map((f) => f.get_render_data()),
-      current_fragment_index: app.current_fragment_index,
+      slice_start: start,
+      slice_end: end,
+      list: app.current_fragment_list.map((f) => f.get_render_data()),
+      current_index: app.current_fragment_index,
     };
   }
 
-  private fragment_list_ref = preact.createRef<HTMLDivElement>();
+  private root_ref = preact.createRef<HTMLDivElement>();
   private fragment_guis_map = new WeakMap<FragmentRoData, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
   private visible_fragments = new Set<FragmentGui>();
 
   public get_fragment_gui_by_index(index: number): FragmentGui | undefined {
-    return this.fragment_guis_map.get(this.state.fragment_list[index]);
+    return this.fragment_guis_map.get(this.state.list[index]);
   }
 
   public override componentDidMount(): void {
@@ -70,7 +84,7 @@ export class EditorGui extends preact.Component<EditorGuiProps, EditorGuiState> 
     utils.assert(this.fragment_observer == null);
     utils.assert(this.fragment_observer_map == null);
     this.fragment_observer = new IntersectionObserver(this.on_fragment_intersection_change, {
-      root: this.fragment_list_ref.current!,
+      root: this.root_ref.current!,
     });
     this.fragment_observer_map = new WeakMap();
   }
@@ -203,13 +217,13 @@ export class EditorGui extends preact.Component<EditorGuiProps, EditorGuiState> 
   };
 
   private on_fragment_list_update = (): void => {
-    this.setState(this.get_fragment_list_state());
+    this.setState(this.copy_state_from_app());
   };
 
   private on_current_fragment_change = (jump: boolean): void => {
     let { app } = this.context;
     let { current_fragment_index } = app;
-    this.setState({ current_fragment_index }, () => {
+    this.setState({ current_index: current_fragment_index }, () => {
       let current_fragment_gui = this.get_fragment_gui_by_index(current_fragment_index);
       if (jump) {
         current_fragment_gui!.root_ref.current!.scrollIntoView();
@@ -218,23 +232,21 @@ export class EditorGui extends preact.Component<EditorGuiProps, EditorGuiState> 
   };
 
   public override render(): preact.VNode {
-    let fragment_list_contents: preact.VNode[] = [];
+    let contents: preact.VNode[] = [];
 
-    let len = this.state.fragment_list.length;
-    let start = utils.clamp(this.state.fragment_list_slice_start, 0, len);
-    let end = utils.clamp(this.state.fragment_list_slice_end, 0, len);
+    let len = this.state.list.length;
+    let start = utils.clamp(this.state.slice_start, 0, len);
+    let end = utils.clamp(this.state.slice_end, 0, len);
     for (let i = start; i < end; i++) {
-      let fragment = this.state.fragment_list[i];
+      let fragment = this.state.list[i];
       if (i > start) {
-        fragment_list_contents.push(
-          <hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />,
-        );
+        contents.push(<hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />);
       }
-      fragment_list_contents.push(
+      contents.push(
         <FragmentGui
           key={fragment.id}
           index={i}
-          is_current={i === this.state.current_fragment_index}
+          is_current={i === this.state.current_index}
           fragment={fragment}
           map={this.fragment_guis_map}
           intersection_observer={this.fragment_observer}
@@ -244,16 +256,12 @@ export class EditorGui extends preact.Component<EditorGuiProps, EditorGuiState> 
     }
 
     return (
-      <BoxGui orientation="vertical" className={cc(this.props.className, 'Editor')}>
-        <EditorTabListGui />
-        <FragmentListToolbarGui />
-        <WrapperGui
-          inner_ref={this.fragment_list_ref}
-          scroll
-          className="BoxItem-expand FragmentList">
-          {fragment_list_contents}
-        </WrapperGui>
-      </BoxGui>
+      <WrapperGui
+        inner_ref={this.root_ref}
+        scroll
+        className={cc(this.props.className, 'BoxItem-expand', 'FragmentList')}>
+        {contents}
+      </WrapperGui>
     );
   }
 }
