@@ -108,7 +108,7 @@ export class ExplorerSectionGui extends preact.Component<
   };
 
   private on_name_click = (): void => {
-    this.setState({ is_opened: !this.state.is_opened });
+    this.setState((state) => ({ is_opened: !state.is_opened }));
   };
 
   public override render(): preact.VNode {

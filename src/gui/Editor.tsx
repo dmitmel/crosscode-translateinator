@@ -222,9 +222,8 @@ export class FragmentListGui extends preact.Component<FragmentListGuiProps, Frag
 
   private on_current_fragment_change = (jump: boolean): void => {
     let { app } = this.context;
-    let { current_fragment_index } = app;
-    this.setState({ current_index: current_fragment_index }, () => {
-      let current_fragment_gui = this.get_fragment_gui_by_index(current_fragment_index);
+    this.setState({ current_index: app.current_fragment_index }, () => {
+      let current_fragment_gui = this.get_fragment_gui_by_index(this.state.current_index);
       if (jump) {
         current_fragment_gui!.root_ref.current!.scrollIntoView();
       }
