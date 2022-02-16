@@ -1,29 +1,19 @@
 import './Label.scss';
 
 import cc from 'clsx';
-import * as preact from 'preact';
-import * as preact_compat from 'preact/compat';
+import * as React from 'react';
 
-export interface LabelGuiProps extends preact.JSX.HTMLAttributes<HTMLSpanElement> {
+export interface LabelGuiProps extends React.HTMLAttributes<HTMLSpanElement> {
   block?: boolean;
   ellipsis?: boolean;
   selectable?: boolean;
   preserve_whitespace?: boolean;
 }
 
-export const LabelGui = preact_compat.forwardRef(function LabelGui(
-  {
-    block,
-    ellipsis,
-    selectable,
-    preserve_whitespace,
-    className,
-    class: _class,
-    children,
-    ...rest
-  }: LabelGuiProps,
-  ref: preact.Ref<HTMLSpanElement>,
-): preact.VNode {
+export const LabelGui = React.forwardRef(function LabelGui(
+  { block, ellipsis, selectable, preserve_whitespace, className, children, ...rest }: LabelGuiProps,
+  ref: React.Ref<HTMLSpanElement>,
+): React.ReactElement {
   return (
     <span
       ref={ref}

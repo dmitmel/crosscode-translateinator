@@ -1,7 +1,7 @@
 import './StatusBar.scss';
 
-import * as preact from 'preact';
+import * as React from 'react';
 
-export function StatusBarGui(): preact.VNode {
+export function StatusBarGui(): React.ReactElement {
   return <div className="StatusBar">Hi!</div>;
 }

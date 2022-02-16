@@ -1,18 +1,18 @@
 import './TextInput.scss';
 
-import * as preact from 'preact';
+import * as React from 'react';
 
 import * as utils from '../utils';
 
-export interface TextAreaGuiProps extends preact.JSX.HTMLAttributes<HTMLTextAreaElement> {
-  style?: preact.JSX.CSSProperties;
+export interface TextAreaGuiProps extends React.HTMLAttributes<HTMLTextAreaElement> {
+  style?: React.CSSProperties;
 }
 
 // Fun fact: this component is a partial port of
 // <https://github.com/uisky/notabenoid/blob/0840a9dd1932f6d254a1c9a022b77fc478afadc4/www/js/jquery.elastic.mod.js>.
 // Indeed, the JQuery plugin used in Notabenoid. Also see
 // <https://github.com/Andarist/react-textarea-autosize/tree/58c9807645dceb9034b733d9cb63aa66df2364b0/src>.
-export class TextAreaGui extends preact.Component<TextAreaGuiProps, unknown> {
+export class TextAreaGui extends React.Component<TextAreaGuiProps, unknown> {
   public static readonly HIDDEN_TEXT_AREA_STYLES = {
     position: 'absolute',
     top: '0',
@@ -133,7 +133,7 @@ export class TextAreaGui extends preact.Component<TextAreaGuiProps, unknown> {
     }
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     return <textarea {...this.props} ref={this.set_ref} />;
   }
 }

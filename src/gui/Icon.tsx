@@ -2,17 +2,16 @@ import './Icon.scss';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 import cc from 'clsx';
-import * as preact from 'preact';
-import * as preact_compat from 'preact/compat';
+import * as React from 'react';
 
-export interface IconGuiProps extends Omit<preact.JSX.HTMLAttributes<HTMLSpanElement>, 'icon'> {
+export interface IconGuiProps extends React.HTMLAttributes<HTMLSpanElement> {
   icon: string | null;
 }
 
-export const IconGui = preact_compat.forwardRef(function IconGui(
-  { icon, className, class: _class, ...rest }: IconGuiProps,
-  ref: preact.Ref<HTMLSpanElement>,
-): preact.VNode {
+export const IconGui = React.forwardRef(function IconGui(
+  { icon, className, ...rest }: IconGuiProps,
+  ref: React.Ref<HTMLSpanElement>,
+): React.ReactElement {
   let valid_icon = icon != null && /^[a-z0-9-]+$/.test(icon);
   return (
     <span
@@ -30,15 +29,14 @@ export const IconGui = preact_compat.forwardRef(function IconGui(
   );
 });
 
-export interface IconlikeTextGuiProps
-  extends Omit<preact.JSX.HTMLAttributes<HTMLSpanElement>, 'icon'> {
+export interface IconlikeTextGuiProps extends React.HTMLAttributes<HTMLSpanElement> {
   icon: string;
 }
 
-export const IconlikeTextGui = preact_compat.forwardRef(function IconlikeTextGui(
-  { icon, className, class: _class, ...rest }: IconlikeTextGuiProps,
-  ref: preact.Ref<HTMLSpanElement>,
-): preact.VNode {
+export const IconlikeTextGui = React.forwardRef(function IconlikeTextGui(
+  { icon, className, ...rest }: IconlikeTextGuiProps,
+  ref: React.Ref<HTMLSpanElement>,
+): React.ReactElement {
   return (
     <span ref={ref} role="img" className={cc(className, 'IconlikeText')} {...rest}>
       {icon}

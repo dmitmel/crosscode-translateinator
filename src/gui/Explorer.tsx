@@ -3,7 +3,6 @@ import './Button';
 
 import cc from 'clsx';
 import Immutable from 'immutable';
-import * as preact from 'preact';
 import * as React from 'react';
 import * as ReactWindow from 'react-window';
 
@@ -17,7 +16,7 @@ import {
   TabFile,
 } from '../app';
 import * as utils from '../utils';
-import { AppMainGuiCtx } from './AppMain';
+import { AppMainCtx } from './AppMainCtx';
 import { BoxGui, WrapperGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
@@ -30,8 +29,9 @@ export interface ExplorerGuiState {
   project_meta: ProjectMetaRoData | null;
 }
 
-export class ExplorerGui extends preact.Component<ExplorerGuiProps, ExplorerGuiState> {
-  public override context!: AppMainGuiCtx;
+export class ExplorerGui extends React.Component<ExplorerGuiProps, ExplorerGuiState> {
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
   public override state: Readonly<ExplorerGuiState> = {
     project_meta: this.copy_project_meta(),
   };
@@ -61,7 +61,7 @@ export class ExplorerGui extends preact.Component<ExplorerGuiProps, ExplorerGuiS
     this.setState({ project_meta: this.copy_project_meta() });
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     let { app } = this.context;
     return (
       <BoxGui orientation="vertical" className={cc(this.props.className, 'Explorer')}>
@@ -99,7 +99,7 @@ export interface ExplorerSectionGuiState {
   is_opened: boolean;
 }
 
-export class ExplorerSectionGui extends preact.Component<
+export class ExplorerSectionGui extends React.Component<
   ExplorerSectionGuiProps,
   ExplorerSectionGuiState
 > {
@@ -111,7 +111,7 @@ export class ExplorerSectionGui extends preact.Component<
     this.setState((state) => ({ is_opened: !state.is_opened }));
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     let { is_opened } = this.state;
     return (
       <BoxGui
@@ -154,8 +154,9 @@ export interface TreeViewGuiState {
   opened_states: Immutable.Map<string, boolean>;
 }
 
-export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiState> {
-  public override context!: AppMainGuiCtx;
+export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiState> {
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
   public override state: Readonly<TreeViewGuiState> = {
     list_height: -1,
     current_path: null,
@@ -163,11 +164,11 @@ export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiS
     opened_states: Immutable.Map(),
   };
 
-  public list_ref = preact.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
+  public list_ref = React.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
   public item_indexes_map = new Map<string, number>();
 
   private resize_observer: ResizeObserver | null = null;
-  private resize_observer_target = preact.createRef<HTMLDivElement>();
+  private resize_observer_target = React.createRef<HTMLDivElement>();
 
   public override componentDidMount(): void {
     this.resize_observer = new ResizeObserver(this.resize_observer_callback);
@@ -234,7 +235,7 @@ export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiS
 
   private on_item_click = (
     file: FileTreeFile,
-    _event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>,
+    _event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
     let { app } = this.context;
     let file_path = file.path;
@@ -256,7 +257,7 @@ export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiS
     }
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     return (
       <WrapperGui ref={this.resize_observer_target} expand>
         {this.state.list_height >= 0 ? this.render_list() : null}
@@ -264,16 +265,13 @@ export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiS
     );
   }
 
-  private render_list(): preact.VNode {
+  private render_list(): React.ReactNode {
     let items: PreparedTreeItem[] = [];
     this.item_indexes_map.clear();
     this.prepare_items(this.state.tree_data.root_dir, this.props.base_depth ?? 0, items);
 
-    let FixedSizeList = ReactWindow.FixedSizeList as preact.ComponentClass<
-      ReactWindow.FixedSizeListProps<PreparedTreeItem[]>
-    >;
     return (
-      <FixedSizeList
+      <ReactWindow.FixedSizeList
         ref={this.list_ref}
         width={'100%'}
         height={this.state.list_height}
@@ -300,7 +298,7 @@ export class TreeViewGui extends preact.Component<TreeViewGuiProps, TreeViewGuiS
     let item = data[index];
     return (
       <TreeItemGui
-        style={style as preact.JSX.CSSProperties}
+        style={style}
         file_type={this.props.files_type}
         file={item.file}
         is_opened={item.is_opened}
@@ -347,11 +345,17 @@ export interface TreeItemGuiProps {
   is_opened: boolean;
   depth: number;
   index: number;
-  on_click: preact.JSX.MouseEventHandler<HTMLButtonElement>;
-  style?: preact.JSX.CSSProperties;
+  on_click: React.MouseEventHandler<HTMLButtonElement>;
+  style?: React.CSSProperties;
 }
 
-export function TreeItemGui(props: TreeItemGuiProps): preact.VNode {
+declare module 'react' {
+  interface CSSProperties {
+    '--TreeItem-depth'?: number;
+  }
+}
+
+export function TreeItemGui(props: TreeItemGuiProps): React.ReactElement {
   let is_directory = props.file instanceof FileTreeDir;
 
   let icon: string;

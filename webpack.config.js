@@ -14,7 +14,6 @@ module.exports = (_env, { mode }) => ({
 
   entry: {
     main: [
-      mode === 'development' ? 'preact/debug' : 'preact/devtools',
       './src/main',
       'crosscode-localization-engine/build/Release/crosslocale.node',
       `crosscode-localization-engine/build/Release/${
@@ -36,10 +35,6 @@ module.exports = (_env, { mode }) => ({
 
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
-    alias: {
-      react: 'preact/compat',
-      'react-dom': 'preact/compat',
-    },
   },
 
   module: {

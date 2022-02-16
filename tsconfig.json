@@ -6,7 +6,6 @@
     "strict": true,
     "noImplicitOverride": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
     "types": ["webpack-env"],

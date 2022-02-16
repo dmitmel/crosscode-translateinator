@@ -1,7 +1,7 @@
 import './EditorTabs.scss';
 
 import cc from 'clsx';
-import * as preact from 'preact';
+import * as React from 'react';
 
 import {
   BaseTabRoData,
@@ -12,7 +12,7 @@ import {
   TabSearchRoData,
 } from '../app';
 import * as utils from '../utils';
-import { AppMainGuiCtx } from './AppMain';
+import { AppMainCtx } from './AppMainCtx';
 import { BoxGui } from './Box';
 import { IconGui } from './Icon';
 
@@ -25,11 +25,12 @@ export interface EditorTabListGuiState {
   opened_tabs: readonly BaseTabRoData[];
 }
 
-export class EditorTabListGui extends preact.Component<
+export class EditorTabListGui extends React.Component<
   EditorTabListGuiProps,
   EditorTabListGuiState
 > {
-  public override context!: AppMainGuiCtx;
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
   public override state: Readonly<EditorTabListGuiState> = {
     current_tab_index: this.context.app.current_tab_index,
     opened_tabs: this.context.app.opened_tabs.map((tab) => tab.get_render_data()),
@@ -65,7 +66,7 @@ export class EditorTabListGui extends preact.Component<
     });
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     return (
       <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
         {this.state.opened_tabs.map((tab, index) => {
@@ -141,10 +142,11 @@ export interface EditorTabGuiProps extends EditorTabGuiDisplayProps {
   is_active: boolean;
 }
 
-export class EditorTabGui extends preact.Component<EditorTabGuiProps, unknown> {
-  public override context!: AppMainGuiCtx;
+export class EditorTabGui extends React.Component<EditorTabGuiProps, unknown> {
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
 
-  public root_ref = preact.createRef<HTMLButtonElement>();
+  public root_ref = React.createRef<HTMLButtonElement>();
 
   public override componentDidMount(): void {
     this.register_into_container(this.props);
@@ -167,18 +169,18 @@ export class EditorTabGui extends preact.Component<EditorTabGuiProps, unknown> {
     props.map.delete(props.tab);
   }
 
-  public on_click = (_event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>): void => {
+  public on_click = (_event: React.MouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
     app.set_current_tab_index(this.props.index, TabChangeTrigger.TabList);
   };
 
-  public on_close_click = (event: preact.JSX.TargetedMouseEvent<HTMLSpanElement>): void => {
+  public on_close_click = (event: React.MouseEvent<HTMLSpanElement>): void => {
     event.stopPropagation();
     let { app } = this.context;
     app.close_tab(this.props.index);
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     return (
       <button
         ref={this.root_ref}

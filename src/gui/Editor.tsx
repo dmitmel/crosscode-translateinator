@@ -1,12 +1,12 @@
 import './Editor.scss';
 
 import cc from 'clsx';
-import * as preact from 'preact';
+import * as React from 'react';
 
 import { FragmentRoData, TranslationRoData } from '../app';
 import * as gui from '../gui';
 import * as utils from '../utils';
-import { AppMainGuiCtx } from './AppMain';
+import { AppMainCtx } from './AppMainCtx';
 import { BoxGui, BoxItemFillerGui, WrapperGui } from './Box';
 import { IconButtonGui } from './Button';
 import { EditorTabListGui } from './EditorTabs';
@@ -19,7 +19,7 @@ export interface EditorGuiProps {
   className?: string;
 }
 
-export function EditorGui(props: EditorGuiProps): preact.VNode {
+export function EditorGui(props: EditorGuiProps): React.ReactElement {
   return (
     <BoxGui orientation="vertical" className={cc(props.className, 'Editor')}>
       <EditorTabListGui />
@@ -44,29 +44,17 @@ export const FRAGMENT_LIST_LOAD_DISTANCE = 0;
 export const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
 export const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
 
-export class FragmentListGui extends preact.Component<FragmentListGuiProps, FragmentListGuiState> {
-  public override context!: AppMainGuiCtx;
+export class FragmentListGui extends React.Component<FragmentListGuiProps, FragmentListGuiState> {
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
   public override state: Readonly<FragmentListGuiState> = {
-    list: [],
-    slice_start: 0,
-    slice_end: 0,
-    current_index: 0,
-    ...this.copy_state_from_app(),
+    list: this.context.app.current_fragment_list.map((f) => f.get_render_data()),
+    slice_start: this.context.app.fragment_list_slice_start,
+    slice_end: this.context.app.fragment_list_slice_end,
+    current_index: this.context.app.current_fragment_index,
   };
 
-  private copy_state_from_app(): Partial<FragmentListGuiState> {
-    let { app } = this.context;
-    let start = app.fragment_list_slice_start;
-    let end = app.fragment_list_slice_end;
-    return {
-      slice_start: start,
-      slice_end: end,
-      list: app.current_fragment_list.map((f) => f.get_render_data()),
-      current_index: app.current_fragment_index,
-    };
-  }
-
-  private root_ref = preact.createRef<HTMLDivElement>();
+  private root_ref = React.createRef<HTMLDivElement>();
   private fragment_guis_map = new WeakMap<FragmentRoData, FragmentGui>();
   private fragment_observer: IntersectionObserver | null = null;
   private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
@@ -217,7 +205,12 @@ export class FragmentListGui extends preact.Component<FragmentListGuiProps, Frag
   };
 
   private on_fragment_list_update = (): void => {
-    this.setState(this.copy_state_from_app());
+    let { app } = this.context;
+    this.setState({
+      list: app.current_fragment_list.map((f) => f.get_render_data()),
+      slice_start: app.fragment_list_slice_start,
+      slice_end: app.fragment_list_slice_end,
+    });
   };
 
   private on_current_fragment_change = (jump: boolean): void => {
@@ -230,8 +223,8 @@ export class FragmentListGui extends preact.Component<FragmentListGuiProps, Frag
     });
   };
 
-  public override render(): preact.VNode {
-    let contents: preact.VNode[] = [];
+  public override render(): React.ReactNode {
+    let contents: React.ReactNode[] = [];
 
     let len = this.state.list.length;
     let start = utils.clamp(this.state.slice_start, 0, len);
@@ -275,11 +268,12 @@ export interface FragmentListToolbarGuiState {
   fragment_count: number;
 }
 
-export class FragmentListToolbarGui extends preact.Component<
+export class FragmentListToolbarGui extends React.Component<
   FragmentListToolbarGuiProps,
   FragmentListToolbarGuiState
 > {
-  public override context!: AppMainGuiCtx;
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
   public override state: Readonly<FragmentListToolbarGuiState> = {
     jump_pos_value: '0',
     filter_value: '',
@@ -288,8 +282,8 @@ export class FragmentListToolbarGui extends preact.Component<
 
   public static readonly FRAGMENT_PAGINATION_JUMP = 10;
 
-  private jump_pos_input_ref = preact.createRef<HTMLInputElement>();
-  private filter_input_ref = preact.createRef<HTMLInputElement>();
+  private jump_pos_input_ref = React.createRef<HTMLInputElement>();
+  private filter_input_ref = React.createRef<HTMLInputElement>();
 
   public override componentDidMount(): void {
     let { app } = this.context;
@@ -314,11 +308,11 @@ export class FragmentListToolbarGui extends preact.Component<
     this.setState({ fragment_count: app.current_fragment_list.length });
   };
 
-  private on_jump_pos_input = (event: preact.JSX.TargetedEvent<HTMLInputElement>): void => {
+  private on_jump_pos_input = (event: React.FormEvent<HTMLInputElement>): void => {
     this.setState({ jump_pos_value: event.currentTarget.value });
   };
 
-  private on_jump_pos_submit = (event: preact.JSX.TargetedEvent<HTMLFormElement>): void => {
+  private on_jump_pos_submit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     let { app } = this.context;
     let jump_pos = parseInt(this.state.jump_pos_value, 10);
@@ -326,14 +320,14 @@ export class FragmentListToolbarGui extends preact.Component<
     app.set_current_fragment_index(jump_pos - 1, /* jump */ true);
   };
 
-  private on_jump_pos_unfocus = (_event: preact.JSX.TargetedFocusEvent<HTMLInputElement>): void => {
+  private on_jump_pos_unfocus = (_event: React.FocusEvent<HTMLInputElement>): void => {
     let { app } = this.context;
     this.setState({ jump_pos_value: app.current_fragment_index.toString() });
   };
 
   private on_jump_button_click = (
     jump_type: 'first' | 'back_many' | 'back_one' | 'fwd_one' | 'fwd_many' | 'last',
-    _event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>,
+    _event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
     let { app } = this.context;
     let jump_pos = app.current_fragment_index;
@@ -351,13 +345,13 @@ export class FragmentListToolbarGui extends preact.Component<
     app.set_current_fragment_index(jump_pos, /* jump */ true);
   };
 
-  private on_filter_submit = (_event: preact.JSX.TargetedEvent<HTMLFormElement>): void => {};
+  private on_filter_submit = (_event: React.FormEvent<HTMLFormElement>): void => {};
 
-  private on_filter_input = (event: preact.JSX.TargetedEvent<HTMLInputElement>): void => {
+  private on_filter_input = (event: React.FormEvent<HTMLInputElement>): void => {
     this.setState({ filter_value: event.currentTarget.value });
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
     return (
       <WrapperGui className={cc('FragmentListToolbar', this.props.className)}>
@@ -445,9 +439,10 @@ export interface FragmentGuiProps {
   intersection_observer_map: WeakMap<Element, FragmentGui> | null;
 }
 
-export class FragmentGui extends preact.Component<FragmentGuiProps, unknown> {
-  public override context!: AppMainGuiCtx;
-  public root_ref = preact.createRef<HTMLDivElement>();
+export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
+  public root_ref = React.createRef<HTMLDivElement>();
   public is_visible = false;
 
   private on_file_path_component_click = (component_path: string): void => {
@@ -458,9 +453,7 @@ export class FragmentGui extends preact.Component<FragmentGuiProps, unknown> {
     console.log('search', this.props.fragment.game_file_path, component_path);
   };
 
-  private on_copy_original_text = (
-    _event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>,
-  ): void => {
+  private on_copy_original_text = (_event: React.MouseEvent<HTMLButtonElement>): void => {
     nw.Clipboard.get().set(this.props.fragment.original_text);
   };
 
@@ -497,7 +490,7 @@ export class FragmentGui extends preact.Component<FragmentGuiProps, unknown> {
     props.map.delete(props.fragment);
   }
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     let { fragment } = this.props;
     return (
       <WrapperGui
@@ -575,8 +568,9 @@ export interface FragmentPathGuiState {
   clickable: boolean;
 }
 
-export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, FragmentPathGuiState> {
-  public override context!: AppMainGuiCtx;
+export class FragmentPathGui extends React.Component<FragmentPathGuiProps, FragmentPathGuiState> {
+  public static override contextType = AppMainCtx;
+  public override context!: AppMainCtx;
   public override state: Readonly<FragmentPathGuiState> = {
     clickable: false,
   };
@@ -593,12 +587,12 @@ export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, Frag
     app.event_global_key_modifiers_change.off(this.on_keymod_event);
   }
 
-  private on_mouse_hover = (_event: preact.JSX.TargetedMouseEvent<HTMLElement>): void => {
+  private on_mouse_hover = (_event: React.MouseEvent<HTMLElement>): void => {
     this.is_mouse_over = true;
     this.update_clickable_state();
   };
 
-  private on_mouse_hover_end = (_event: preact.JSX.TargetedMouseEvent<HTMLElement>): void => {
+  private on_mouse_hover_end = (_event: React.MouseEvent<HTMLElement>): void => {
     this.is_mouse_over = false;
     this.update_clickable_state();
   };
@@ -615,22 +609,22 @@ export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, Frag
 
   private on_link_click = (
     component_path: string,
-    event: preact.JSX.TargetedMouseEvent<HTMLAnchorElement>,
+    event: React.MouseEvent<HTMLAnchorElement>,
   ): void => {
     event.preventDefault();
     this.props.on_click?.(component_path);
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     let full_path = this.props.path;
-    let children: preact.ComponentChildren = full_path;
+    let children: React.ReactNode[] = [full_path];
 
     if (this.state.clickable) {
-      let links: preact.VNode[] = [];
+      children.length = 0;
       for (let component of utils.split_iter(full_path, '/')) {
         let component_full_path = full_path.slice(0, component.end + 1);
         let component_path = full_path.slice(component.start, component.end + 1);
-        links.push(
+        children.push(
           // An empty href is required for focus to work on the links.
           <a
             key={component_full_path}
@@ -640,7 +634,6 @@ export class FragmentPathGui extends preact.Component<FragmentPathGuiProps, Frag
           </a>,
         );
       }
-      children = links;
     }
 
     // Without a wrapper element, when moving the cursor between path component
@@ -662,12 +655,12 @@ export interface TranslationGuiProps {
   translation: TranslationRoData;
 }
 
-export class TranslationGui extends preact.Component<TranslationGuiProps, unknown> {
-  private on_copy_text = (_event: preact.JSX.TargetedMouseEvent<HTMLButtonElement>): void => {
+export class TranslationGui extends React.Component<TranslationGuiProps, unknown> {
+  private on_copy_text = (_event: React.MouseEvent<HTMLButtonElement>): void => {
     nw.Clipboard.get().set(this.props.translation.text);
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     let { translation } = this.props;
 
     return (
@@ -708,7 +701,7 @@ export interface NewTranslationGuiState {
   text_area_height: number;
 }
 
-export class NewTranslationGui extends preact.Component<
+export class NewTranslationGui extends React.Component<
   NewTranslationGuiProps,
   NewTranslationGuiState
 > {
@@ -719,7 +712,7 @@ export class NewTranslationGui extends preact.Component<
 
   private textarea_id: string = utils.new_html_id();
 
-  private on_input = (event: preact.JSX.TargetedEvent<HTMLTextAreaElement>): void => {
+  private on_input = (event: React.FormEvent<HTMLTextAreaElement>): void => {
     let text = event.currentTarget.value;
     let height = -1;
     if (text.length > 0) {
@@ -728,7 +721,7 @@ export class NewTranslationGui extends preact.Component<
     this.setState({ text, text_area_height: height });
   };
 
-  public override render(): preact.VNode {
+  public override render(): React.ReactNode {
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
         <textarea

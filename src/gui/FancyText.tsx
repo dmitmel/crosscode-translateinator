@@ -1,5 +1,4 @@
-import * as preact from 'preact';
-import * as preact_compat from 'preact/compat';
+import * as React from 'react';
 
 import * as crosscode_markup from '../crosscode_markup';
 
@@ -14,11 +13,11 @@ export interface FancyTextGuiProps {
   children: string;
 }
 
-export const FancyTextGui = preact_compat.memo(function FancyTextGui(
+export const FancyTextGui = React.memo(function FancyTextGui(
   props: FancyTextGuiProps,
-): preact.VNode {
+): React.ReactElement {
   let source_text = props.children;
-  let token_elements: preact.VNode[] = [];
+  let token_elements: React.ReactNode[] = [];
 
   let tokens_iterable: Iterable<crosscode_markup.Token> = props.highlight_crosscode_markup
     ? crosscode_markup.lex(source_text)
@@ -44,14 +43,14 @@ export const FancyTextGui = preact_compat.memo(function FancyTextGui(
       current_color = crosscode_markup.FONT_COLORS.get(token.data);
     }
 
-    let token_style: preact.JSX.CSSProperties = {};
+    let token_style: React.CSSProperties = {};
     let token_color = token.type === 'LITERAL_TEXT' ? current_color : SPECIAL_ESCAPES_COLOR;
     if (token_color != null) token_style.color = token_color;
 
     let token_key = `token;${token.type};${token.start_index};${token.end_index}`;
 
     let text_slice = source_text.slice(token.start_index, token.end_index);
-    let text_elements: Array<preact.VNode | string> = [];
+    let text_elements: React.ReactNode[] = [];
 
     if (props.highlight_newlines) {
       let line_start_index = 0;
