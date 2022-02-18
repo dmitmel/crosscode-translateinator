@@ -5,6 +5,7 @@ export enum KeyMod {
   Ctrl = 1 << 1,
   Meta = 1 << 3,
   Shift = 1 << 0,
+  MetaOrCtrl = process.platform === 'darwin' ? Meta : Ctrl,
 }
 
 export function get_keyboard_event_modifiers(event: KeyboardEvent | MouseEvent): KeyMod {
