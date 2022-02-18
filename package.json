@@ -38,7 +38,6 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "html-webpack-plugin": "^5.5.0",
-    "json-parse-better-errors": "^1.0.2",
     "mini-css-extract-plugin": "^2.4.6",
     "prettier": "^2.5.1",
     "sass": "^1.47.0",
