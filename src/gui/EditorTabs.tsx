@@ -171,7 +171,9 @@ export class EditorTabGui extends React.Component<EditorTabGuiProps, unknown> {
 
   public on_click = (_event: React.MouseEvent<HTMLButtonElement>): void => {
     let { app } = this.context;
-    app.set_current_tab_index(this.props.index, TabChangeTrigger.TabList);
+    if (app.current_tab_index !== this.props.index) {
+      app.set_current_tab_index(this.props.index, TabChangeTrigger.TabList);
+    }
   };
 
   public on_close_click = (event: React.MouseEvent<HTMLSpanElement>): void => {

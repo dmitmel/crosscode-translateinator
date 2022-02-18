@@ -74,21 +74,19 @@ export class AppMain {
   public set_current_tab_index(index: number, trigger: TabChangeTrigger | null = null): void {
     utils.assert(Number.isSafeInteger(index));
     index = this.clamp_tab_index(index);
-    if (this.current_tab_index !== index) {
-      this.current_tab_index = index;
-      let tab = this.opened_tabs[this.current_tab_index];
-      this.current_tab = tab;
-      this.event_current_tab_change.fire(trigger);
+    this.current_tab_index = index;
+    let tab = this.opened_tabs[this.current_tab_index];
+    this.current_tab = tab;
+    this.event_current_tab_change.fire(trigger);
 
-      // TODO: handle cancellation, the current tab being closed, etc etc
-      this.current_tab_loading_promise = (async () => {
-        await this.current_tab_loading_promise;
-        await tab.loaded_promise;
-        let list = await tab.list_fragments();
-        this.current_tab_loading_promise = null;
-        tab.notify_fragment_list_update(list);
-      })();
-    }
+    // TODO: handle cancellation, the current tab being closed, etc etc
+    this.current_tab_loading_promise = (async () => {
+      await this.current_tab_loading_promise;
+      await tab.loaded_promise;
+      let list = await tab.list_fragments();
+      this.current_tab_loading_promise = null;
+      tab.notify_fragment_list_update(list);
+    })();
   }
 
   public clamp_tab_index(index: number): number {
@@ -136,19 +134,15 @@ export class AppMain {
   public set_current_fragment_index(index: number, jump: boolean): void {
     utils.assert(Number.isSafeInteger(index));
     index = utils.clamp(index, 0, this.current_fragment_list.length - 1);
-    if (this.current_fragment_index !== index) {
-      this.current_fragment_index = index;
-      this.event_current_fragment_change.fire(jump);
-    }
+    this.current_fragment_index = index;
+    this.event_current_fragment_change.fire(jump);
   }
 
   public global_key_modifiers = gui.KeyMod.None;
   public event_global_key_modifiers_change = new Event2<[state: gui.KeyMod]>();
   public set_global_key_modifiers(state: gui.KeyMod): void {
-    if (this.global_key_modifiers !== state) {
-      this.global_key_modifiers = state;
-      this.event_global_key_modifiers_change.fire(state);
-    }
+    this.global_key_modifiers = state;
+    this.event_global_key_modifiers_change.fire(state);
   }
 
   // Fragments received from the game window are queued and processed

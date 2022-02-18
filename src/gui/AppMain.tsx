@@ -48,14 +48,18 @@ export class AppMainGui extends React.Component<unknown, unknown> {
   private on_global_key_down = (event: KeyboardEvent): void => {
     let { app } = this.child_context;
     let kmod = gui.get_keyboard_event_modifiers(event);
-    app.set_global_key_modifiers(kmod);
+    if (app.global_key_modifiers !== kmod) {
+      app.set_global_key_modifiers(kmod);
+    }
   };
 
   private on_global_key_up = (event: KeyboardEvent): void => {
     let { app } = this.child_context;
     let key = event.code;
     let kmod = gui.get_keyboard_event_modifiers(event);
-    app.set_global_key_modifiers(kmod);
+    if (app.global_key_modifiers !== kmod) {
+      app.set_global_key_modifiers(kmod);
+    }
 
     if (key === 'F5' && kmod === gui.KeyMod.None) {
       // Soft reload, caught by on_before_page_unload, although the callback is

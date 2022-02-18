@@ -201,7 +201,10 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
       }
     }
 
-    app.set_current_fragment_index(top_index ?? 0, /* jump */ false);
+    top_index ??= 0;
+    if (app.current_fragment_index !== top_index) {
+      app.set_current_fragment_index(top_index, /* jump */ false);
+    }
   };
 
   private on_fragment_list_update = (): void => {
