@@ -2,19 +2,26 @@ import * as crosslocale_bridge from './backend/ffi_bridge';
 import { Event2 } from './events';
 import * as utils from './utils';
 
-crosslocale_bridge.init_logging();
-
 export const PROTOCOL_VERSION = 0;
 if (crosslocale_bridge.PROTOCOL_VERSION !== PROTOCOL_VERSION) {
   throw new Error('Unsupported protocol version!');
 }
 
-export type Message = RequestMessage | ResponseMessage | ErrorResponseMessage;
+export type Message = RequestMessage | ResponseMessage | ErrorResponseMessage | LogRecordMessage;
 
 export const enum MessageType {
   Request = 1,
   Response = 2,
   ErrorResponse = 3,
+  LogRecord = 4,
+}
+
+export const enum LogLevel {
+  Error = 1,
+  Warn = 2,
+  Info = 3,
+  Debug = 4,
+  Trace = 5,
 }
 
 export type RequestMessage<M extends keyof MessageRegistry = keyof MessageRegistry> = [
@@ -34,6 +41,13 @@ export type ErrorResponseMessage = [
   type: MessageType.ErrorResponse,
   id: number | null,
   message: string,
+];
+
+export type LogRecordMessage = [
+  type: MessageType.LogRecord,
+  level: LogLevel,
+  target: string,
+  text: string,
 ];
 
 type Empty = Record<string, never>;
@@ -331,6 +345,20 @@ export class Backend {
             throw new Error('server has sent an error response to an unknown message');
           }
           callback(error);
+        }
+        break;
+      }
+
+      case MessageType.LogRecord: {
+        let [_, log_level, log_target, log_text] = message as LogRecordMessage;
+        let printed_text = `[${log_target}] ${log_text}`;
+        // prettier-ignore
+        switch (log_level) {
+          case LogLevel.Error: console.error(printed_text); break;
+          case LogLevel.Warn:  console.warn(printed_text);  break;
+          case LogLevel.Info:  console.info(printed_text);  break;
+          case LogLevel.Debug: console.log(printed_text);   break;
+          case LogLevel.Trace: console.debug(printed_text); break;
         }
         break;
       }
