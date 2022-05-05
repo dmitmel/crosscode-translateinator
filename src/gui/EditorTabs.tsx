@@ -5,7 +5,6 @@ import * as React from 'react';
 
 import {
   BaseTabRoData,
-  FileType,
   TabChangeTrigger,
   TabFileRoData,
   TabQueueRoData,
@@ -14,6 +13,7 @@ import {
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
 import { BoxGui } from './Box';
+import { GameFileGuiData } from './Explorer';
 import { IconGui } from './Icon';
 
 export interface EditorTabListGuiProps {
@@ -88,17 +88,7 @@ export class EditorTabListGui extends React.Component<
 
   private prepare_to_render_tab(tab: BaseTabRoData): EditorTabGuiDisplayProps {
     if (tab instanceof TabFileRoData) {
-      let icon: string;
-      let description: string;
-      if (tab.file_type === FileType.GameFile) {
-        icon = 'file-earmark-zip-fill';
-        description = `Game file ${tab.file_path}`;
-      } else if (tab.file_type === FileType.TrFile) {
-        icon = 'file-earmark-text-fill';
-        description = `Translation file ${tab.file_path}`;
-      } else {
-        throw new Error(`unknown file type: ${tab.file_type}`);
-      }
+      let gui_data = GameFileGuiData.get(tab.file_type, tab.file_path);
 
       // Almost all paths you'll ever see begin with `data/` anyway.
       let shorter_path = utils.strip_prefix(tab.file_path, 'data/');
@@ -115,9 +105,9 @@ export class EditorTabListGui extends React.Component<
       }
 
       return {
-        icon,
+        icon: gui_data.icon_filled,
         title: display_path,
-        description,
+        description: gui_data.description,
       };
     } else if (tab instanceof TabQueueRoData) {
       return { icon: 'journal-bookmark-fill', title: 'Queue' };

@@ -358,17 +358,12 @@ declare module 'react' {
 export function TreeItemGui(props: TreeItemGuiProps): React.ReactElement {
   let is_directory = props.file instanceof FileTreeDir;
 
-  let icon: string;
+  let gui_data = GameFileGuiData.get(props.file_type, props.file.path);
   let label = props.file.path;
+  let { icon } = gui_data;
   if (is_directory) {
     label += '/';
     icon = `chevron-${props.is_opened ? 'down' : 'right'}`;
-  } else if (props.file_type === FileType.TrFile) {
-    icon = 'file-earmark-zip';
-  } else if (props.file_type === FileType.GameFile) {
-    icon = 'file-earmark-text';
-  } else {
-    throw new Error('unreachable');
   }
 
   return (
@@ -391,4 +386,36 @@ export function TreeItemGui(props: TreeItemGuiProps): React.ReactElement {
       </LabelGui>
     </button>
   );
+}
+
+export abstract class FileTypeGuiData {
+  public abstract icon: string;
+  public abstract icon_filled: string;
+  public abstract description: string;
+
+  public constructor(public file_type: FileType, public file_path: string) {}
+
+  public static get(...args: ConstructorParameters<typeof FileTypeGuiData>): FileTypeGuiData {
+    let [file_type] = args;
+    switch (file_type) {
+      case FileType.TrFile:
+        return new TrFileGuiData(...args);
+      case FileType.GameFile:
+        return new GameFileGuiData(...args);
+      default:
+        throw new Error(`unknown file type: ${file_type}`);
+    }
+  }
+}
+
+export class TrFileGuiData extends FileTypeGuiData {
+  public icon = 'file-earmark-zip';
+  public icon_filled = `${this.icon}-fill`;
+  public description = `Translation file ${this.file_path}`;
+}
+
+export class GameFileGuiData extends FileTypeGuiData {
+  public icon = 'file-earmark-text';
+  public icon_filled = `${this.icon}-fill`;
+  public description = `Game file ${this.file_path}`;
 }
