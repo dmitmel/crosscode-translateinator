@@ -1,12 +1,17 @@
 @import '../theme.scss';
 
+@font-face {
+  font-family: 'bootstrap-icons';
+  font-display: block;
+  src: url('~bootstrap-icons/font/fonts/bootstrap-icons.woff2') format('woff2'),
+    url('~bootstrap-icons/font/fonts/bootstrap-icons.woff') format('woff');
+}
+
 .Icon {
   display: inline-block;
   // vertical-align: text-bottom;
-}
-
-.IconBlank {
   width: 1em;
+  height: 1em;
 }
 
 .Icon,

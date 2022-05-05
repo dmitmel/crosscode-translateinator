@@ -1,5 +1,5 @@
-import './Icon.scss';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import './Icon.scss';
 
 import cc from 'clsx';
 import * as React from 'react';
