@@ -262,8 +262,7 @@ export enum BackendState {
 }
 
 export class Backend {
-  private transport: crosslocale_bridge.Backend = null!;
-  private state = BackendState.DISCONNECTED;
+  private transport: crosslocale_bridge.Backend | null = null;
   private current_request_id = 1;
   private sent_request_success_callbacks = new Map<number, (data: unknown) => void>();
   private sent_request_error_callbacks = new Map<number, (error: Error) => void>();
@@ -274,22 +273,24 @@ export class Backend {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   public async connect(): Promise<void> {
-    utils.assert(this.state === BackendState.DISCONNECTED);
-    this.state = BackendState.DISCONNECTED;
+    utils.assert(this.transport == null);
 
     this.transport = new crosslocale_bridge.Backend();
     void this.run_message_receiver_loop();
 
-    this.state = BackendState.CONNECTED;
     this.event_connected.fire();
   }
 
   private async run_message_receiver_loop(): Promise<void> {
+    // The backend is allowed to send messages after disconnection of the
+    // client, so we have to keep the instance in a local variable instead of
+    // referencing this.transport, so that we can receive those after close().
+    let transport = this.transport!;
     while (true) {
       let message: Buffer;
       try {
         message = await new Promise<Buffer>((resolve, reject) => {
-          this.transport.recv_message((err, message) => {
+          transport.recv_message((err, message) => {
             if (err != null) reject(err);
             else resolve(message);
           });
@@ -306,18 +307,18 @@ export class Backend {
         console.error(e);
       }
     }
-    // NOTE: Explicit disconnection at this point **is not needed** because
-    // recv_message has already thrown an exception due to a disconnection!
+    // The backend has already disconnected by this point.
   }
 
   private send_message_internal(message: Message): void {
-    utils.assert(this.state !== BackendState.DISCONNECTED);
+    utils.assert(this.transport != null);
     let text = JSON.stringify(message);
     this.transport.send_message(Buffer.from(text, 'utf8'));
   }
 
   private recv_message_internal(text: Buffer): void {
-    utils.assert(this.state !== BackendState.DISCONNECTED);
+    // The backend may send messages after disconnection.
+    // utils.assert(this.transport != null);
     let message: Message = JSON.parse(text.toString('utf8'));
     let [msg_type] = message;
     switch (msg_type) {
@@ -373,7 +374,7 @@ export class Backend {
     method: M,
     params: MessageRegistry[M]['request'],
   ): Promise<MessageRegistry[M]['response']> {
-    utils.assert(this.state !== BackendState.DISCONNECTED);
+    utils.assert(this.transport != null);
 
     this.current_request_id = Math.max(this.current_request_id, 1);
     let id = this.current_request_id;
@@ -393,10 +394,10 @@ export class Backend {
   }
 
   public disconnect(): void {
-    if (this.state === BackendState.DISCONNECTED) return;
+    utils.assert(this.transport != null);
 
     this.transport.close();
-    this.transport = null!;
+    this.transport = null;
 
     this.event_disconnected.fire();
   }
