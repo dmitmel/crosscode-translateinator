@@ -171,12 +171,12 @@ export class AppMain {
   }
 }
 
-export abstract class BaseAppObject<T extends object> {
+export abstract class BaseAppObject<T extends object = object> {
   public readonly obj_id: number = utils.new_gui_id();
 
   public changetick = 0;
   protected render_data_changetick = -1;
-  protected render_data_cached: T | undefined;
+  protected render_data_cached: ReturnType<typeof this.get_render_data_impl> | undefined;
 
   public mark_changed(): void {
     this.changetick += 1;
@@ -186,19 +186,24 @@ export abstract class BaseAppObject<T extends object> {
     return this.render_data_changetick !== this.changetick;
   }
 
-  public get_render_data(): T {
+  // `T` is referenced indirectly here, so that when a child class overrides
+  // the render data to some more precise type, it is also reflected on all
+  // other methods that return the render data without the need for also
+  // explicitly overriding those methods. See the tab classes for an example.
+  public get_render_data(): ReturnType<typeof this.get_render_data_impl> {
     if (this.render_data_changetick !== this.changetick) {
-      this.render_data_cached = this.update_render_data_impl();
+      this.render_data_cached = this.get_render_data_impl();
       this.render_data_changetick = this.changetick;
     }
     return this.render_data_cached!;
   }
 
-  protected abstract update_render_data_impl(): T;
+  protected abstract get_render_data_impl(): T;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
-export abstract class BaseRenderData {}
+export abstract class BaseRenderData {
+  public constructor(public readonly ref: BaseAppObject) {}
+}
 
 export enum TabChangeTrigger {
   FileTree,
@@ -206,8 +211,8 @@ export enum TabChangeTrigger {
 }
 
 export class BaseTabRoData extends BaseRenderData {
-  public constructor(public readonly ref: BaseTab) {
-    super();
+  public constructor(public override readonly ref: BaseTab) {
+    super(ref);
   }
   public readonly is_closeable: boolean = this.ref.is_closeable;
 }
@@ -221,7 +226,7 @@ export abstract class BaseTab extends BaseAppObject<BaseTabRoData> {
     super();
   }
 
-  protected override update_render_data_impl(): BaseTabRoData {
+  protected override get_render_data_impl(): BaseTabRoData {
     return new BaseTabRoData(this);
   }
 
@@ -253,12 +258,8 @@ export class TabQueue extends BaseTab {
 
   public override readonly is_closeable = false;
 
-  public override update_render_data_impl(): TabQueueRoData {
+  public override get_render_data_impl(): TabQueueRoData {
     return new TabQueueRoData(this);
-  }
-
-  public override get_render_data(): TabQueueRoData {
-    return super.get_render_data() as TabQueueRoData;
   }
 
   public fragments: Fragment[] = [];
@@ -302,12 +303,8 @@ export class TabSearchRoData extends BaseTabRoData {
 export class TabSearch extends BaseTab {
   public override readonly is_closeable = false;
 
-  public override update_render_data_impl(): TabSearchRoData {
+  public override get_render_data_impl(): TabSearchRoData {
     return new TabSearchRoData(this);
-  }
-
-  public override get_render_data(): TabSearchRoData {
-    return super.get_render_data() as TabSearchRoData;
   }
 
   public list_fragments(_start?: number | null, _end?: number | null): Promise<Fragment[]> {
@@ -337,12 +334,8 @@ export class TabFile extends BaseTab {
     super(app);
   }
 
-  public override update_render_data_impl(): TabFileRoData {
+  public override get_render_data_impl(): TabFileRoData {
     return new TabFileRoData(this);
-  }
-
-  public override get_render_data(): TabFileRoData {
-    return super.get_render_data() as TabFileRoData;
   }
 
   public get_file_name(): string {
@@ -374,7 +367,7 @@ export class FileTree extends BaseAppObject<FileTree> {
     this.clear();
   }
 
-  protected override update_render_data_impl(): FileTree {
+  protected override get_render_data_impl(): FileTree {
     let tree = new FileTree();
     for (let [path, file] of this.files) {
       tree.files.set(path, file);
@@ -582,8 +575,8 @@ export class Project {
 }
 
 export class ProjectMetaRoData extends BaseRenderData {
-  public constructor(public readonly ref: ProjectMeta) {
-    super();
+  public constructor(public override readonly ref: ProjectMeta) {
+    super(ref);
   }
   public readonly root_dir: string = this.ref.root_dir;
   public readonly id: string = this.ref.id;
@@ -614,14 +607,14 @@ export class ProjectMeta extends BaseAppObject<ProjectMetaRoData> {
     super();
   }
 
-  public update_render_data_impl(): ProjectMetaRoData {
+  public get_render_data_impl(): ProjectMetaRoData {
     return new ProjectMetaRoData(this);
   }
 }
 
 export class FragmentRoData extends BaseRenderData {
-  public constructor(public readonly ref: Fragment) {
-    super();
+  public constructor(public override readonly ref: Fragment) {
+    super(ref);
   }
   public readonly id: string = this.ref.id;
   public readonly tr_file_path: string = this.ref.tr_file_path;
@@ -654,7 +647,7 @@ export class Fragment extends BaseAppObject<FragmentRoData> {
     super();
   }
 
-  protected override update_render_data_impl(): FragmentRoData {
+  protected override get_render_data_impl(): FragmentRoData {
     return new FragmentRoData(this);
   }
 
@@ -664,8 +657,8 @@ export class Fragment extends BaseAppObject<FragmentRoData> {
 }
 
 export class TranslationRoData extends BaseRenderData {
-  public constructor(public readonly ref: Translation) {
-    super();
+  public constructor(public override readonly ref: Translation) {
+    super(ref);
   }
   public readonly id: string = this.ref.id;
   public readonly author_username: string = this.ref.author_username;
@@ -690,14 +683,14 @@ export class Translation extends BaseAppObject<TranslationRoData> {
     super();
   }
 
-  protected override update_render_data_impl(): TranslationRoData {
+  protected override get_render_data_impl(): TranslationRoData {
     return new TranslationRoData(this);
   }
 }
 
 export class CommentRoData extends BaseRenderData {
-  public constructor(public readonly ref: Comment) {
-    super();
+  public constructor(public override readonly ref: Comment) {
+    super(ref);
   }
   public readonly id: string = this.ref.id;
   public readonly author_username: string = this.ref.author_username;
@@ -720,7 +713,7 @@ export class Comment extends BaseAppObject<CommentRoData> {
     super();
   }
 
-  protected override update_render_data_impl(): CommentRoData {
+  protected override get_render_data_impl(): CommentRoData {
     return new CommentRoData(this);
   }
 }
