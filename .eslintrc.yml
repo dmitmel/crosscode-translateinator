@@ -40,8 +40,46 @@ overrides:
     parserOptions:
       project: 'tsconfig.json'
     rules:
-      '@typescript-eslint/no-use-before-define': off
-      '@typescript-eslint/naming-convention': off
+      '@typescript-eslint/naming-convention':
+        # The naming policy is designed in similarity with Rust's one.
+        - warn
+        - selector: default
+          format: [snake_case]
+          leadingUnderscore: allowSingleOrDouble
+          trailingUnderscore: allowSingleOrDouble
+
+        - selector: variable
+          filter: { regex: 'Gui$', match: false }
+          format: [snake_case, UPPER_CASE]
+          leadingUnderscore: allowSingleOrDouble
+          trailingUnderscore: allowSingleOrDouble
+        - selector: property
+          modifiers: [static]
+          format: [snake_case, UPPER_CASE]
+          leadingUnderscore: allowSingleOrDouble
+          trailingUnderscore: allowSingleOrDouble
+
+        - selector: [typeLike, enumMember]
+          format: [PascalCase]
+        - selector: variableLike
+          filter: { regex: 'Gui$', match: true }
+          format: [PascalCase]
+
+        - selector: [variable, parameter]
+          modifiers: [destructured]
+          format: null
+        - selector: property
+          modifiers: [requiresQuotes]
+          format: null
+        - selector: [objectLiteralProperty, objectLiteralMethod]
+          format: null
+
+        - selector: method
+          filter: 'componentDidMount|componentDidUpdate|componentWillUnmount|toString'
+          format: null
+        - selector: property
+          filter: 'contextType|defaultProps|className'
+          format: null
 
   - files: 'src/mod/**/*.js'
     globals:

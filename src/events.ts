@@ -7,8 +7,8 @@ export class Event2<Args extends unknown[] = []> {
 
   public once(listener: (...args: Args) => void): void {
     let self = this;
-    this.listeners.add(function listenerOnce(this: unknown, ...args: Args): void {
-      self.listeners.delete(listenerOnce);
+    this.listeners.add(function listener_once(this: unknown, ...args: Args): void {
+      self.listeners.delete(listener_once);
       return listener.apply(this, args);
     });
   }

@@ -349,12 +349,6 @@ export interface TreeItemGuiProps {
   style?: React.CSSProperties;
 }
 
-declare module 'react' {
-  interface CSSProperties {
-    '--TreeItem-depth'?: number;
-  }
-}
-
 export function TreeItemGui(props: TreeItemGuiProps): React.ReactElement {
   let is_directory = props.file instanceof FileTreeDir;
 
@@ -372,7 +366,7 @@ export function TreeItemGui(props: TreeItemGuiProps): React.ReactElement {
       className={cc('block', 'TreeItem', {
         'TreeItem-current': !is_directory && props.is_opened,
       })}
-      style={{ ...props.style, '--TreeItem-depth': props.depth }}
+      style={{ ...props.style, '--TreeItem-depth': props.depth } as React.CSSProperties}
       title={label}
       tabIndex={0}
       onClick={props.on_click}>
