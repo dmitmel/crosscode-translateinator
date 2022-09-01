@@ -36,8 +36,8 @@ ig.module('translateinator.connector')
   .defines(() => {
     if (sc.tr2 == null) sc.tr2 = {};
     sc.tr2.symbols = {
-      LangLabel_filePath: utils.Symbol_LangLabel_filePath,
-      LangLabel_jsonPath: utils.Symbol_LangLabel_jsonPath,
+      LangLabel_filePath: utils.LANG_LABEL_FILE_PATH_SYM,
+      LangLabel_jsonPath: utils.LANG_LABEL_JSON_PATH_SYM,
     };
 
     ig.LangEdit.inject({
@@ -64,8 +64,8 @@ ig.module('translateinator.connector')
         if (!(langLabel instanceof ig.LangLabel))
           throw Error('Assertion failed: langLabel instanceof ig.LangLabel');
         // Extract our secretly injected stuff.
-        let filePath = langLabel.data[utils.Symbol_LangLabel_filePath];
-        let jsonPath = langLabel.data[utils.Symbol_LangLabel_jsonPath];
+        let filePath = langLabel.data[utils.LANG_LABEL_FILE_PATH_SYM];
+        let jsonPath = langLabel.data[utils.LANG_LABEL_JSON_PATH_SYM];
         if (filePath != null && jsonPath != null) {
           sc.tr2.sendLangLabelToTrTool(filePath, jsonPath);
         }

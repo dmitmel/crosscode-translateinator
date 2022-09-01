@@ -16,8 +16,8 @@ function recursivelyPatchLangLabels(obj, filePath, jsonPathStack = []) {
 
   // A wild lang label has appeared! Let's inject our additional metadata.
   if (utils.hasKey(obj, 'en_US') && typeof obj.en_US === 'string') {
-    obj[utils.Symbol_LangLabel_filePath] = filePath;
-    obj[utils.Symbol_LangLabel_jsonPath] = jsonPathStack.join('/');
+    obj[utils.LANG_LABEL_FILE_PATH_SYM] = filePath;
+    obj[utils.LANG_LABEL_JSON_PATH_SYM] = jsonPathStack.join('/');
     return;
   }
 

@@ -5,8 +5,8 @@
 // conflicts with Localize Me or similar.
 // P.S. Additionally they are invisble to the for-in loop.
 // See also <https://developer.mozilla.org/en-US/docs/Glossary/Symbol>.
-export const Symbol_LangLabel_filePath = Symbol('LangLabel_filePath');
-export const Symbol_LangLabel_jsonPath = Symbol('LangLabel_jsonPath');
+export const LANG_LABEL_FILE_PATH_SYM = Symbol('LangLabel.filePath');
+export const LANG_LABEL_JSON_PATH_SYM = Symbol('LangLabel.jsonPath');
 
 // We are parsing untrusted JSON objects (yes, this is a thing), so we better
 // play safe. This function wraps hasOwnProperty in such a way that an object

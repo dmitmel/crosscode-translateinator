@@ -13,8 +13,10 @@ import {
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
 import { BoxGui } from './Box';
-import { GameFileGuiData } from './Explorer';
+import { FileTypeGuiData } from './Explorer';
 import { IconGui } from './Icon';
+
+export const TAB_RENDERER_SYM = Symbol('TabRenderer');
 
 export interface EditorTabListGuiProps {
   className?: string;
@@ -70,10 +72,10 @@ export class EditorTabListGui extends React.Component<
     return (
       <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
         {this.state.opened_tabs.map((tab, index) => {
-          let props = this.prepare_to_render_tab(tab);
+          let renderer = new tab[TAB_RENDERER_SYM]();
           return (
             <EditorTabGui
-              {...props}
+              {...renderer.prepare_to_render(tab)}
               key={tab.ref.obj_id}
               map={this.map}
               index={index}
@@ -85,39 +87,61 @@ export class EditorTabListGui extends React.Component<
       </BoxGui>
     );
   }
+}
 
-  private prepare_to_render_tab(tab: BaseTabRoData): EditorTabGuiDisplayProps {
-    if (tab instanceof TabFileRoData) {
-      let gui_data = GameFileGuiData.get(tab.file_type, tab.file_path);
+export interface TabRenderer {
+  prepare_to_render(tab: BaseTabRoData): EditorTabGuiDisplayProps;
+}
 
-      // Almost all paths you'll ever see begin with `data/` anyway.
-      let shorter_path = utils.strip_prefix(tab.file_path, 'data/');
-      // The path shortener was inspired by Vim's pathshorten() function, see
-      // <https://neovim.io/doc/user/eval.html#pathshorten()>.
-      let display_path = '';
-      for (let component of utils.split_iter(shorter_path, '/')) {
-        if (component.is_last) {
-          display_path += shorter_path.slice(component.start, component.end);
-        } else {
-          display_path += shorter_path.charAt(component.start);
-          display_path += '/';
-        }
-      }
-
-      return {
-        icon: gui_data.icon_filled,
-        title: display_path,
-        description: gui_data.description,
-      };
-    } else if (tab instanceof TabQueueRoData) {
-      return { icon: 'journal-bookmark-fill', title: 'Queue' };
-    } else if (tab instanceof TabSearchRoData) {
-      return { icon: 'search', title: 'Search' };
-    } else {
-      throw new Error(`unknown tab type: ${tab.constructor.name}`);
-    }
+declare module '../app' {
+  interface BaseTabRoData {
+    [TAB_RENDERER_SYM]: new () => TabRenderer;
   }
 }
+
+BaseTabRoData.prototype[TAB_RENDERER_SYM] = class BaseTabRenderer implements TabRenderer {
+  public prepare_to_render(tab: BaseTabRoData): EditorTabGuiDisplayProps {
+    throw new Error(`no renderer found for tab type: ${tab.constructor.name}`);
+  }
+};
+
+TabFileRoData.prototype[TAB_RENDERER_SYM] = class TabFileRenderer implements TabRenderer {
+  public prepare_to_render(tab: TabFileRoData): EditorTabGuiDisplayProps {
+    let gui_data = FileTypeGuiData.get(tab.file_type, tab.file_path);
+
+    // Almost all paths you'll ever see begin with `data/` anyway.
+    let shorter_path = utils.strip_prefix(tab.file_path, 'data/');
+    // The path shortener was inspired by Vim's pathshorten() function, see
+    // <https://neovim.io/doc/user/eval.html#pathshorten()>.
+    let display_path = '';
+    for (let component of utils.split_iter(shorter_path, '/')) {
+      if (component.is_last) {
+        display_path += shorter_path.slice(component.start, component.end);
+      } else {
+        display_path += shorter_path.charAt(component.start);
+        display_path += '/';
+      }
+    }
+
+    return {
+      icon: gui_data.icon_filled,
+      title: display_path,
+      description: gui_data.description,
+    };
+  }
+};
+
+TabQueueRoData.prototype[TAB_RENDERER_SYM] = class TabQueueRenderer implements TabRenderer {
+  public prepare_to_render(_tab: TabQueueRoData): EditorTabGuiDisplayProps {
+    return { icon: 'journal-bookmark-fill', title: 'Queue' };
+  }
+};
+
+TabSearchRoData.prototype[TAB_RENDERER_SYM] = class TabSearchRenderer implements TabRenderer {
+  public prepare_to_render(_tab: TabSearchRoData): EditorTabGuiDisplayProps {
+    return { icon: 'search', title: 'Search' };
+  }
+};
 
 export interface EditorTabGuiDisplayProps {
   icon: string;
