@@ -97,7 +97,7 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
         item_count={this.state.list.length}
         item_data={this.state.list}
         render_item={this.render_item}
-        item_size={320}
+        item_size={200}
         estimate_average_item_size
         overscan_count={3}
         last_page_behavior="one_last_item"
@@ -303,10 +303,18 @@ export interface FragmentGuiProps {
   list?: VirtualizedListGui<FragmentVirtListData>;
 }
 
-export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
+export interface FragmentGuiState {
+  show_new_translation_gui: boolean;
+}
+
+export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiState> {
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
+  public override state: Readonly<FragmentGuiState> = {
+    show_new_translation_gui: false,
+  };
   public root_ref = React.createRef<HTMLDivElement>();
+  public new_translation_ref = React.createRef<NewTranslationGui>();
 
   public override componentDidMount(): void {
     this.props.list?.on_item_mounted(this.props.index, this.root_ref.current!);
@@ -330,6 +338,16 @@ export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
 
   private on_copy_original_text = (_event: React.MouseEvent<HTMLButtonElement>): void => {
     nw.Clipboard.get().set(this.props.fragment.original_text);
+  };
+
+  private on_new_translation_click = (_event: React.MouseEvent<HTMLButtonElement>): void => {
+    this.setState({ show_new_translation_gui: true }, () => {
+      this.new_translation_ref.current?.text_area_ref.current?.focus();
+    });
+  };
+
+  private on_new_translation_cancel_click = (_event: React.MouseEvent<HTMLButtonElement>): void => {
+    this.setState({ show_new_translation_gui: false });
   };
 
   public override render(): React.ReactNode {
@@ -386,6 +404,11 @@ export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
                 onClick={this.on_copy_original_text}
               />
               <IconButtonGui icon="search" title="Search other fragments with this original text" />
+              <IconButtonGui
+                icon="plus-square"
+                title="Add a new translation"
+                onClick={this.on_new_translation_click}
+              />
             </BoxGui>
           </WrapperGui>
 
@@ -393,7 +416,13 @@ export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
             {fragment.translations.map((translation) => (
               <TranslationGui key={translation.ref.obj_id} translation={translation} />
             ))}
-            <NewTranslationGui fragment={fragment} />
+            {this.state.show_new_translation_gui || fragment.translations.length === 0 ? (
+              <NewTranslationGui
+                ref={this.new_translation_ref}
+                fragment={fragment}
+                on_cancel_click={this.on_new_translation_cancel_click}
+              />
+            ) : null}
           </WrapperGui>
         </BoxGui>
       </WrapperGui>
@@ -530,7 +559,7 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
           />
           <IconButtonGui icon="pencil-square" title="Edit this translation" />
           <IconButtonGui icon="chat-left-quote" title="Add a comment about this translation" />
-          <IconButtonGui icon="trash-fill" title="Delete this translation" />
+          <IconButtonGui icon="trash" title="Delete this translation" />
         </BoxGui>
       </WrapperGui>
     );
@@ -539,6 +568,7 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
 
 export interface NewTranslationGuiProps {
   fragment: FragmentRoData;
+  on_cancel_click: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 export interface NewTranslationGuiState {
@@ -554,8 +584,8 @@ export class NewTranslationGui extends React.Component<
     text: '',
     text_area_height: -1,
   };
-
-  private textarea_id: string = utils.new_html_id();
+  public text_area_ref = React.createRef<HTMLTextAreaElement>();
+  private text_area_id: string = utils.new_html_id();
 
   private on_input = (event: React.FormEvent<HTMLTextAreaElement>): void => {
     let text = event.currentTarget.value;
@@ -570,30 +600,24 @@ export class NewTranslationGui extends React.Component<
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
         <textarea
-          id={this.textarea_id}
-          name={this.textarea_id}
+          id={this.text_area_id}
+          name={this.text_area_id}
           value={this.state.text}
           onInput={this.on_input}
           placeholder="Add new translation..."
           autoComplete="off"
           spellCheck={false}
           rows={2}
-          // `ref` must be implemented as an anonymous function here (i.e. not
-          // as a bound method) so that it always gets invoked on each render.
-          ref={(element: HTMLTextAreaElement | null): void => {
-            if (element == null) return;
-            let height = this.state.text_area_height;
-            if (height > 0) {
-              element.style.setProperty('height', `${height}px`, 'important');
-              element.style.setProperty('overflow', 'hidden', 'important');
-            } else {
-              element.style.removeProperty('height');
-              element.style.removeProperty('overflow');
-            }
-          }}
+          style={
+            this.state.text_area_height > 0
+              ? { height: this.state.text_area_height, overflow: 'hidden' }
+              : {}
+          }
+          ref={this.text_area_ref}
         />
         <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
           <BoxItemFillerGui />
+          <IconButtonGui icon="x-lg" title="Cancel" onClick={this.props.on_cancel_click} />
           <IconButtonGui icon="check2" title="Submit" />
         </BoxGui>
       </WrapperGui>

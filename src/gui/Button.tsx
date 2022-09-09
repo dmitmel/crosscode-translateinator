@@ -7,7 +7,7 @@ import { IconGui, IconGuiProps } from './Icon';
 
 interface IconButtonGuiProps extends React.HTMLAttributes<HTMLButtonElement> {
   icon: string | null;
-  icon_props?: IconGuiProps;
+  icon_props?: Omit<IconGuiProps, 'icon'>;
 }
 
 export const IconButtonGui = React.forwardRef(function IconButtonGui(

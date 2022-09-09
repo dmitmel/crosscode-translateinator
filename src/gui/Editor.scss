@@ -76,12 +76,12 @@
     margin-bottom: $spacing-Fragment;
   }
 
-  .Fragment-Translation {
-    > .Fragment-Buttons {
-      > span:not(:last-child) {
-        margin-right: 1em;
-      }
-    }
+  .Fragment-Translation > .Fragment-Buttons > span:not(:last-child) {
+    margin-right: 1em;
+  }
+
+  .Fragment-Buttons > .IconButton {
+    font-size: 20px;
   }
 
   .Fragment-Description {

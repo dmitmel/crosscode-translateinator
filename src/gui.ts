@@ -1,3 +1,5 @@
+import * as React from 'react';
+
 /// Idea taken from <https://github.com/libsdl-org/SDL/blob/bd06538778102f72bad8393ef07da5a1ec444217/include/SDL_keycode.h#L324-L347>
 export enum KeyMod {
   None = 0,
@@ -15,4 +17,13 @@ export function get_keyboard_event_modifiers(event: KeyboardEvent | MouseEvent):
   if (event.metaKey) result |= KeyMod.Meta;
   if (event.shiftKey) result |= KeyMod.Shift;
   return result;
+}
+
+// <https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L818-L861>
+export function set_react_ref<T>(ref: React.Ref<T>, value: T | null): void {
+  if (typeof ref === 'function') {
+    ref(value);
+  } else if (ref != null) {
+    (ref as { current: T | null }).current = value;
+  }
 }
