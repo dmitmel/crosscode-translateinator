@@ -4,7 +4,6 @@ import './Button';
 import cc from 'clsx';
 import Immutable from 'immutable';
 import * as React from 'react';
-import * as ReactWindow from 'react-window';
 
 import {
   FileTree,
@@ -17,9 +16,10 @@ import {
 } from '../app';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
-import { BoxGui, WrapperGui } from './Box';
+import { BoxGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
+import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
 
 export interface ExplorerGuiProps {
   className?: string;
@@ -136,6 +136,7 @@ export class ExplorerSectionGui extends React.Component<
 }
 
 export interface TreeViewGuiProps {
+  className?: string;
   tree_ref: FileTree;
   files_type: FileType;
   base_depth?: number;
@@ -154,6 +155,8 @@ export interface TreeViewGuiState {
   opened_states: Immutable.Map<string, boolean>;
 }
 
+export type TreeVirtListData = readonly PreparedTreeItem[];
+
 export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiState> {
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
@@ -164,16 +167,10 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     opened_states: Immutable.Map(),
   };
 
-  public list_ref = React.createRef<ReactWindow.FixedSizeList<PreparedTreeItem[]>>();
+  public list_ref = React.createRef<VirtualizedListGui<TreeVirtListData>>();
   public item_indexes_map = new Map<string, number>();
 
-  private resize_observer: ResizeObserver | null = null;
-  private resize_observer_target = React.createRef<HTMLDivElement>();
-
   public override componentDidMount(): void {
-    this.resize_observer = new ResizeObserver(this.resize_observer_callback);
-    this.resize_observer.observe(this.resize_observer_target.current!, { box: 'border-box' });
-
     let { app } = this.context;
     app.event_current_tab_change.on(this.on_current_tab_change);
     app.event_project_opened.on(this.on_file_tree_updated);
@@ -181,9 +178,6 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
   }
 
   public override componentWillUnmount(): void {
-    this.resize_observer!.disconnect();
-    this.resize_observer = null;
-
     let { app } = this.context;
     app.event_current_tab_change.off(this.on_current_tab_change);
     app.event_project_opened.off(this.on_file_tree_updated);
@@ -208,7 +202,7 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     }, callback);
   }
 
-  private on_current_tab_change = (trigger: TabChangeTrigger | null): void => {
+  private on_current_tab_change = (_trigger: TabChangeTrigger | null): void => {
     let { app } = this.context;
     let tab = app.current_tab;
     let file_path: string | null = null;
@@ -216,7 +210,7 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
       file_path = tab.file_path;
     }
     this.set_current(file_path, () => {
-      if (trigger !== TabChangeTrigger.FileTree && file_path != null) {
+      if (file_path != null) {
         this.scroll_to_file(file_path);
       }
     });
@@ -229,7 +223,7 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
   public scroll_to_file(path: string): void {
     let index = this.item_indexes_map.get(path);
     if (index != null) {
-      this.list_ref.current?.scrollToItem(index, 'smart');
+      this.list_ref.current!.scroll_to_item(index, VirtListScrollAlign.Smart);
     }
   }
 
@@ -248,63 +242,37 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     }
   };
 
-  private resize_observer_callback = (entries: ResizeObserverEntry[]): void => {
-    for (let entry of entries) {
-      if (entry.target === this.resize_observer_target.current) {
-        let list_height = entry.contentRect.height;
-        this.setState((state) => (state.list_height !== list_height ? { list_height } : null));
-      }
-    }
-  };
-
   public override render(): React.ReactNode {
-    return (
-      <WrapperGui ref={this.resize_observer_target} expand>
-        {this.state.list_height >= 0 ? this.render_list() : null}
-      </WrapperGui>
-    );
-  }
-
-  private render_list(): React.ReactNode {
     let items: PreparedTreeItem[] = [];
     this.item_indexes_map.clear();
     this.prepare_items(this.state.tree_data.root_dir, this.props.base_depth ?? 0, items);
 
     return (
-      <ReactWindow.FixedSizeList
+      <VirtualizedListGui
         ref={this.list_ref}
-        width={'100%'}
-        height={this.state.list_height}
-        itemSize={30}
-        itemData={items}
-        itemCount={items.length}
-        itemKey={(index, data) => data[index].file.path}
-        children={this.render_list_item}
+        className={cc(this.props.className, 'TreeView')}
+        item_count={items.length}
+        item_data={items}
+        render_item={this.render_list_item}
+        item_size={30}
+        fixed_size_items
+        overscan_count={3}
       />
     );
   }
 
-  // This can't be an anonymous function because the virtual list library
-  // passes it as the first argument to `React.createElement`, to handle both
-  // class and functional components. However, this means that if the function
-  // is defined anonymously in the JSX where the list component is used, on
-  // every render a different instance of it will be created, and this would
-  // make React think that a completely different component is used for list
-  // items every time, causing the whole list to be re-rendered even if no
-  // items actually change.
-  private render_list_item: React.ComponentType<
-    ReactWindow.ListChildComponentProps<PreparedTreeItem[]>
-  > = ({ index, style, data }) => {
-    let item = data[index];
+  private render_list_item = (props: VirtListItemFnProps<TreeVirtListData>): React.ReactNode => {
+    let item = props.data[props.index];
     return (
       <TreeItemGui
-        style={style}
+        key={item.file.path}
+        list={props.list}
         file_type={this.props.files_type}
         file={item.file}
         is_opened={item.is_opened}
         depth={item.depth}
-        index={index}
-        on_click={(event) => this.on_item_click(item.file, event)}
+        index={props.index}
+        on_click={this.on_item_click}
       />
     );
   };
@@ -345,41 +313,63 @@ export interface TreeItemGuiProps {
   is_opened: boolean;
   depth: number;
   index: number;
-  on_click: React.MouseEventHandler<HTMLButtonElement>;
-  style?: React.CSSProperties;
+  on_click: (file: FileTreeFile, event: React.MouseEvent<HTMLButtonElement>) => void;
+  list?: VirtualizedListGui<TreeVirtListData>;
 }
 
-export function TreeItemGui(props: TreeItemGuiProps): React.ReactElement {
-  let is_directory = props.file instanceof FileTreeDir;
+export class TreeItemGui extends React.Component<TreeItemGuiProps, unknown> {
+  public root_ref = React.createRef<HTMLButtonElement>();
 
-  let gui_data = GameFileGuiData.get(props.file_type, props.file.path);
-  let label = props.file.path;
-  let { icon } = gui_data;
-  if (is_directory) {
-    label += '/';
-    icon = `chevron-${props.is_opened ? 'down' : 'right'}`;
+  public override componentDidMount(): void {
+    this.props.list?.on_item_mounted(this.props.index, this.root_ref.current!);
   }
 
-  return (
-    <button
-      type="button"
-      className={cc('block', 'TreeItem', {
-        'TreeItem-current': !is_directory && props.is_opened,
-      })}
-      style={{ ...props.style, '--TreeItem-depth': props.depth } as React.CSSProperties}
-      title={label}
-      tabIndex={0}
-      onClick={props.on_click}>
-      {
-        // Note that a nested div for enabling ellipsis is necessary,
-        // otherwise the tree item shrinks when the enclosing list begins
-        // overflowing.
-      }
-      <LabelGui block ellipsis>
-        <IconGui icon={icon} /> {props.file.name}
-      </LabelGui>
-    </button>
-  );
+  public override componentDidUpdate(prev_props: TreeItemGuiProps): void {
+    this.props.list?.on_item_updated(prev_props.index, this.props.index, this.root_ref.current!);
+  }
+
+  public override componentWillUnmount(): void {
+    this.props.list?.on_item_unmounted(this.props.index, this.root_ref.current!);
+  }
+
+  private on_click = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    this.props.on_click(this.props.file, event);
+  };
+
+  public override render(): React.ReactNode {
+    let { props } = this;
+    let is_directory = props.file instanceof FileTreeDir;
+
+    let gui_data = GameFileGuiData.get(props.file_type, props.file.path);
+    let label = props.file.path;
+    let { icon } = gui_data;
+    if (is_directory) {
+      label += '/';
+      icon = `chevron-${props.is_opened ? 'down' : 'right'}`;
+    }
+
+    return (
+      <button
+        ref={this.root_ref}
+        type="button"
+        className={cc('block', 'TreeItem', {
+          'TreeItem-current': !is_directory && props.is_opened,
+        })}
+        style={{ '--TreeItem-depth': props.depth } as React.CSSProperties}
+        title={label}
+        tabIndex={0}
+        onClick={this.on_click}>
+        {
+          // Note that a container element is necessary for enabling ellipsis,
+          // otherwise the tree item shrinks when the enclosing list begins
+          // overflowing.
+        }
+        <LabelGui block ellipsis>
+          <IconGui icon={icon} /> {props.file.name}
+        </LabelGui>
+      </button>
+    );
+  }
 }
 
 export abstract class FileTypeGuiData {
