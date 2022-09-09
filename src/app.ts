@@ -119,23 +119,24 @@ export class AppMain {
   }
 
   public current_fragment_list: Fragment[] = [];
-  public fragment_list_slice_start = 0;
-  public fragment_list_slice_end = 10;
+  public current_fragment_list_owner: BaseAppObject | null = null;
   public event_fragment_list_update = new Event2();
-  public get_current_fragment_list_slice(): Fragment[] {
-    return this.current_fragment_list.slice(
-      this.fragment_list_slice_start,
-      this.fragment_list_slice_end,
-    );
-  }
 
   public current_fragment_index = -1; // TODO: save a position per each tab
-  public event_current_fragment_change = new Event2<[jump: boolean]>();
-  public set_current_fragment_index(index: number, jump: boolean): void {
+  // TODO: Actually, store the object ID of the current fragment. The fragment
+  // ID shouldn't be used because the fragment list should be able to handle
+  // two instances of the same fragment.
+  public event_current_fragment_change = new Event2<
+    [trigger: CurrentFragmentChangeTrigger | null]
+  >();
+  public set_current_fragment_index(
+    index: number,
+    trigger: CurrentFragmentChangeTrigger | null,
+  ): void {
     utils.assert(Number.isSafeInteger(index));
-    index = utils.clamp(index, 0, this.current_fragment_list.length - 1);
+    index = utils.clamp(index, -1, this.current_fragment_list.length - 1);
     this.current_fragment_index = index;
-    this.event_current_fragment_change.fire(jump);
+    this.event_current_fragment_change.fire(trigger);
   }
 
   public global_key_modifiers = gui.KeyMod.None;
@@ -205,6 +206,11 @@ export abstract class BaseRenderData {
   public constructor(public readonly ref: BaseAppObject) {}
 }
 
+export enum CurrentFragmentChangeTrigger {
+  Jump,
+  Scroll,
+}
+
 export enum TabChangeTrigger {
   FileTree,
   TabList,
@@ -234,8 +240,9 @@ export abstract class BaseTab extends BaseAppObject<BaseTabRoData> {
   public abstract list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]>;
 
   public notify_fragment_list_update(new_list: Fragment[]): void {
-    if (this.app.current_tab_index === this.app.opened_tabs.indexOf(this)) {
+    if (this.app.opened_tabs[this.app.current_tab_index] === this) {
       this.app.current_fragment_list = new_list;
+      this.app.current_fragment_list_owner = this;
       this.app.event_fragment_list_update.fire();
     }
   }
@@ -307,8 +314,11 @@ export class TabSearch extends BaseTab {
     return new TabSearchRoData(this);
   }
 
-  public list_fragments(_start?: number | null, _end?: number | null): Promise<Fragment[]> {
-    return Promise.resolve([]);
+  public async list_fragments(start?: number | null, end?: number | null): Promise<Fragment[]> {
+    return (await this.app.current_project!.query_fragments({
+      slice_start: start,
+      slice_end: end,
+    })) as Fragment[];
   }
 }
 

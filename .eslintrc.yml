@@ -75,7 +75,7 @@ overrides:
           format: null
 
         - selector: method
-          filter: 'componentDidMount|componentDidUpdate|componentWillUnmount|toString'
+          filter: 'componentDidMount|componentDidUpdate|componentWillUnmount|getSnapshotBeforeUpdate|toString'
           format: null
         - selector: property
           filter: 'contextType|defaultProps|className'

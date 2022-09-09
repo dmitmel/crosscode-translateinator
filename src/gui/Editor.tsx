@@ -3,7 +3,7 @@ import './Editor.scss';
 import cc from 'clsx';
 import * as React from 'react';
 
-import { FragmentRoData, TranslationRoData } from '../app';
+import { CurrentFragmentChangeTrigger, FragmentRoData, TranslationRoData } from '../app';
 import * as gui from '../gui';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
@@ -14,6 +14,7 @@ import { FancyTextGui } from './FancyText';
 import { IconGui, IconlikeTextGui } from './Icon';
 import { LabelGui } from './Label';
 import { TextAreaGui } from './TextInput';
+import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
 
 export interface EditorGuiProps {
   className?: string;
@@ -24,7 +25,7 @@ export function EditorGui(props: EditorGuiProps): React.ReactElement {
     <BoxGui orientation="vertical" className={cc(props.className, 'Editor')}>
       <EditorTabListGui />
       <FragmentListToolbarGui />
-      <FragmentListGui />
+      <FragmentListGui className="BoxItem-expand" />
     </BoxGui>
   );
 }
@@ -35,230 +36,88 @@ export interface FragmentListGuiProps {
 
 export interface FragmentListGuiState {
   list: readonly FragmentRoData[];
-  slice_start: number;
-  slice_end: number;
-  current_index: number;
+  list_owner_id: number;
 }
 
-export const FRAGMENT_LIST_LOAD_DISTANCE = 0;
-export const FRAGMENT_LIST_SLICE_MAX_LENGTH = 40;
-export const FRAGMENT_LIST_LOAD_CHUNK_SIZE = 20;
+export type FragmentVirtListData = readonly FragmentRoData[];
 
 export class FragmentListGui extends React.Component<FragmentListGuiProps, FragmentListGuiState> {
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
   public override state: Readonly<FragmentListGuiState> = {
-    list: this.context.app.current_fragment_list.map((f) => f.get_render_data()),
-    slice_start: this.context.app.fragment_list_slice_start,
-    slice_end: this.context.app.fragment_list_slice_end,
-    current_index: this.context.app.current_fragment_index,
+    ...this.copy_fragment_list(),
   };
 
-  private root_ref = React.createRef<HTMLDivElement>();
-  private fragment_guis_map = new WeakMap<FragmentRoData, FragmentGui>();
-  private fragment_observer: IntersectionObserver | null = null;
-  private fragment_observer_map: WeakMap<Element, FragmentGui> | null = null;
-  private visible_fragments = new Set<FragmentGui>();
-
-  public get_fragment_gui_by_index(index: number): FragmentGui | undefined {
-    return this.fragment_guis_map.get(this.state.list[index]);
-  }
+  private list_ref = React.createRef<VirtualizedListGui<FragmentVirtListData>>();
 
   public override componentDidMount(): void {
     let { app } = this.context;
     app.event_fragment_list_update.on(this.on_fragment_list_update);
     app.event_current_fragment_change.on(this.on_current_fragment_change);
-
-    utils.assert(this.fragment_observer == null);
-    utils.assert(this.fragment_observer_map == null);
-    this.fragment_observer = new IntersectionObserver(this.on_fragment_intersection_change, {
-      root: this.root_ref.current!,
-    });
-    this.fragment_observer_map = new WeakMap();
   }
 
   public override componentWillUnmount(): void {
     let { app } = this.context;
     app.event_fragment_list_update.off(this.on_fragment_list_update);
     app.event_current_fragment_change.off(this.on_current_fragment_change);
-
-    utils.assert(this.fragment_observer != null);
-    utils.assert(this.fragment_observer_map != null);
-    this.fragment_observer.disconnect();
-    this.fragment_observer = null;
-    this.fragment_observer_map = null;
   }
 
-  // TODO: current fragment should be not the first visible one, but the first
-  // fully visible one.
-  private on_fragment_intersection_change = (entries: IntersectionObserverEntry[]): void => {
-    utils.assert(this.fragment_observer != null);
-    utils.assert(this.fragment_observer_map != null);
-    let { app } = this.context;
-
-    let affected_fragments: FragmentGui[] = [];
-    for (let entry of entries) {
-      let fragment_gui = this.fragment_observer_map.get(entry.target);
-      utils.assert(fragment_gui != null);
-      fragment_gui.is_visible = entry.isIntersecting;
-      if (fragment_gui.is_visible) {
-        this.visible_fragments.add(fragment_gui);
-      } else {
-        this.visible_fragments.delete(fragment_gui);
-      }
-      affected_fragments.push(fragment_gui);
-    }
-
-    let new_slice_start = app.fragment_list_slice_start;
-    let new_slice_end = app.fragment_list_slice_end;
-    let list_length = app.current_fragment_list.length;
-    // The following must be done in a second loop because we rely on the
-    // `is_visible` flags, and they must be filled in correctly on all affected
-    // fragments.
-    for (let fragment_gui of affected_fragments) {
-      // I don't care about fragments which became invisible, however they will
-      // be eventually unloaded when an edge of the list slice is reached.
-      if (!fragment_gui.is_visible) continue;
-      let fragment_index = fragment_gui.props.index;
-
-      // Check if the very first fragment in the slice is visible.
-      if (fragment_index - FRAGMENT_LIST_LOAD_DISTANCE <= new_slice_start) {
-        new_slice_start = Math.max(new_slice_start - FRAGMENT_LIST_LOAD_CHUNK_SIZE, 0);
-      }
-      // Check if the very last fragment in the slice is visible.
-      if (fragment_index + FRAGMENT_LIST_LOAD_DISTANCE >= new_slice_end - 1) {
-        new_slice_end = Math.min(new_slice_end + FRAGMENT_LIST_LOAD_CHUNK_SIZE, list_length);
-      }
-    }
-
-    // Sanity-check the validity of the new range after extending.
-    utils.sanity_check_slice(new_slice_start, new_slice_end, list_length);
-
-    let slice_grew_at_start = new_slice_start < app.fragment_list_slice_start;
-    let slice_grew_at_end = new_slice_end > app.fragment_list_slice_end;
-    if (!slice_grew_at_start && !slice_grew_at_end) {
-      // ok. my work here is done
-      //
-    } else if (slice_grew_at_start && !slice_grew_at_end) {
-      // The list grew only at the beginning, shrink the end as far as possible.
-
-      while (new_slice_end - new_slice_start > FRAGMENT_LIST_SLICE_MAX_LENGTH) {
-        let other_fragment_gui = this.get_fragment_gui_by_index(new_slice_end - 1);
-        utils.assert(other_fragment_gui != null);
-        if (!other_fragment_gui.is_visible) {
-          new_slice_end--;
-        } else {
-          // No more invisible (out of range) fragments to unload.
-          break;
-        }
-      }
-
-      //
-    } else if (!slice_grew_at_start && slice_grew_at_end) {
-      // The list grew only at the end, shrink the beginning as far as possible.
-
-      while (new_slice_end - new_slice_start > FRAGMENT_LIST_SLICE_MAX_LENGTH) {
-        let other_fragment_gui = this.get_fragment_gui_by_index(new_slice_start);
-        utils.assert(other_fragment_gui != null);
-        if (!other_fragment_gui.is_visible) {
-          new_slice_start++;
-        } else {
-          // No more invisible (out of range) fragments to unload.
-          break;
-        }
-      }
-
-      //
-    } else if (slice_grew_at_start && slice_grew_at_end) {
-      // The list grew at both edges, most likely because the screen is larger
-      // than the list chunk size. Try to shrink as far as possible?
-      throw new Error('TODO');
-
-      //
-    } else {
-      // wut?
-      throw new Error('Unreachable');
-    }
-
-    // Sanity-check again after shrinking.
-    utils.sanity_check_slice(new_slice_start, new_slice_end, list_length);
-
-    if (
-      new_slice_start !== app.fragment_list_slice_start ||
-      new_slice_end !== app.fragment_list_slice_end
-    ) {
-      app.fragment_list_slice_start = new_slice_start;
-      app.fragment_list_slice_end = new_slice_end;
-      app.event_fragment_list_update.fire();
-    }
-
-    // Why doesn't JS have a binary tree Set collection?
-    let top_index: number | null = null;
-    for (let fragment_gui of this.visible_fragments) {
-      let { index } = fragment_gui.props;
-      if (top_index == null || index < top_index) {
-        top_index = index;
-      }
-    }
-
-    top_index ??= 0;
-    if (app.current_fragment_index !== top_index) {
-      app.set_current_fragment_index(top_index, /* jump */ false);
-    }
-  };
-
   private on_fragment_list_update = (): void => {
-    let { app } = this.context;
-    this.setState({
-      list: app.current_fragment_list.map((f) => f.get_render_data()),
-      slice_start: app.fragment_list_slice_start,
-      slice_end: app.fragment_list_slice_end,
-    });
+    this.setState(this.copy_fragment_list());
   };
 
-  private on_current_fragment_change = (jump: boolean): void => {
+  private copy_fragment_list(): Pick<FragmentListGuiState, 'list' | 'list_owner_id'> {
     let { app } = this.context;
-    this.setState({ current_index: app.current_fragment_index }, () => {
-      let current_fragment_gui = this.get_fragment_gui_by_index(this.state.current_index);
-      if (jump) {
-        current_fragment_gui!.root_ref.current!.scrollIntoView();
-      }
-    });
+    return {
+      list: app.current_fragment_list.map((f) => f.get_render_data()),
+      list_owner_id: app.current_fragment_list_owner?.obj_id ?? utils.new_gui_id(),
+    };
+  }
+
+  private on_current_fragment_change = (trigger: CurrentFragmentChangeTrigger | null): void => {
+    let { app } = this.context;
+    if (trigger !== CurrentFragmentChangeTrigger.Scroll) {
+      this.list_ref.current!.scroll_to_item(app.current_fragment_index, VirtListScrollAlign.Start);
+    }
+  };
+
+  private on_items_rendered = (list: VirtualizedListGui<FragmentVirtListData>): void => {
+    let { app } = this.context;
+    if (app.current_fragment_index !== list.state.current_index) {
+      app.set_current_fragment_index(list.state.current_index, CurrentFragmentChangeTrigger.Scroll);
+    }
   };
 
   public override render(): React.ReactNode {
-    let contents: React.ReactNode[] = [];
-
-    let len = this.state.list.length;
-    let start = utils.clamp(this.state.slice_start, 0, len);
-    let end = utils.clamp(this.state.slice_end, 0, len);
-    for (let i = start; i < end; i++) {
-      let fragment = this.state.list[i];
-      if (i > start) {
-        contents.push(<hr key={`${fragment.id}-sep`} className="FragmentList-Separator" />);
-      }
-      contents.push(
-        <FragmentGui
-          key={fragment.id}
-          index={i}
-          is_current={i === this.state.current_index}
-          fragment={fragment}
-          map={this.fragment_guis_map}
-          intersection_observer={this.fragment_observer}
-          intersection_observer_map={this.fragment_observer_map}
-        />,
-      );
-    }
-
     return (
-      <WrapperGui
-        ref={this.root_ref}
-        scroll
-        className={cc(this.props.className, 'BoxItem-expand', 'FragmentList')}>
-        {contents}
-      </WrapperGui>
+      <VirtualizedListGui
+        key={this.state.list_owner_id}
+        ref={this.list_ref}
+        className={cc(this.props.className, 'FragmentList')}
+        item_count={this.state.list.length}
+        item_data={this.state.list}
+        render_item={this.render_item}
+        item_size={320}
+        estimate_average_item_size
+        overscan_count={3}
+        last_page_behavior="one_last_item"
+        on_items_rendered={this.on_items_rendered}
+      />
     );
   }
+
+  private render_item = (props: VirtListItemFnProps<FragmentVirtListData>): React.ReactNode => {
+    let fragment = props.data[props.index];
+    return (
+      <FragmentGui
+        key={fragment.ref.obj_id}
+        list={props.list}
+        fragment={fragment}
+        index={props.index}
+        is_current={props.index === props.list.state.current_index}
+      />
+    );
+  };
 }
 
 export interface FragmentListToolbarGuiProps {
@@ -302,9 +161,13 @@ export class FragmentListToolbarGui extends React.Component<
 
   private on_current_fragment_change = (): void => {
     this.jump_pos_input_ref.current!.blur();
+    this.set_current_fragment_text();
+  };
+
+  private set_current_fragment_text(): void {
     let { app } = this.context;
     this.setState({ jump_pos_value: (app.current_fragment_index + 1).toString() });
-  };
+  }
 
   private on_fragment_list_update = (): void => {
     let { app } = this.context;
@@ -320,12 +183,11 @@ export class FragmentListToolbarGui extends React.Component<
     let { app } = this.context;
     let jump_pos = parseInt(this.state.jump_pos_value, 10);
     if (!Number.isSafeInteger(jump_pos)) return;
-    app.set_current_fragment_index(jump_pos - 1, /* jump */ true);
+    app.set_current_fragment_index(jump_pos - 1, CurrentFragmentChangeTrigger.Jump);
   };
 
   private on_jump_pos_unfocus = (_event: React.FocusEvent<HTMLInputElement>): void => {
-    let { app } = this.context;
-    this.setState({ jump_pos_value: app.current_fragment_index.toString() });
+    this.set_current_fragment_text();
   };
 
   private on_jump_button_click = (
@@ -345,7 +207,8 @@ export class FragmentListToolbarGui extends React.Component<
       case 'fwd_many':  { jump_pos += long_jump;        break; }
       case 'last':      { jump_pos  = fragment_count-1; break; }
     }
-    app.set_current_fragment_index(jump_pos, /* jump */ true);
+    jump_pos = utils.clamp(jump_pos, 0, fragment_count);
+    app.set_current_fragment_index(jump_pos, CurrentFragmentChangeTrigger.Jump);
   };
 
   private on_filter_submit = (_event: React.FormEvent<HTMLFormElement>): void => {};
@@ -437,16 +300,25 @@ export interface FragmentGuiProps {
   index: number;
   is_current: boolean;
   fragment: FragmentRoData;
-  map: WeakMap<FragmentRoData, FragmentGui>;
-  intersection_observer: IntersectionObserver | null;
-  intersection_observer_map: WeakMap<Element, FragmentGui> | null;
+  list?: VirtualizedListGui<FragmentVirtListData>;
 }
 
 export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
   public root_ref = React.createRef<HTMLDivElement>();
-  public is_visible = false;
+
+  public override componentDidMount(): void {
+    this.props.list?.on_item_mounted(this.props.index, this.root_ref.current!);
+  }
+
+  public override componentDidUpdate(prev_props: FragmentGuiProps): void {
+    this.props.list?.on_item_updated(prev_props.index, this.props.index, this.root_ref.current!);
+  }
+
+  public override componentWillUnmount(): void {
+    this.props.list?.on_item_unmounted(this.props.index, this.root_ref.current!);
+  }
 
   private on_file_path_component_click = (component_path: string): void => {
     console.log('search', component_path);
@@ -459,39 +331,6 @@ export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
   private on_copy_original_text = (_event: React.MouseEvent<HTMLButtonElement>): void => {
     nw.Clipboard.get().set(this.props.fragment.original_text);
   };
-
-  public override componentDidMount(): void {
-    this.register_into_container(this.props);
-
-    let { intersection_observer, intersection_observer_map } = this.props;
-    utils.assert(intersection_observer != null);
-    utils.assert(intersection_observer_map != null);
-    intersection_observer.observe(this.root_ref.current!);
-    intersection_observer_map.set(this.root_ref.current!, this);
-  }
-
-  public override componentDidUpdate(prev_props: FragmentGuiProps): void {
-    this.unregister_from_container(prev_props);
-    this.register_into_container(this.props);
-  }
-
-  public override componentWillUnmount(): void {
-    this.unregister_from_container(this.props);
-
-    let { intersection_observer, intersection_observer_map } = this.props;
-    utils.assert(intersection_observer != null);
-    utils.assert(intersection_observer_map != null);
-    intersection_observer.unobserve(this.root_ref.current!);
-    intersection_observer_map.delete(this.root_ref.current!);
-  }
-
-  public register_into_container(props: FragmentGuiProps): void {
-    props.map.set(props.fragment, this);
-  }
-
-  public unregister_from_container(props: FragmentGuiProps): void {
-    props.map.delete(props.fragment);
-  }
 
   public override render(): React.ReactNode {
     let { fragment } = this.props;
@@ -552,7 +391,7 @@ export class FragmentGui extends React.Component<FragmentGuiProps, unknown> {
 
           <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
             {fragment.translations.map((translation) => (
-              <TranslationGui key={translation.id} translation={translation} />
+              <TranslationGui key={translation.ref.obj_id} translation={translation} />
             ))}
             <NewTranslationGui fragment={fragment} />
           </WrapperGui>
@@ -571,7 +410,10 @@ export interface FragmentPathGuiState {
   clickable: boolean;
 }
 
-export class FragmentPathGui extends React.Component<FragmentPathGuiProps, FragmentPathGuiState> {
+export class FragmentPathGui extends React.PureComponent<
+  FragmentPathGuiProps,
+  FragmentPathGuiState
+> {
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
   public override state: Readonly<FragmentPathGuiState> = {

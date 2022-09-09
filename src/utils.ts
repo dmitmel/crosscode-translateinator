@@ -6,6 +6,10 @@ export function clamp(n: number, min: number, max: number): number {
   return Math.min(Math.max(n, min), max);
 }
 
+export function random(min = 0, max = 1): number {
+  return Math.random() * (max - min) + min;
+}
+
 export function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -29,6 +33,10 @@ export function assert(condition: boolean): asserts condition {
     throw new Error('Assertion failed');
   }
 }
+
+// For when something obvious must be proven.
+export function type_assert<T>(value: unknown): asserts value is T {}
+export function assert_nonnull<T>(value: T | null | undefined): asserts value is T {}
 
 let current_gui_id = 0;
 export function new_gui_id(): number {
@@ -112,4 +120,93 @@ export function array_remove<T>(array: T[], element: T): number {
     array.splice(index, 1);
   }
   return index;
+}
+
+export function binary_search(
+  start: number,
+  end: number,
+  comparator: (index: number) => number,
+  extra_opts?: {
+    find_very_first?: boolean | null;
+    find_very_last?: boolean | null;
+    find_strictly_equal?: boolean | null;
+  } | null,
+): number | null {
+  extra_opts ??= {};
+  start = Math.trunc(start);
+  end = Math.trunc(end);
+  let result: number | null = null;
+  let strict = Boolean(extra_opts.find_strictly_equal ?? true);
+
+  if (extra_opts.find_very_first) {
+    let lo = start;
+    let hi = end;
+    let found = false;
+    while (lo < hi) {
+      let mid = lo + Math.floor((hi - lo) / 2);
+      let cmp = comparator(mid);
+      found ||= cmp === 0;
+      if (cmp < 0) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    if (found || !strict) {
+      result = lo;
+    }
+
+    //
+  } else if (extra_opts.find_very_last) {
+    let lo = start;
+    let hi = end;
+    let found = false;
+    while (lo < hi) {
+      let mid = lo + Math.floor((hi - lo) / 2);
+      let cmp = comparator(mid);
+      found ||= cmp === 0;
+      if (cmp > 0) {
+        hi = mid;
+      } else {
+        lo = mid + 1;
+      }
+    }
+    if (found || !strict) {
+      result = hi - 1;
+    }
+
+    //
+  } else {
+    let lo = start;
+    let hi = end - 1;
+    let found = false;
+    while (lo <= hi) {
+      let mid = lo + Math.floor((hi - lo) / 2);
+      let cmp = comparator(mid);
+      if (cmp < 0) {
+        lo = mid + 1;
+      } else if (cmp > 0) {
+        hi = mid - 1;
+      } else {
+        result = mid;
+        found = true;
+        break;
+      }
+    }
+    if (!found && !strict) {
+      result = Math.max(lo - 1, 0);
+    }
+  }
+
+  if (result != null && start <= result && result < end) {
+    return result;
+  } else {
+    return null;
+  }
+}
+
+export class Unique {
+  public toString(): string {
+    return '[object Unique]';
+  }
 }
