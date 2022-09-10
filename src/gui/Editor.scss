@@ -1,24 +1,24 @@
-@import '../theme.scss';
+@use '../theme.scss';
 
 .Editor {
-  background-color: $color-Editor;
+  background-color: theme.$editor-bg;
 }
 
 .FragmentListToolbar {
-  padding: $spacing * 2;
+  padding: theme.$spacing * 2;
   border-bottom: 1px solid #3c3c3c;
 }
 
 .FragmentListToolbar-Pagination {
   > * {
-    padding: $spacing * calc(2 / 3);
+    padding: theme.$spacing * calc(2 / 3);
   }
 
   .FragmentListToolbar-JumpInput {
     text-align: right;
     // This should be enough considering that CC in total contains 42k fragments
     $digits: 5;
-    width: calc(#{$spacing * 2} + #{$digits * 1ch});
+    width: calc(#{theme.$spacing * 2} + #{$digits * 1ch});
   }
 
   .FragmentListToolbar-Filter {
@@ -27,7 +27,7 @@
 }
 
 .FragmentList {
-  $spacing-FragmentList: $spacing * 3;
+  $spacing-FragmentList: theme.$spacing * 3;
   padding: 0 $spacing-FragmentList;
   > .Fragment {
     padding: $spacing-FragmentList 0;
@@ -41,20 +41,20 @@
 .Fragment {
   font-size: calc(18em / 16);
 
-  $spacing-Fragment: $spacing;
+  $spacing: theme.$spacing;
 
   .Fragment-TextBlock {
     white-space: pre-wrap;
     background-color: #252526;
-    padding: $spacing-Fragment;
+    padding: $spacing;
   }
 
   > *:not(:last-child) {
-    margin-bottom: $spacing-Fragment;
+    margin-bottom: $spacing;
   }
 
   .Fragment-Columns > *:not(:last-child) {
-    margin-right: $spacing-Fragment;
+    margin-right: $spacing;
   }
 
   .Fragment-Location > *:not(:last-child) {
@@ -73,7 +73,7 @@
   }
 
   .Fragment-Translations > *:not(:last-child) {
-    margin-bottom: $spacing-Fragment;
+    margin-bottom: $spacing;
   }
 
   .Fragment-Translation > .Fragment-Buttons > span:not(:last-child) {
@@ -86,5 +86,13 @@
 
   .Fragment-Description {
     font-family: monospace;
+  }
+}
+
+.FragmentPath > a {
+  color: mix(theme.$text-link-fg, theme.$fg, 60%);
+  &:hover,
+  &:focus {
+    color: theme.$text-link-fg;
   }
 }

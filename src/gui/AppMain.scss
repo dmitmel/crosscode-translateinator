@@ -1,4 +1,4 @@
-@import '../theme.scss';
+@use '../theme.scss';
 
 .App {
   width: 100%;
@@ -9,14 +9,14 @@
   font-size: 16px;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: $color-fg;
+  color: theme.$fg;
   user-select: none;
 }
 
 ::selection {
   // <https://stackoverflow.com/a/22751702/12005228>
   // <https://stackoverflow.com/a/14970961/12005228>
-  background-color: rgba($color-selection-bg, 0.99);
+  background-color: rgba(theme.$selection-bg, 0.99);
 }
 
 .App-MainLayout {
@@ -25,24 +25,27 @@
 }
 
 *:focus {
-  outline-color: $color-focus-outline;
+  outline-color: theme.$focus-outline;
   outline-width: 1px;
   outline-style: solid;
   outline-offset: -1px;
 }
 
+*:active {
+  outline: none;
+}
+
 a {
-  color: $color-Link-fg;
+  color: theme.$text-link-fg;
   text-decoration: none;
   &:hover {
-    color: $color-Link-fg-hover;
     text-decoration: underline;
   }
 }
 
 hr {
   margin: unset;
-  height: $spacing;
+  height: theme.$spacing;
   background-color: rgba(#ffffff, 0.1);
   border: unset;
 }
@@ -56,10 +59,10 @@ hr {
 // <https://css-tricks.com/custom-scrollbars-in-webkit/>
 // <https://css-tricks.com/almanac/properties/s/scrollbar/>
 ::-webkit-scrollbar {
-  width: $scrollbar-size;
-  height: $scrollbar-size;
+  width: theme.$scrollbar-size;
+  height: theme.$scrollbar-size;
   border-style: solid;
-  border-color: $color-scrollbar-border;
+  border-color: theme.$scrollbar-border;
 }
 
 // Neither margin nor padding can be used on the scrollbar thumb, let's abuse
@@ -67,10 +70,10 @@ hr {
 ::-webkit-scrollbar,
 ::-webkit-scrollbar-thumb {
   &:vertical {
-    border-width: 0 $scrollbar-border;
+    border-width: 0 theme.$scrollbar-border-width;
   }
   &:horizontal {
-    border-width: $scrollbar-border 0;
+    border-width: theme.$scrollbar-border-width 0;
   }
 }
 
@@ -80,22 +83,15 @@ hr {
   // This is also necessary to make the emulated margin hack work:
   background-clip: padding-box;
 
-  background-color: $color-scrollbar-slider-bg;
+  background-color: theme.$scrollbar-slider-bg;
   &:hover {
-    background-color: $color-scrollbar-slider-bg-hover;
+    background-color: theme.$scrollbar-slider-hover-bg;
   }
   &:active {
-    background-color: $color-scrollbar-slider-bg-active;
+    background-color: theme.$scrollbar-slider-active-bg;
   }
 }
 
 ::-webkit-scrollbar-corner {
-  background-color: $color-scrollbar-border;
-}
-
-input[type='search']::-webkit-search-cancel-button,
-input[type='search']::-webkit-search-decoration,
-input[type='search']::-webkit-search-results-button,
-input[type='search']::-webkit-search-results-decoration {
-  -webkit-appearance: none;
+  background-color: theme.$scrollbar-border;
 }

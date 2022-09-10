@@ -1,33 +1,48 @@
+// Useful files for stealing colors from:
+// <https://github.com/microsoft/vscode/blob/1.71.0/src/vs/platform/theme/common/colorRegistry.ts>
+// <https://github.com/microsoft/vscode/blob/1.71.0/src/vs/workbench/common/theme.ts>
+// <https://github.com/microsoft/vscode/blob/1.71.0/src/vs/editor/common/core/editorColorRegistry.ts>
+// <https://github.com/microsoft/vscode/blob/1.71.0/extensions/theme-defaults/themes/dark_vs.json>
+
 $spacing: 6px;
 
 $scrollbar-size: 16px;
-$scrollbar-border: 1px;
+$scrollbar-border-width: 1px;
 
-$color-fg: #cccccc;
-$color-selection-bg: #264f78;
-$color-scrollbar-slider-bg: rgba(#797979, 0.4);
-$color-scrollbar-slider-bg-hover: rgba(#646464, 0.7);
-$color-scrollbar-slider-bg-active: rgba(#bfbfbf, 0.4);
-$color-scrollbar-border: rgba(#7f7f7f, 0.3);
-$color-focus-outline: #007fd4;
-$color-TextArea-bg: #3c3c3c;
-$color-TextArea-fg: $color-fg;
-$color-TextArea-placeholder-fg: rgba($color-TextArea-fg, 0.5);
-$color-Icon-fg: #c5c5c5;
-$color-IconButton-bg-hover: rgba(#5a5d5e, 0.31);
-$color-Link-fg-hover: #3794ff;
-$color-Link-fg: mix($color-Link-fg-hover, $color-fg, 60%);
-$color-StatusBar: #007acc;
-$color-StatusBar-fg: #ffffff;
-$color-Explorer: #252526;
-$color-TreeItem-hover: #2a2d2e;
-$color-TreeItem-focus: #094771;
-$color-TreeItem-current: #37373d;
-$color-Editor: #1e1e1e;
-$color-EditorTabList: $color-Explorer;
-$color-EditorTab-active: $color-Editor;
-$color-EditorTab-active-fg: #ffffff;
-$color-EditorTab-inactive: #2d2d2d;
-$color-EditorTab-inactive-fg: rgba($color-EditorTab-active-fg, 0.5);
-$color-Fragment-focus: rgba(#808080, 0.14);
-$color-Fragment-hover: rgba(#808080, 0.07);
+$fg: #cccccc;
+$disabled-fg: rgba(#cccccc, 0.5);
+$icon-fg: #c5c5c5;
+$selection-bg: #264f78;
+$text-link-fg: #3794ff;
+$focus-outline: #007fd4;
+
+$input-bg: #3c3c3c;
+$input-fg: $fg;
+$input-placeholder-bg: rgba($input-fg, 0.5);
+
+$scrollbar-slider-bg: rgba(#797979, 0.4);
+$scrollbar-slider-hover-bg: rgba(#646464, 0.7);
+$scrollbar-slider-active-bg: rgba(#bfbfbf, 0.4);
+$scrollbar-border: rgba(#7f7f7f, 0.3);
+
+$editor-bg: #1e1e1e;
+$editor-widget-bg: #252526;
+$editor-widget-shadow: rgba(#000000, 0.36);
+
+$list-active-selection-bg: #04395e;
+$list-inactive-selection-bg: #37373d;
+$list-hover-bg: #2a2d2e;
+
+$toolbar-hover-bg: rgba(#5a5d5e, 0.31);
+
+$side-bar-bg: $editor-widget-bg;
+$side-bar-section-border: rgba(#cccccc, 0.2);
+$status-bar-bg: #007acc;
+$status-bar-fg: #ffffff;
+
+$tab-list-bg: $editor-widget-bg;
+$tab-border: #252526;
+$tab-active-bg: $editor-bg;
+$tab-active-fg: #ffffff;
+$tab-inactive-bg: #2d2d2d;
+$tab-inactive-fg: rgba($tab-active-fg, 0.5);

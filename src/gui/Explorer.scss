@@ -1,18 +1,18 @@
-@import '../theme.scss';
+@use '../theme.scss';
 
 .Explorer {
-  background-color: $color-Explorer;
+  background-color: theme.$side-bar-bg;
   min-width: 300px;
   max-width: 300px;
 }
 
 .Explorer-Header {
-  padding: ($spacing * 2) $spacing;
-  color: $color-EditorTab-active-fg;
+  padding: (theme.$spacing * 2) theme.$spacing;
+  color: theme.$tab-active-fg;
 }
 
 .ExplorerSection:not(:last-child) {
-  border-bottom: 1px solid rgba(#ffffff, 0.2);
+  border-bottom: 1px solid theme.$side-bar-section-border;
 }
 
 .ExplorerSection-Name {
@@ -22,20 +22,19 @@
 }
 
 .TreeItem {
-  padding: $spacing;
-  padding-left: calc(#{$spacing} + var(--TreeItem-depth, 0) * #{$spacing} * 2.5);
+  padding: theme.$spacing;
+  padding-left: calc(#{theme.$spacing} + var(--TreeItem-depth, 0) * #{theme.$spacing} * 2.5);
   cursor: pointer;
 
   &:hover {
-    background-color: $color-TreeItem-hover;
+    background-color: theme.$list-hover-bg;
   }
 
   &.TreeItem-current {
-    background-color: $color-TreeItem-current;
+    background-color: theme.$list-inactive-selection-bg;
   }
 
   &:focus {
-    background-color: $color-TreeItem-focus;
-    outline: none;
+    background-color: theme.$list-active-selection-bg;
   }
 }

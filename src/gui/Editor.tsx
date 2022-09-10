@@ -515,6 +515,7 @@ export class FragmentPathGui extends React.PureComponent<
     // mouse events is needed.
     return (
       <LabelGui
+        className="FragmentPath"
         selectable
         onMouseEnter={this.on_mouse_hover}
         onMouseMove={this.on_mouse_hover}

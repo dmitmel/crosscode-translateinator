@@ -77,6 +77,7 @@
 import * as React from 'react';
 
 import * as utils from '../utils';
+import { WrapperGui } from './Box';
 
 export interface VirtListItemFnProps<T> {
   list: VirtualizedListGui<T>;
@@ -693,12 +694,12 @@ export class VirtualizedListGui<T> extends React.Component<
 export function VirtListContainerGui<T>(props: VirtListContainerFnProps<T>): React.ReactElement {
   let { list } = props;
   return (
-    <div
+    <WrapperGui
       ref={props.inner_ref}
       className={props.className}
+      scroll
       onScroll={props.on_scroll}
       style={{
-        overflowY: 'scroll',
         // Necessary for correct offsetTop calculations (relative to the top
         // of the scroll viewport):
         // <https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Positioning/Understanding_z_index/The_stacking_context>.
@@ -719,6 +720,6 @@ export function VirtListContainerGui<T>(props: VirtListContainerFnProps<T>): Rea
       <div style={{ height: `${list.state.offset_start}px` }} />
       {props.children}
       <div style={{ height: `${list.state.offset_end}px` }} />
-    </div>
+    </WrapperGui>
   );
 }

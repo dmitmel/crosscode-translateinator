@@ -1,4 +1,4 @@
-@import '../theme.scss';
+@use '../theme.scss';
 
 textarea,
 input {
@@ -13,12 +13,12 @@ input {
   resize: none;
   overflow: hidden;
 
-  padding: $spacing;
-  background-color: $color-TextArea-bg;
-  color: $color-TextArea-fg;
+  padding: theme.$spacing;
+  background-color: theme.$input-bg;
+  color: theme.$input-fg;
 
   &::placeholder {
-    color: $color-TextArea-placeholder-fg;
+    color: theme.$input-placeholder-bg;
   }
 }
 
@@ -29,7 +29,19 @@ input {
     -webkit-appearance: none;
     margin: 0;
   }
-  &[type='number'] {
-    -moz-appearance: textfield; /* Firefox */
+}
+
+input[type='number'],
+input[type='search'] {
+  -moz-appearance: textfield;
+}
+
+// Taken from <https://github.com/necolas/normalize.css/issues/171>
+input[type='search'] {
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration,
+  &::-webkit-search-results-button,
+  &::-webkit-search-results-decoration {
+    -webkit-appearance: none;
   }
 }

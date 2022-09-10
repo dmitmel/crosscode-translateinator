@@ -1,4 +1,4 @@
-@import '../theme.scss';
+@use '../theme.scss';
 
 @font-face {
   font-family: 'bootstrap-icons';
@@ -16,6 +16,6 @@
 
 .Icon,
 .IconlikeText {
-  color: $color-Icon-fg;
+  color: theme.$icon-fg;
   user-select: none;
 }

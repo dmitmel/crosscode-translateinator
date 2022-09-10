@@ -1,18 +1,20 @@
-@import '../theme.scss';
+@use '../theme.scss';
 
 .EditorTabList {
-  background-color: $color-EditorTabList;
+  background-color: theme.$side-bar-bg;
 }
 
 .EditorTab {
-  padding: $spacing * 2;
-  color: $color-EditorTab-inactive-fg;
-  background-color: $color-EditorTab-inactive;
+  padding: theme.$spacing * 2;
+  color: theme.$tab-inactive-fg;
+  background-color: theme.$tab-inactive-bg;
+  border-right: 1px solid;
+  border-color: theme.$tab-border;
   cursor: pointer;
 
   &.EditorTab-active {
-    color: $color-EditorTab-active-fg;
-    background-color: $color-EditorTab-active;
+    color: theme.$tab-active-fg;
+    background-color: theme.$tab-active-bg;
   }
 
   .Icon {

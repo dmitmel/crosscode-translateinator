@@ -1,7 +1,7 @@
-@import '../theme.scss';
+@use '../theme.scss';
 
 .StatusBar {
-  padding: $spacing ($spacing * 2);
-  background-color: $color-StatusBar;
-  color: $color-StatusBar-fg;
+  padding: theme.$spacing (theme.$spacing * 2);
+  background-color: theme.$status-bar-bg;
+  color: theme.$status-bar-fg;
 }

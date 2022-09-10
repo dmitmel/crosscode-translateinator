@@ -1,10 +1,4 @@
-@import '../theme.scss';
-
-$IconButton-font-size: 18px;
-// $Button-bg-color: #3a3d41;
-// $Button-bg-color-hover: scale-color($Button-bg-color, $lightness: 20%);
-$Button-bg-color-hover: #3a3d41;
-// $Button-bg-color: scale-color($Button-bg-color-hover, $lightness: -20%);
+@use '../theme.scss';
 
 button {
   font-family: unset;
@@ -24,17 +18,17 @@ button {
 }
 
 .IconButton {
-  padding: $spacing;
+  padding: theme.$spacing;
   cursor: pointer;
   font-size: 18px;
-  color: $color-Icon-fg;
+  color: theme.$icon-fg;
 
-  // &.IconButton-disabled {
-  //   color: /* TODO */;
+  // &:disabled {
+  //   color: theme.$disabled-fg;
   // }
 
   &:hover {
-    background-color: $color-IconButton-bg-hover;
+    background-color: theme.$toolbar-hover-bg;
   }
 
   &:active > .Icon {
