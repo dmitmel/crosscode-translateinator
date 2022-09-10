@@ -235,7 +235,7 @@ export function expand_table_data<T extends keyof TableDataTypes>(
         expanded_data.push(row);
         continue;
       }
-      let row_obj = {} as Record<string, unknown>;
+      let row_obj: Record<PropertyKey, unknown> = {};
       for (let j = 0, len = requested_columns.length; j < len; j++) {
         let column_name = requested_columns[j];
         let column = row[j];
