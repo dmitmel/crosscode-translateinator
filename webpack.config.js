@@ -3,7 +3,6 @@ const paths = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const packageJson = require('./package.json');
 
 /**
   @returns {webpack.Configuration}
@@ -101,12 +100,6 @@ module.exports = (_env, { mode }) => ({
       template: 'src/main.html',
       inject: 'body',
       scriptLoading: 'blocking',
-    }),
-
-    new webpack.DefinePlugin({
-      'process.env': {
-        npm_package_version: JSON.stringify(packageJson.version),
-      },
     }),
   ],
 });
