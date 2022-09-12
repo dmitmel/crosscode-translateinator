@@ -621,6 +621,14 @@ export class VirtualizedListGui<T> extends React.Component<
     let item_size: number;
     if (item_elem != null) {
       item_offset = item_elem.offsetTop;
+      // `offsetTop` is calculated relative to the offsetParent, not to the
+      // parent element, we must take that into account when necessary.
+      // <https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/offsetParent>
+      let parent_elem = item_elem.parentElement;
+      let offset_parent = item_elem.offsetParent;
+      if (offset_parent !== parent_elem && offset_parent != null && parent_elem != null) {
+        item_offset -= parent_elem.offsetTop;
+      }
       item_size = item_elem.offsetHeight;
     } else {
       let measurement = this.item_measurements[target_index];
@@ -696,27 +704,10 @@ export function VirtListContainerGui<T>(props: VirtListContainerFnProps<T>): Rea
   return (
     <WrapperGui
       ref={props.inner_ref}
-      className={props.className}
       scroll
-      onScroll={props.on_scroll}
-      style={{
-        // Necessary for correct offsetTop calculations (relative to the top
-        // of the scroll viewport):
-        // <https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Positioning/Understanding_z_index/The_stacking_context>.
-        // Note that `will-change` creates a relative positioning block too:
-        // <https://dev.opera.com/articles/css-will-change-property/#does-will-change-affect-the-element-it-is-applied-to-beyond-hinting-the-browser-about-the-changes-to-that-element>.
-        position: 'relative',
-        // The following two were properties were taken from react-window's
-        // implementation. As far as I understand, `will-change` decouples
-        // scrolling from the JS thread, so the rendering thread doesn't pause
-        // and lag while the elements of items are being created, and
-        // `-webkit-overflow-scrolling` enables elastic scrolling.
-        // <https://github.com/bvaughn/react-window/issues/221#issuecomment-495322355>
-        // <https://dev.opera.com/articles/css-will-change-property/>
-        willChange: 'transform',
-        WebkitOverflowScrolling: 'touch',
-        ...props.style,
-      }}>
+      className={props.className}
+      style={props.style}
+      onScroll={props.on_scroll}>
       <div style={{ height: `${list.state.offset_start}px` }} />
       {props.children}
       <div style={{ height: `${list.state.offset_end}px` }} />

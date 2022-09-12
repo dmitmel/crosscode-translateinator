@@ -94,6 +94,7 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
         key={this.state.list_owner_id}
         ref={this.list_ref}
         className={cc(this.props.className, 'FragmentList')}
+        style={{ overflowY: 'scroll' }}
         item_count={this.state.list.length}
         item_data={this.state.list}
         render_item={this.render_item}

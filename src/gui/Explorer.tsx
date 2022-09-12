@@ -256,7 +256,6 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
         render_item={this.render_list_item}
         item_size={30}
         fixed_size_items
-        overscan_count={3}
       />
     );
   }
