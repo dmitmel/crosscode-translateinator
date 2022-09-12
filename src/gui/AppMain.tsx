@@ -5,7 +5,7 @@ import * as React from 'react';
 import { AppMain } from '../app';
 import * as gui from '../gui';
 import { AppMainCtx } from './AppMainCtx';
-import { BoxGui } from './Box';
+import { HBoxGui, VBoxGui } from './Box';
 import { EditorGui } from './Editor';
 import { ExplorerGui } from './Explorer';
 import { StatusBarGui } from './StatusBar';
@@ -206,13 +206,13 @@ export class AppMainGui extends React.Component<unknown, unknown> {
     return (
       <AppMainCtx.Provider value={this.child_context}>
         <div className="App">
-          <BoxGui className="App-MainLayout" orientation="vertical">
-            <BoxGui orientation="horizontal" className="BoxItem-expand">
+          <VBoxGui className="App-MainLayout">
+            <HBoxGui className="BoxItem-expand">
               <ExplorerGui />
               <EditorGui className="BoxItem-expand" />
-            </BoxGui>
+            </HBoxGui>
             <StatusBarGui />
-          </BoxGui>
+          </VBoxGui>
         </div>
       </AppMainCtx.Provider>
     );

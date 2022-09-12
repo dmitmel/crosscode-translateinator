@@ -10,7 +10,7 @@
     flex-grow: 1;
   }
 
-  &.Box-orientation-horizontal {
+  &.HBox {
     flex-direction: row;
     &.Box-reverse-children {
       flex-direction: row-reverse;
@@ -28,7 +28,7 @@
     }
   }
 
-  &.Box-orientation-vertical {
+  &.VBox {
     flex-direction: column;
     &.Box-reverse-children {
       flex-direction: column-reverse;
@@ -51,9 +51,17 @@
     flex-wrap: wrap;
   }
 
-  @each $align-items in auto, flex-start, flex-end, center, baseline, stretch {
-    &.Box-align-items-#{$align-items} {
-      align-items: $align-items;
+  $align-items-options: (
+    auto: auto,
+    start: flex-start,
+    end: flex-end,
+    center: center,
+    baseline: baseline,
+    stretch: stretch,
+  );
+  @each $name, $align in $align-items-options {
+    &.Box-align-items-#{$name} {
+      align-items: $align;
     }
   }
 }

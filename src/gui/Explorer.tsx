@@ -16,7 +16,7 @@ import {
 } from '../app';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
-import { BoxGui } from './Box';
+import { VBoxGui } from './Box';
 import { IconGui } from './Icon';
 import { LabelGui } from './Label';
 import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
@@ -64,7 +64,7 @@ export class ExplorerGui extends React.Component<ExplorerGuiProps, ExplorerGuiSt
   public override render(): React.ReactNode {
     let { app } = this.context;
     return (
-      <BoxGui orientation="vertical" className={cc(this.props.className, 'Explorer')}>
+      <VBoxGui className={cc(this.props.className, 'Explorer')}>
         <div className="Explorer-Header">
           <IconGui icon={null} /> PROJECT [
           {this.state.project_meta?.translation_locale ?? 'loading...'}]
@@ -85,7 +85,7 @@ export class ExplorerGui extends React.Component<ExplorerGuiProps, ExplorerGuiSt
             base_depth={1}
           />
         </ExplorerSectionGui>
-      </BoxGui>
+      </VBoxGui>
     );
   }
 }
@@ -114,8 +114,7 @@ export class ExplorerSectionGui extends React.Component<
   public override render(): React.ReactNode {
     let { is_opened } = this.state;
     return (
-      <BoxGui
-        orientation="vertical"
+      <VBoxGui
         className={cc('ExplorerSection', {
           'ExplorerSection-opened': is_opened,
           'BoxItem-expand': is_opened,
@@ -130,7 +129,7 @@ export class ExplorerSectionGui extends React.Component<
           </button>
         </div>
         {is_opened ? this.props.children : null}
-      </BoxGui>
+      </VBoxGui>
     );
   }
 }

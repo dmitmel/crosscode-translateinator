@@ -12,7 +12,7 @@ import {
 } from '../app';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
-import { BoxGui } from './Box';
+import { HBoxGui } from './Box';
 import { FileTypeGuiData } from './Explorer';
 import { IconGui } from './Icon';
 
@@ -70,7 +70,7 @@ export class EditorTabListGui extends React.Component<
 
   public override render(): React.ReactNode {
     return (
-      <BoxGui orientation="horizontal" scroll className={cc(this.props.className, 'EditorTabList')}>
+      <HBoxGui scroll className={cc(this.props.className, 'EditorTabList')}>
         {this.state.opened_tabs.map((tab, index) => {
           let renderer = new tab[TAB_RENDERER_SYM]();
           return (
@@ -84,7 +84,7 @@ export class EditorTabListGui extends React.Component<
             />
           );
         })}
-      </BoxGui>
+      </HBoxGui>
     );
   }
 }

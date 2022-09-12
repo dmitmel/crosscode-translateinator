@@ -7,7 +7,7 @@ import { CurrentFragmentChangeTrigger, FragmentRoData, TranslationRoData } from 
 import * as gui from '../gui';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
-import { BoxGui, BoxItemFillerGui, WrapperGui } from './Box';
+import { BoxItemFillerGui, HBoxGui, VBoxGui, WrapperGui } from './Box';
 import { IconButtonGui } from './Button';
 import { EditorTabListGui } from './EditorTabs';
 import { FancyTextGui } from './FancyText';
@@ -22,11 +22,11 @@ export interface EditorGuiProps {
 
 export function EditorGui(props: EditorGuiProps): React.ReactElement {
   return (
-    <BoxGui orientation="vertical" className={cc(props.className, 'Editor')}>
+    <VBoxGui className={cc(props.className, 'Editor')}>
       <EditorTabListGui />
       <FragmentListToolbarGui />
       <FragmentListGui className="BoxItem-expand" />
-    </BoxGui>
+    </VBoxGui>
   );
 }
 
@@ -222,10 +222,7 @@ export class FragmentListToolbarGui extends React.Component<
     let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
     return (
       <WrapperGui className={cc('FragmentListToolbar', this.props.className)}>
-        <BoxGui
-          orientation="horizontal"
-          align_items="center"
-          className="FragmentListToolbar-Pagination">
+        <HBoxGui align_items="center" className="FragmentListToolbar-Pagination">
           <IconButtonGui
             icon="chevron-bar-left"
             title="First"
@@ -290,7 +287,7 @@ export class FragmentListToolbarGui extends React.Component<
               autoComplete="off"
             />
           </form>
-        </BoxGui>
+        </HBoxGui>
       </WrapperGui>
     );
   }
@@ -360,11 +357,7 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
         className={cc(this.props.className, 'Fragment', {
           'Fragment-current': this.props.is_current,
         })}>
-        <BoxGui
-          orientation="horizontal"
-          allow_wrapping
-          allow_overflow
-          className="Fragment-Location">
+        <HBoxGui allow_wrapping allow_overflow className="Fragment-Location">
           <span title="File path" className="Fragment-FilePath">
             <IconGui icon="file-earmark-text" />{' '}
             <FragmentPathGui
@@ -382,7 +375,7 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
           <span title="Position in the list" className="Fragment-Index">
             <IconlikeTextGui icon="#" /> <LabelGui selectable>{this.props.index + 1}</LabelGui>
           </span>
-        </BoxGui>
+        </HBoxGui>
 
         {fragment.description.length > 0 ? (
           <LabelGui block selectable className="Fragment-Description Fragment-TextBlock">
@@ -390,14 +383,14 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
           </LabelGui>
         ) : null}
 
-        <BoxGui orientation="horizontal" allow_overflow className="Fragment-Columns">
+        <HBoxGui allow_overflow className="Fragment-Columns">
           <WrapperGui allow_overflow className="Fragment-Original BoxItem-expand">
             <LabelGui block selectable className="Fragment-TextBlock">
               <FancyTextGui highlight_crosscode_markup highlight_newlines>
                 {fragment.original_text}
               </FancyTextGui>
             </LabelGui>
-            <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
+            <HBoxGui className="Fragment-Buttons" align_items="baseline">
               <BoxItemFillerGui />
               <IconButtonGui
                 icon="clipboard"
@@ -410,7 +403,7 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
                 title="Add a new translation"
                 onClick={this.on_new_translation_click}
               />
-            </BoxGui>
+            </HBoxGui>
           </WrapperGui>
 
           <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
@@ -425,7 +418,7 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
               />
             ) : null}
           </WrapperGui>
-        </BoxGui>
+        </HBoxGui>
       </WrapperGui>
     );
   }
@@ -546,7 +539,7 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
             {translation.text}
           </FancyTextGui>
         </LabelGui>
-        <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
+        <HBoxGui className="Fragment-Buttons" align_items="baseline">
           <LabelGui ellipsis selectable>
             {translation.author_username}
           </LabelGui>
@@ -562,7 +555,7 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
           <IconButtonGui icon="pencil-square" title="Edit this translation" />
           <IconButtonGui icon="chat-left-quote" title="Add a comment about this translation" />
           <IconButtonGui icon="trash" title="Delete this translation" />
-        </BoxGui>
+        </HBoxGui>
       </WrapperGui>
     );
   }
@@ -617,11 +610,11 @@ export class NewTranslationGui extends React.Component<
           }
           ref={this.text_area_ref}
         />
-        <BoxGui orientation="horizontal" className="Fragment-Buttons" align_items="baseline">
+        <HBoxGui className="Fragment-Buttons" align_items="baseline">
           <BoxItemFillerGui />
           <IconButtonGui icon="x-lg" title="Cancel" onClick={this.props.on_cancel_click} />
           <IconButtonGui icon="check2" title="Submit" />
-        </BoxGui>
+        </HBoxGui>
       </WrapperGui>
     );
   }

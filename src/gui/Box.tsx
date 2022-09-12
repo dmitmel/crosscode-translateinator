@@ -4,18 +4,17 @@ import cc from 'clsx';
 import * as React from 'react';
 
 export interface BoxGuiProps extends React.HTMLAttributes<HTMLDivElement> {
-  orientation: 'vertical' | 'horizontal';
   inline?: boolean;
   reverse_children?: boolean;
   scroll?: boolean;
   allow_overflow?: boolean;
   allow_wrapping?: boolean;
-  align_items?: 'auto' | 'flex-start' | 'flex-end' | 'center' | 'baseline' | 'stretch';
+  align_items?: 'auto' | 'start' | 'end' | 'center' | 'baseline' | 'stretch';
 }
 
-export const BoxGui = React.forwardRef(function BoxGui(
+function BoxGui(
+  layout_name: string,
   {
-    orientation,
     inline,
     reverse_children,
     scroll,
@@ -34,7 +33,7 @@ export const BoxGui = React.forwardRef(function BoxGui(
       className={cc(
         className,
         'Box',
-        `Box-orientation-${orientation}`,
+        layout_name,
         align_items != null ? `Box-align-items-${align_items}` : null,
         {
           'Box-inline': inline,
@@ -48,6 +47,20 @@ export const BoxGui = React.forwardRef(function BoxGui(
       {children}
     </div>
   );
+}
+
+export const VBoxGui = React.forwardRef(function VBoxGui(
+  props: BoxGuiProps,
+  ref: React.Ref<HTMLDivElement>,
+): React.ReactElement {
+  return BoxGui('VBox', props, ref);
+});
+
+export const HBoxGui = React.forwardRef(function HBoxGui(
+  props: BoxGuiProps,
+  ref: React.Ref<HTMLDivElement>,
+): React.ReactElement {
+  return BoxGui('HBox', props, ref);
 });
 
 export interface BoxItemFillerGuiProps extends React.HTMLAttributes<HTMLDivElement> {}
