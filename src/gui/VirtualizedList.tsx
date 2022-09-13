@@ -65,10 +65,7 @@
 //    zero, scrolling upwards when the sizes of the items above aren't known,
 //    the list will jump slightly because of the changes between the estimated
 //    size of items and the actual size after rendering.
-// 3. TODO: When `last_page_behavior` is set to `full_blank` the component
-//    throws errors. Not a big deal since that mode is not used at all by my
-//    application.
-// 4. TODO: This is more of a general note rather than a concrete problem, but
+// 3. TODO: This is more of a general note rather than a concrete problem, but
 //    the implementation should use keys instead of indexes for recording the
 //    sizes of items. The list items may shift around, but their sizes will
 //    almost certainly follow the keys rather than stay at the same indexes.
@@ -389,6 +386,20 @@ export class VirtualizedListGui<T> extends React.Component<
     }
   }
 
+  public get_item_offset_at_index(index: number): number {
+    let { item_measurements } = this;
+    let item_count = item_measurements.length;
+    index = utils.clamp(index, 0, item_count);
+    if (index < item_count) {
+      return item_measurements[index].offset;
+    } else if (item_count > 0) {
+      let measurement = item_measurements[item_count - 1];
+      return measurement.offset + measurement.size;
+    } else {
+      return 0;
+    }
+  }
+
   public update(
     options?: {
       snapshot?: VirtualizedListGuiSnapshot | null;
@@ -398,7 +409,6 @@ export class VirtualizedListGui<T> extends React.Component<
     let { props, state } = this;
     let { item_count } = props;
     let { snapshot, reset_item_sizes } = options ?? {};
-    let { item_measurements } = this;
 
     let slice_end = utils.clamp(state.slice_end, 0, item_count);
     let slice_start = utils.clamp(state.slice_start, 0, slice_end);
@@ -409,18 +419,8 @@ export class VirtualizedListGui<T> extends React.Component<
       this.apply_scroll_offset_correction(snapshot.scroll_offset);
     }
 
-    const get_item_offset_at_index = (idx: number): number => {
-      if (item_count > 0) {
-        idx = utils.clamp(idx, 0, item_count);
-        let measurement = item_measurements[Math.min(idx, item_count - 1)];
-        return measurement.offset + (idx >= item_count ? measurement.size : 0);
-      } else {
-        return 0;
-      }
-    };
-
     let scroll_delta = 0;
-    scroll_delta -= get_item_offset_at_index(visible_slice_start);
+    scroll_delta -= this.get_item_offset_at_index(visible_slice_start);
 
     if (reset_item_sizes) {
       this.reset_measured_item_sizes();
@@ -432,7 +432,7 @@ export class VirtualizedListGui<T> extends React.Component<
       this.recalc_item_offsets(average_item_size);
     }
 
-    scroll_delta += get_item_offset_at_index(visible_slice_start);
+    scroll_delta += this.get_item_offset_at_index(visible_slice_start);
     this.scroll_correction_delta += scroll_delta;
 
     let viewport_size = this.get_viewport_size();
@@ -452,7 +452,7 @@ export class VirtualizedListGui<T> extends React.Component<
           0,
           item_count,
           (index: number): number => {
-            let measurement = item_measurements[index];
+            let measurement = this.item_measurements[index];
             if (target_offset < measurement.offset) {
               return 1;
             } else if (target_offset < measurement.offset + measurement.size) {
@@ -479,7 +479,7 @@ export class VirtualizedListGui<T> extends React.Component<
     if (visible_slice_len === 1) {
       current_index = visible_slice_start;
     } else if (visible_slice_len >= 2) {
-      let measurement = item_measurements[visible_slice_start];
+      let measurement = this.item_measurements[visible_slice_start];
       if (fixed_scroll_offset <= measurement.offset + measurement.size / 2) {
         current_index = visible_slice_start;
       } else {
@@ -491,31 +491,20 @@ export class VirtualizedListGui<T> extends React.Component<
     slice_end = utils.clamp(visible_slice_end + overscan_count, 0, item_count);
     slice_start = utils.clamp(visible_slice_start - overscan_count, 0, slice_end);
 
-    let offset_start = 0;
-    let slice_total_size = 0;
-    let offset_end = 0;
-    let total_size = 0;
-
+    let total_size = this.get_item_offset_at_index(item_count);
     if (item_count > 0) {
-      let slice_start_measurement = item_measurements[slice_start];
-      offset_start = slice_start_measurement.offset;
-
-      let last_item_measurement = item_measurements[item_count - 1];
-      total_size = last_item_measurement.offset + last_item_measurement.size;
       if (props.last_page_behavior === 'one_last_item') {
+        let last_item_measurement = this.item_measurements[item_count - 1];
         total_size += Math.max(0, viewport_size - last_item_measurement.size);
       } else if (props.last_page_behavior === 'full_blank') {
         total_size += viewport_size;
       }
-
-      let slice_end_offset = slice_start_measurement.offset;
-      if (slice_end > slice_start) {
-        let slice_end_measurement = item_measurements[slice_end - 1];
-        slice_end_offset = slice_end_measurement.offset + slice_end_measurement.size;
-      }
-      slice_total_size = slice_end_offset - slice_start_measurement.offset;
-      offset_end = total_size - slice_end_offset;
     }
+
+    let offset_start = this.get_item_offset_at_index(slice_start);
+    let slice_end_offset = this.get_item_offset_at_index(slice_end);
+    let slice_total_size = slice_end_offset - offset_start;
+    let offset_end = total_size - slice_end_offset;
 
     if (
       state.average_item_size !== average_item_size ||
@@ -708,9 +697,9 @@ export function VirtListContainerGui<T>(props: VirtListContainerFnProps<T>): Rea
       className={props.className}
       style={props.style}
       onScroll={props.on_scroll}>
-      <div style={{ height: `${list.state.offset_start}px` }} />
+      <div style={{ height: list.state.offset_start }} />
       {props.children}
-      <div style={{ height: `${list.state.offset_end}px` }} />
+      <div style={{ height: list.state.offset_end }} />
     </WrapperGui>
   );
 }

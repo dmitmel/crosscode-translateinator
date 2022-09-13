@@ -198,7 +198,7 @@ export function binary_search(
     }
   }
 
-  if (result != null && start <= result && result < end) {
+  if (result != null && start <= result && result <= end) {
     return result;
   } else {
     return null;
