@@ -13,7 +13,7 @@ import { EditorTabListGui } from './EditorTabs';
 import { FancyTextGui } from './FancyText';
 import { IconGui, IconlikeTextGui } from './Icon';
 import { LabelGui } from './Label';
-import { TextAreaGui } from './TextInput';
+import { TextAreaGui, TextInputGui } from './TextInput';
 import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
 
 export interface EditorGuiProps {
@@ -39,8 +39,6 @@ export interface FragmentListGuiState {
   list_owner_id: number;
 }
 
-export type FragmentVirtListData = readonly FragmentRoData[];
-
 export class FragmentListGui extends React.Component<FragmentListGuiProps, FragmentListGuiState> {
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
@@ -48,7 +46,7 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
     ...this.copy_fragment_list(),
   };
 
-  private list_ref = React.createRef<VirtualizedListGui<FragmentVirtListData>>();
+  public list_ref = React.createRef<VirtualizedListGui>();
 
   public override componentDidMount(): void {
     let { app } = this.context;
@@ -81,7 +79,7 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
     }
   };
 
-  private on_items_rendered = (list: VirtualizedListGui<FragmentVirtListData>): void => {
+  private on_items_rendered = (list: VirtualizedListGui): void => {
     let { app } = this.context;
     if (app.current_fragment_index !== list.state.current_index) {
       app.set_current_fragment_index(list.state.current_index, CurrentFragmentChangeTrigger.Scroll);
@@ -96,7 +94,6 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
         className={cc(this.props.className, 'FragmentList')}
         style={{ overflowY: 'scroll' }}
         item_count={this.state.list.length}
-        item_data={this.state.list}
         render_item={this.render_item}
         item_size={200}
         estimate_average_item_size
@@ -107,15 +104,15 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
     );
   }
 
-  private render_item = (props: VirtListItemFnProps<FragmentVirtListData>): React.ReactNode => {
-    let fragment = props.data[props.index];
+  private render_item = ({ index, list }: VirtListItemFnProps): React.ReactNode => {
+    let fragment = this.state.list[index];
     return (
       <FragmentGui
         key={fragment.ref.obj_id}
-        list={props.list}
+        list={list}
         fragment={fragment}
-        index={props.index}
-        is_current={props.index === props.list.state.current_index}
+        index={index}
+        is_current={index === list.state.current_index}
       />
     );
   };
@@ -145,8 +142,8 @@ export class FragmentListToolbarGui extends React.Component<
 
   public static readonly FRAGMENT_PAGINATION_JUMP = 10;
 
-  private jump_pos_input_ref = React.createRef<HTMLInputElement>();
-  private filter_input_ref = React.createRef<HTMLInputElement>();
+  public jump_pos_input_ref = React.createRef<HTMLInputElement>();
+  public filter_input_ref = React.createRef<HTMLInputElement>();
 
   public override componentDidMount(): void {
     let { app } = this.context;
@@ -212,7 +209,9 @@ export class FragmentListToolbarGui extends React.Component<
     app.set_current_fragment_index(jump_pos, CurrentFragmentChangeTrigger.Jump);
   };
 
-  private on_filter_submit = (_event: React.FormEvent<HTMLFormElement>): void => {};
+  private on_filter_submit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+  };
 
   private on_filter_input = (event: React.FormEvent<HTMLInputElement>): void => {
     this.setState({ filter_value: event.currentTarget.value });
@@ -275,16 +274,15 @@ export class FragmentListToolbarGui extends React.Component<
           />
           <BoxItemFillerGui />
           <form onSubmit={this.on_filter_submit}>
-            <input
+            <TextInputGui
               ref={this.filter_input_ref}
-              type="filter"
+              type="search"
               name="filter"
               className="FragmentListToolbar-Filter"
               onInput={this.on_filter_input}
               value={this.state.filter_value}
               title="Quick search"
               placeholder="Quick search..."
-              autoComplete="off"
             />
           </form>
         </HBoxGui>
@@ -298,7 +296,7 @@ export interface FragmentGuiProps {
   index: number;
   is_current: boolean;
   fragment: FragmentRoData;
-  list?: VirtualizedListGui<FragmentVirtListData>;
+  list?: VirtualizedListGui;
 }
 
 export interface FragmentGuiState {

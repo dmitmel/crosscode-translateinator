@@ -1,0 +1,34 @@
+@use '../theme.scss';
+
+.QuickActions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  max-width: 600px;
+  width: 60%;
+  // max-height: 40%;
+  // height: 100%;
+
+  background-color: theme.$editor-widget-bg;
+  box-shadow: 0 0 8px 2px theme.$editor-widget-shadow;
+
+  &-Header {
+    padding: theme.$spacing;
+    padding-bottom: theme.$spacing * calc(2 / 3);
+  }
+
+  &-List {
+    max-height: 0;
+  }
+}
+
+.QuickActionsEntry {
+  padding: theme.$spacing (theme.$spacing * 2);
+}
+
+.QuickActionsEntryLabel .highlight {
+  font-weight: bold;
+  color: theme.$list-highlight-fg;
+}

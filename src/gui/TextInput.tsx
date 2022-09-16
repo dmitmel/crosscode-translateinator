@@ -4,6 +4,25 @@ import * as React from 'react';
 
 import * as utils from '../utils';
 
+export interface TextInputGuiProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+export const TextInputGui = React.forwardRef(function TextInputGui(
+  rest: TextInputGuiProps,
+  ref: React.Ref<HTMLInputElement>,
+): React.ReactElement {
+  return (
+    <input
+      ref={ref}
+      type="text"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
+      autoComplete="off"
+      {...rest}
+    />
+  );
+});
+
 export interface TextAreaGuiProps extends React.HTMLAttributes<HTMLTextAreaElement> {
   style?: React.CSSProperties;
 }

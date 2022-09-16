@@ -25,16 +25,4 @@
   padding: theme.$spacing;
   padding-left: calc(#{theme.$spacing} + var(--TreeItem-depth, 0) * #{theme.$spacing} * 2.5);
   cursor: pointer;
-
-  &:hover {
-    background-color: theme.$list-hover-bg;
-  }
-
-  &.TreeItem-current {
-    background-color: theme.$list-inactive-selection-bg;
-  }
-
-  &:focus {
-    background-color: theme.$list-active-selection-bg;
-  }
 }

@@ -1,0 +1,16 @@
+@use '../theme.scss';
+
+.ListItem {
+  &:hover {
+    background-color: theme.$list-hover-bg;
+  }
+
+  &.selected {
+    background-color: theme.$list-inactive-selection-bg;
+  }
+
+  &.selected:focus,
+  &.focused {
+    background-color: theme.$list-active-selection-bg;
+  }
+}

@@ -1,5 +1,6 @@
 import './Explorer.scss';
 import './Button';
+import './List.scss';
 
 import cc from 'clsx';
 import Immutable from 'immutable';
@@ -232,7 +233,7 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
   ): void => {
     let { app } = this.context;
     let file_path = file.path;
-    if (file instanceof FileTreeDir) {
+    if (file.is_dir) {
       this.setState(({ opened_states }) => ({
         opened_states: opened_states.set(file_path, !opened_states.get(file_path)),
       }));
@@ -311,7 +312,7 @@ export interface TreeItemGuiProps {
   is_opened: boolean;
   depth: number;
   index: number;
-  on_click: (file: FileTreeFile, event: React.MouseEvent<HTMLButtonElement>) => void;
+  on_click?: (file: FileTreeFile, event: React.MouseEvent<HTMLButtonElement>) => void;
   list?: VirtualizedListGui<TreeVirtListData>;
 }
 
@@ -331,17 +332,16 @@ export class TreeItemGui extends React.Component<TreeItemGuiProps, unknown> {
   }
 
   private on_click = (event: React.MouseEvent<HTMLButtonElement>): void => {
-    this.props.on_click(this.props.file, event);
+    this.props.on_click?.(this.props.file, event);
   };
 
   public override render(): React.ReactNode {
     let { props } = this;
-    let is_directory = props.file instanceof FileTreeDir;
 
     let gui_data = GameFileGuiData.get(props.file_type, props.file.path);
     let label = props.file.path;
     let { icon } = gui_data;
-    if (is_directory) {
+    if (props.file.is_dir) {
       label += '/';
       icon = `chevron-${props.is_opened ? 'down' : 'right'}`;
     }
@@ -350,8 +350,8 @@ export class TreeItemGui extends React.Component<TreeItemGuiProps, unknown> {
       <button
         ref={this.root_ref}
         type="button"
-        className={cc('block', 'TreeItem', {
-          'TreeItem-current': !is_directory && props.is_opened,
+        className={cc('block', 'TreeItem', 'ListItem', {
+          selected: !props.file.is_dir && props.is_opened,
         })}
         style={{ '--TreeItem-depth': props.depth } as React.CSSProperties}
         title={label}

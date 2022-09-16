@@ -10,7 +10,10 @@ export enum KeyMod {
   MetaOrCtrl = process.platform === 'darwin' ? Meta : Ctrl,
 }
 
-export function get_keyboard_event_modifiers(event: KeyboardEvent | MouseEvent): KeyMod {
+export function get_keyboard_event_modifiers(
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  event: { altKey: boolean; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean },
+): KeyMod {
   let result = KeyMod.None;
   if (event.altKey) result |= KeyMod.Alt;
   if (event.ctrlKey) result |= KeyMod.Ctrl;

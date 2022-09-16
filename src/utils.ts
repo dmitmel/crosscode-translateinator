@@ -3,7 +3,8 @@ export function u32(num: number): number {
 }
 
 export function clamp(n: number, min: number, max: number): number {
-  return Math.min(Math.max(n, min), max);
+  // NOTE: if min > max, min will be returned
+  return Math.max(min, Math.min(max, n));
 }
 
 export function random(min = 0, max = 1): number {
@@ -172,7 +173,7 @@ export function binary_search(
       }
     }
     if (found || !strict) {
-      result = hi - 1;
+      result = Math.max(hi - 1, start);
     }
 
     //
@@ -194,7 +195,7 @@ export function binary_search(
       }
     }
     if (!found && !strict) {
-      result = Math.max(lo - 1, 0);
+      result = Math.max(lo - 1, start);
     }
   }
 

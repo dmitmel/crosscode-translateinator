@@ -434,6 +434,8 @@ export class FileTree extends BaseAppObject<FileTree> {
 }
 
 export class FileTreeFile {
+  public readonly obj_id: number = utils.new_gui_id();
+
   public constructor(public readonly path: string) {}
 
   public get name(): string {
@@ -444,10 +446,18 @@ export class FileTreeFile {
       return this.path.slice(idx + 1);
     }
   }
+
+  public get is_dir(): boolean {
+    return false;
+  }
 }
 
 export class FileTreeDir extends FileTreeFile {
   public readonly children: ReadonlySet<string> = new Set<string>();
+
+  public override get is_dir(): boolean {
+    return true;
+  }
 }
 
 export class Project {

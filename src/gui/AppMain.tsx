@@ -8,6 +8,7 @@ import { AppMainCtx } from './AppMainCtx';
 import { HBoxGui, VBoxGui } from './Box';
 import { EditorGui } from './Editor';
 import { ExplorerGui } from './Explorer';
+import { QuickActionsGui } from './QuickActions';
 import { StatusBarGui } from './StatusBar';
 
 export const SOURCE_CODE_URL = 'https://github.com/dmitmel/crosscode-translateinator';
@@ -24,8 +25,8 @@ export class AppMainGui extends React.Component<unknown, unknown> {
     nw_window.on('closed', this.on_nw_window_closing);
 
     window.addEventListener('beforeunload', this.on_before_page_unload);
-    window.addEventListener('keydown', this.on_global_key_down);
-    window.addEventListener('keyup', this.on_global_key_up);
+    window.addEventListener('keydown', this.on_global_key_down, { capture: true });
+    window.addEventListener('keyup', this.on_global_key_up, { capture: true });
 
     // TODO: menubar.createMacBuiltin()
     let ctrl_key = process.platform === 'darwin' ? 'cmd' : 'ctrl';
@@ -166,8 +167,8 @@ export class AppMainGui extends React.Component<unknown, unknown> {
     nw_window.removeListener('closed', this.on_nw_window_closing);
 
     window.removeEventListener('beforeunload', this.on_before_page_unload);
-    window.removeEventListener('keydown', this.on_global_key_down);
-    window.removeEventListener('keyup', this.on_global_key_up);
+    window.removeEventListener('keydown', this.on_global_key_down, { capture: true });
+    window.removeEventListener('keyup', this.on_global_key_up, { capture: true });
 
     nw_window.menu = null;
   }
@@ -213,6 +214,7 @@ export class AppMainGui extends React.Component<unknown, unknown> {
             </HBoxGui>
             <StatusBarGui />
           </VBoxGui>
+          <QuickActionsGui />
         </div>
       </AppMainCtx.Provider>
     );

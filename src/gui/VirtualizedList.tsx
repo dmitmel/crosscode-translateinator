@@ -76,13 +76,13 @@ import * as React from 'react';
 import * as utils from '../utils';
 import { WrapperGui } from './Box';
 
-export interface VirtListItemFnProps<T> {
+export interface VirtListItemFnProps<T = unknown> {
   list: VirtualizedListGui<T>;
   index: number;
   data: T;
 }
 
-export interface VirtListContainerFnProps<T> {
+export interface VirtListContainerFnProps<T = unknown> {
   list: VirtualizedListGui<T>;
   inner_ref: React.RefCallback<HTMLElement>;
   className?: string;
@@ -91,11 +91,11 @@ export interface VirtListContainerFnProps<T> {
   children: React.ReactNode;
 }
 
-interface VirtualizedListGuiInternalProps<T> {
+interface VirtualizedListGuiInternalProps<T = unknown> {
   className?: string;
   style?: React.CSSProperties;
   item_count: number;
-  item_data: T;
+  item_data?: T;
   // Unlike react-window I use render props because that allows the user of the
   // component to select which props they want to pass to the item components,
   // which avoids problems (missing and/or excessive re-renders) when the item
@@ -120,7 +120,7 @@ interface VirtualizedListGuiInternalProps<T> {
 // This will create a type where all props that are in `defaultProps` are
 // marked as optional, while my code can continue relying on the internal props
 // type where everything is non-optional.
-export type VirtualizedListGuiProps<T> = JSX.LibraryManagedAttributes<
+export type VirtualizedListGuiProps<T = unknown> = JSX.LibraryManagedAttributes<
   typeof VirtualizedListGui,
   VirtualizedListGuiInternalProps<T>
 >;
@@ -161,7 +161,7 @@ export enum VirtListScrollAlign {
   Smart = 'smart',
 }
 
-export class VirtualizedListGui<T> extends React.Component<
+export class VirtualizedListGui<T = unknown> extends React.Component<
   VirtualizedListGuiInternalProps<T>,
   VirtualizedListGuiState,
   VirtualizedListGuiSnapshot
@@ -187,7 +187,7 @@ export class VirtualizedListGui<T> extends React.Component<
   };
 
   public static readonly defaultProps: Pick<
-    VirtualizedListGuiInternalProps<unknown>,
+    VirtualizedListGuiInternalProps,
     | 'render_container'
     | 'overscan_count'
     | 'fixed_size_items'
@@ -341,6 +341,10 @@ export class VirtualizedListGui<T> extends React.Component<
     for (let i = slice_start; i < slice_end; i++) {
       let item_elem = this.get_item_element(i)!;
       let measurement = item_measurements[i];
+      // This prevents crashes if a parent of the list or the list itself has
+      // `display: none`.
+      // <https://github.com/jquery/jquery/blob/3.6.1/src/css/hiddenVisibleSelectors.js#L11-L13>
+      if (item_elem.getClientRects().length === 0) continue;
       let new_size = item_elem.offsetHeight;
       let old_size = measurement.real_size;
       if (old_size < 0) {
@@ -448,14 +452,15 @@ export class VirtualizedListGui<T> extends React.Component<
       // scroll offset will change by just a little bit and be somewhere close
       // to the currently rendered slice.
       const find_item_by_offset = (target_offset: number, is_last: boolean): number => {
+        let cmp: (a: number, b: number) => boolean = is_last ? (a, b) => a <= b : (a, b) => a < b;
         let result_index = utils.binary_search(
           0,
           item_count,
           (index: number): number => {
             let measurement = this.item_measurements[index];
-            if (target_offset < measurement.offset) {
+            if (cmp(target_offset, measurement.offset)) {
               return 1;
-            } else if (target_offset < measurement.offset + measurement.size) {
+            } else if (cmp(target_offset, measurement.offset + measurement.size)) {
               return 0;
             } else {
               return -1;
@@ -587,7 +592,7 @@ export class VirtualizedListGui<T> extends React.Component<
     if (align !== VirtListScrollAlign.Smart) return align;
     let scroll_offset = this.get_scroll_offset();
     let viewport_size = this.get_viewport_size();
-    if (offset - viewport_size <= scroll_offset && scroll_offset < offset + size) {
+    if (offset - viewport_size < scroll_offset && scroll_offset < offset + size) {
       // The item is in the viewport, or at the very least partially visible.
       return VirtListScrollAlign.Auto;
     } else {
@@ -600,14 +605,19 @@ export class VirtualizedListGui<T> extends React.Component<
     this.set_scroll_offset(this.align_scroll_offset(target_offset, 0, align));
   }
 
-  public scroll_to_item(target_index: number, align?: VirtListScrollAlign | null): void {
+  public scroll_to_item(
+    target_index: number,
+    align?: VirtListScrollAlign | null,
+    callback?: (() => void) | null,
+  ): void {
     this.scheduled_scroll_hook = null;
     align ??= VirtListScrollAlign.Smart;
-    target_index = utils.clamp(target_index, 0, this.props.item_count);
+    let { item_count } = this.props;
+    target_index = utils.clamp(target_index, 0, item_count);
 
     let item_elem = this.get_item_element(target_index);
-    let item_offset: number;
-    let item_size: number;
+    let item_offset = 0;
+    let item_size = 0;
     if (item_elem != null) {
       item_offset = item_elem.offsetTop;
       // `offsetTop` is calculated relative to the offsetParent, not to the
@@ -619,10 +629,13 @@ export class VirtualizedListGui<T> extends React.Component<
         item_offset -= parent_elem.offsetTop;
       }
       item_size = item_elem.offsetHeight;
-    } else {
+    } else if (target_index < item_count) {
       let measurement = this.item_measurements[target_index];
       item_offset = measurement.offset;
       item_size = measurement.size;
+    } else if (item_count > 0) {
+      let measurement = this.item_measurements[item_count - 1];
+      item_offset = measurement.offset + measurement.size;
     }
 
     align = this.normalize_smart_align(item_offset, item_size, align);
@@ -630,13 +643,16 @@ export class VirtualizedListGui<T> extends React.Component<
     // `scrollTop` because if the scroll position doesn't change, the `scroll`
     // event handler is not invoked.
     let target_offset = this.align_scroll_offset(item_offset, item_size, align);
+    target_offset = this.clamp_scroll_offset(target_offset);
     if (this.get_scroll_offset() !== target_offset) {
       this.scheduled_scroll_hook = () => {
         this.scheduled_scroll_hook = null;
-        this.scroll_to_item(target_index, align);
+        this.scroll_to_item(target_index, align, callback);
       };
       // This will implicitly call the on_scroll handler.
       this.set_scroll_offset(target_offset);
+    } else {
+      callback?.();
     }
   }
 
@@ -674,7 +690,7 @@ export class VirtualizedListGui<T> extends React.Component<
 
     let items: React.ReactNode[] = [];
     for (let i = slice_start; i < slice_end; i++) {
-      items.push(props.render_item({ list: this, index: i, data: props.item_data }));
+      items.push(props.render_item({ list: this, index: i, data: props.item_data! }));
     }
 
     return this.props.render_container({
@@ -688,7 +704,9 @@ export class VirtualizedListGui<T> extends React.Component<
   }
 }
 
-export function VirtListContainerGui<T>(props: VirtListContainerFnProps<T>): React.ReactElement {
+export function VirtListContainerGui<T = unknown>(
+  props: VirtListContainerFnProps<T>,
+): React.ReactElement {
   let { list } = props;
   return (
     <WrapperGui

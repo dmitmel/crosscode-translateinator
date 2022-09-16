@@ -75,11 +75,13 @@ overrides:
           format: null
 
         - selector: method
-          filter: 'componentDidMount|componentDidUpdate|componentWillUnmount|getSnapshotBeforeUpdate|toString'
+          filter: '^(?:componentDidMount|componentDidUpdate|componentWillUnmount|getSnapshotBeforeUpdate|toString)$'
           format: null
         - selector: property
-          filter: 'contextType|defaultProps|className'
+          filter: '^(?:contextType|defaultProps|className)$'
           format: null
+
+      '@typescript-eslint/no-use-before-define': off
 
   - files: 'src/mod/**/*.js'
     globals:
