@@ -590,6 +590,7 @@ export class NewTranslationGui extends React.Component<
   };
 
   public override render(): React.ReactNode {
+    let { text_area_height } = this.state;
     return (
       <WrapperGui allow_overflow className="Fragment-NewTranslation">
         <textarea
@@ -601,11 +602,10 @@ export class NewTranslationGui extends React.Component<
           autoComplete="off"
           spellCheck={false}
           rows={2}
-          style={
-            this.state.text_area_height > 0
-              ? { height: this.state.text_area_height, overflow: 'hidden' }
-              : {}
-          }
+          style={{
+            height: text_area_height > 0 ? text_area_height : null!,
+            overflow: text_area_height > 0 ? 'hidden' : null!,
+          }}
           ref={this.text_area_ref}
         />
         <HBoxGui className="Fragment-Buttons" align_items="baseline">

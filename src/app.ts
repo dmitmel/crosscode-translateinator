@@ -170,6 +170,8 @@ export class AppMain {
       }, 0);
     }
   }
+
+  public event_quick_actions_pick = new Event2();
 }
 
 export abstract class BaseAppObject<T extends object = object> {

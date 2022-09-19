@@ -5,6 +5,8 @@ import cc from 'clsx';
 import { Fzf, FzfResultItem } from 'fzf';
 import * as React from 'react';
 
+import { FileType } from '../app';
+import { KeyCode, KeyMod, KeyStroke } from '../gui';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
 import { WrapperGui } from './Box';
@@ -15,6 +17,7 @@ import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './
 export interface QuickActionsEntry {
   readonly id: number;
   readonly label: string;
+  readonly on_selected: () => void;
 }
 
 export type QuickListMatchedEntry = FzfResultItem<QuickActionsEntry>;
@@ -24,6 +27,7 @@ export interface QuickActionsGuiProps {
 }
 
 export interface QuickActionsGuiState {
+  is_visible: boolean;
   filter_value: string;
   entries: Fzf<readonly QuickActionsEntry[]>;
   matched_entries: readonly QuickListMatchedEntry[];
@@ -35,6 +39,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
   public override state: Readonly<QuickActionsGuiState> = {
+    is_visible: false,
     filter_value: '',
     entries: this.create_fzf([]),
     matched_entries: [],
@@ -57,10 +62,9 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     let { app } = this.context;
     app.event_project_opened.on(this.on_entries_updated);
     app.event_project_closed.on(this.on_entries_updated);
+    app.event_quick_actions_pick.on(this.on_picker_requested);
 
     this.update_list_max_height();
-
-    this.input_ref.current!.focus();
   }
 
   public override componentWillUnmount(): void {
@@ -69,6 +73,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     let { app } = this.context;
     app.event_project_opened.off(this.on_entries_updated);
     app.event_project_closed.off(this.on_entries_updated);
+    app.event_quick_actions_pick.off(this.on_picker_requested);
   }
 
   private on_entries_updated = (): void => {
@@ -77,11 +82,20 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     let file_tree = app.project_game_files_tree;
     for (let file of file_tree.files.values()) {
       if (file !== file_tree.root_dir && !file.is_dir) {
-        entries.push({ id: file.obj_id, label: file.path });
+        let { path } = file;
+        entries.push({
+          id: file.obj_id,
+          label: path,
+          on_selected: () => app.open_file(FileType.GameFile, path),
+        });
       }
     }
     this.setState({ entries: this.create_fzf(entries) });
     this.match_entries();
+  };
+
+  private on_picker_requested = (): void => {
+    this.show();
   };
 
   private create_fzf(entries: readonly QuickActionsEntry[]): Fzf<readonly QuickActionsEntry[]> {
@@ -132,10 +146,25 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
 
   private on_entry_click = (
     entry: QuickListMatchedEntry,
-    _event: React.MouseEvent<HTMLButtonElement>,
+    event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
-    console.log(entry);
+    event.preventDefault();
+    entry.item.on_selected();
   };
+
+  public show(callback?: (() => void) | null): void {
+    this.setState({ is_visible: true, filter_value: '', selected_index: 0 }, () => {
+      this.input_ref.current!.focus();
+      callback?.();
+    });
+    this.match_entries();
+  }
+
+  public hide(callback?: (() => void) | null): void {
+    this.setState({ is_visible: false, filter_value: '', matched_entries: [] }, () => {
+      callback?.();
+    });
+  }
 
   public select(
     get_index: (prev_index: number, list_length: number) => number,
@@ -157,25 +186,28 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
   }
 
   private on_key_down = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    let key_stroke = new KeyStroke(event.nativeEvent);
+
     let input = this.input_ref.current;
-    let should_focus = input != null && event.target !== input;
+    let input_is_focused = input != null && event.target === input;
     let focus_item_callback = (): void => {
-      if (!should_focus) return;
+      if (input_is_focused) return;
       this.get_entry(this.state.selected_index)?.root_ref.current!.focus();
     };
 
-    switch (event.key) {
-      case 'ArrowUp': {
+    switch (key_stroke.code) {
+      case KeyCode.ArrowUp: {
         this.select((i, len) => (i - 1 > 0 ? i - 1 : len - 1), focus_item_callback);
         event.preventDefault();
         break;
       }
-      case 'ArrowDown': {
+      case KeyCode.ArrowDown: {
         this.select((i, len) => (i + 1 < len ? i + 1 : 0), focus_item_callback);
         event.preventDefault();
         break;
       }
-      case 'PageUp': {
+
+      case KeyCode.PageUp: {
         this.select((i) => {
           let list = this.list_ref.current!;
           let start = list.state.visible_slice_start;
@@ -185,7 +217,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
         event.preventDefault();
         break;
       }
-      case 'PageDown': {
+      case KeyCode.PageDown: {
         this.select((i) => {
           let list = this.list_ref.current!;
           let start = list.state.visible_slice_start;
@@ -195,13 +227,37 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
         event.preventDefault();
         break;
       }
-      case 'Home': {
-        this.select((_i) => 0, focus_item_callback);
+
+      case KeyCode.Home: {
+        if (!input_is_focused || key_stroke.modifiers === KeyMod.Cmd) {
+          this.select((_i) => 0, focus_item_callback);
+          event.preventDefault();
+        }
+        break;
+      }
+      case KeyCode.End: {
+        if (!input_is_focused || key_stroke.modifiers === KeyMod.Cmd) {
+          this.select((_i, len) => len - 1, focus_item_callback);
+          event.preventDefault();
+        }
+        break;
+      }
+
+      case KeyCode.Escape: {
+        this.hide();
         event.preventDefault();
         break;
       }
-      case 'End': {
-        this.select((_i, len) => len - 1, focus_item_callback);
+
+      case KeyCode.Enter: {
+        this.setState((state) => {
+          if (state.matched_entries.length > 0) {
+            let entry = state.matched_entries[state.selected_index];
+            entry.item.on_selected();
+          }
+          return null;
+        });
+        this.hide();
         event.preventDefault();
         break;
       }
@@ -213,6 +269,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
       <WrapperGui
         ref={this.root_ref}
         className={cc(this.props.className, 'QuickActions')}
+        style={{ display: this.state.is_visible ? null! : 'none' }}
         onKeyDown={this.on_key_down}>
         <WrapperGui className="QuickActions-Header">
           <TextInputGui
