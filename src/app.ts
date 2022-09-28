@@ -14,7 +14,7 @@ export class AppMain {
   public backend: backend.Backend;
 
   public constructor() {
-    utils.assert(!('__app__' in window));
+    ASSERT(!('__app__' in window));
     window.__app__ = this;
     // Proper initialization happens after the global reference has been
     // installed, so that if there is an exception thrown somewhere in the
@@ -72,7 +72,7 @@ export class AppMain {
   private current_tab_loading_promise: Promise<void> | null = null;
 
   public set_current_tab_index(index: number, trigger: TabChangeTrigger | null = null): void {
-    utils.assert(Number.isSafeInteger(index));
+    ASSERT(Number.isSafeInteger(index));
     index = this.clamp_tab_index(index);
     this.current_tab_index = index;
     let tab = this.opened_tabs[this.current_tab_index];
@@ -108,7 +108,7 @@ export class AppMain {
 
   public close_tab(index: number, trigger: TabChangeTrigger | null = null): void {
     let tab = this.opened_tabs[index];
-    utils.assert(tab != null);
+    ASSERT(tab != null);
     if (!tab.is_closeable) return;
     this.opened_tabs.splice(index, 1);
     this.event_tab_closed.fire(tab, index);
@@ -133,7 +133,7 @@ export class AppMain {
     index: number,
     trigger: CurrentFragmentChangeTrigger | null,
   ): void {
-    utils.assert(Number.isSafeInteger(index));
+    ASSERT(Number.isSafeInteger(index));
     index = utils.clamp(index, -1, this.current_fragment_list.length - 1);
     this.current_fragment_index = index;
     this.event_current_fragment_change.fire(trigger);
@@ -389,7 +389,7 @@ export class FileTree extends BaseAppObject<FileTree> {
 
   public get root_dir(): FileTreeDir {
     let root_dir = this.files.get(FileTree.ROOT_DIR);
-    utils.assert(root_dir instanceof FileTreeDir);
+    ASSERT(root_dir instanceof FileTreeDir);
     return root_dir;
   }
 

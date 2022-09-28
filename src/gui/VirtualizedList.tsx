@@ -468,7 +468,7 @@ export class VirtualizedListGui<T = unknown> extends React.Component<
           },
           { find_very_first: !is_last, find_very_last: is_last, find_strictly_equal: false },
         );
-        utils.assert(result_index != null);
+        ASSERT(result_index != null);
         return result_index;
       };
 

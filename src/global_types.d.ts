@@ -13,3 +13,6 @@ declare namespace chrome {
     function reload(): never;
   }
 }
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+declare function ASSERT(condition: boolean): asserts condition;

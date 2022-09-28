@@ -1,8 +1,10 @@
+// @ts-check
 const webpack = require('webpack');
 const paths = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const ts = require('typescript');
 
 /**
   @returns {webpack.Configuration}
@@ -44,6 +46,11 @@ module.exports = (_env, { mode }) => ({
         use: [
           {
             loader: 'ts-loader',
+            options: {
+              getCustomTransformers: (/** @type {ts.Program} */ program) => ({
+                before: [ts_assert_transformer(program)],
+              }),
+            },
           },
         ],
       },
@@ -103,3 +110,80 @@ module.exports = (_env, { mode }) => ({
     }),
   ],
 });
+
+// Inspiration: <https://github.com/4Catalyzer/babel-plugin-dev-expression/blob/v0.2.2/dev-expression.js>
+function ts_assert_transformer(/** @type {ts.Program} */ _program) {
+  /* eslint-disable no-undefined */
+  return (/** @type {ts.TransformationContext} */ context) => {
+    let { factory } = context;
+
+    /** @type {ts.UnscopedEmitHelper} */
+    let throw_helper = {
+      name: 'assert:throw',
+      scoped: false,
+      text: 'var __assert_throw = function(x) { throw x };',
+    };
+
+    let visitor = (/** @type {ts.Node} */ node) => {
+      let /** @type {ts.CallExpression} */ call_expr = null;
+      let is_statement = false;
+      if (ts.isExpressionStatement(node) && ts.isCallExpression(node.expression)) {
+        is_statement = true;
+        call_expr = node.expression;
+      } else if (ts.isCallExpression(node)) {
+        call_expr = node;
+      }
+
+      if (call_expr != null) {
+        let callee = call_expr.expression;
+        let args = call_expr.arguments;
+        if (ts.isIdentifier(callee) && callee.text === 'ASSERT' && args.length >= 1) {
+          let condition_expr = args[0];
+
+          let error_expr = factory.createNewExpression(
+            /*expression*/ factory.createIdentifier('Error'),
+            /*typeArguments*/ undefined,
+            /*argumentsArray*/ [
+              factory.createBinaryExpression(
+                /*left*/ factory.createStringLiteral('Assertion failed: '),
+                /*operator*/ factory.createToken(ts.SyntaxKind.PlusToken),
+                /*right*/ factory.createStringLiteral(condition_expr.getText()),
+              ),
+            ],
+          );
+
+          if (is_statement) {
+            node = factory.createIfStatement(
+              /*expression*/ factory.createPrefixUnaryExpression(
+                /*operator*/ ts.SyntaxKind.ExclamationToken,
+                /*operand*/ condition_expr,
+              ),
+              /*thenStatement*/ factory.createThrowStatement(/*expression*/ error_expr),
+              /*elseStatement*/ undefined,
+            );
+          } else {
+            context.requestEmitHelper(throw_helper);
+            node = factory.createConditionalExpression(
+              /*condition*/ condition_expr,
+              /*questionToken*/ undefined,
+              /*whenTrue*/ factory.createVoidZero(),
+              /*colonToken*/ undefined,
+              /*whenFalse*/ factory.createCallExpression(
+                /*expression*/ factory.createIdentifier('__assert_throw'),
+                /*typeArguments*/ undefined,
+                /*argumentsArray*/ [error_expr],
+              ),
+            );
+          }
+        }
+      }
+
+      return ts.visitEachChild(node, visitor, context);
+    };
+
+    return (/** @type {ts.SourceFile} */ source_file) => {
+      return ts.visitNode(source_file, visitor);
+    };
+  };
+  /* eslint-enable no-undefined */
+}

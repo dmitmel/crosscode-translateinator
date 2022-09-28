@@ -273,7 +273,7 @@ export class Backend {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   public async connect(): Promise<void> {
-    utils.assert(this.transport == null);
+    ASSERT(this.transport == null);
 
     this.transport = new crosslocale_bridge.Backend();
     void this.run_message_receiver_loop();
@@ -311,14 +311,14 @@ export class Backend {
   }
 
   private send_message_internal(message: Message): void {
-    utils.assert(this.transport != null);
+    ASSERT(this.transport != null);
     let text = JSON.stringify(message);
     this.transport.send_message(Buffer.from(text, 'utf8'));
   }
 
   private recv_message_internal(text: Buffer): void {
     // The backend may send messages after disconnection.
-    // utils.assert(this.transport != null);
+    // ASSERT(this.transport != null);
     let message: Message = JSON.parse(text.toString('utf8'));
     let [msg_type] = message;
     switch (msg_type) {
@@ -374,7 +374,7 @@ export class Backend {
     method: M,
     params: MessageRegistry[M]['request'],
   ): Promise<MessageRegistry[M]['response']> {
-    utils.assert(this.transport != null);
+    ASSERT(this.transport != null);
 
     this.current_request_id = Math.max(this.current_request_id, 1);
     let id = this.current_request_id;
@@ -394,7 +394,7 @@ export class Backend {
   }
 
   public disconnect(): void {
-    utils.assert(this.transport != null);
+    ASSERT(this.transport != null);
 
     this.transport.close();
     this.transport = null;

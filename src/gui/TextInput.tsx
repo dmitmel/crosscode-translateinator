@@ -125,7 +125,7 @@ export class TextAreaGui extends React.Component<TextAreaGuiProps, unknown> {
   public ref: HTMLTextAreaElement | null = null;
 
   public override componentDidMount(): void {
-    utils.assert(this.ref != null);
+    ASSERT(this.ref != null);
     this.ref.addEventListener('input', this.update_size);
     window.addEventListener('resize', this.update_size);
 
@@ -133,13 +133,13 @@ export class TextAreaGui extends React.Component<TextAreaGuiProps, unknown> {
   }
 
   public override componentWillUnmount(): void {
-    utils.assert(this.ref != null);
+    ASSERT(this.ref != null);
     this.ref.removeEventListener('input', this.update_size);
     window.removeEventListener('resize', this.update_size);
   }
 
   public update_size = (): void => {
-    utils.assert(this.ref != null);
+    ASSERT(this.ref != null);
     let height = TextAreaGui.compute_text_area_height(this.ref);
     this.ref.style.setProperty('height', `${height}px`, 'important');
     this.ref.style.setProperty('overflow', 'hidden', 'important');

@@ -29,6 +29,7 @@ export function escape_html(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
+/** @deprecated */
 export function assert(condition: boolean): asserts condition {
   if (!condition) {
     throw new Error('Assertion failed');
@@ -55,9 +56,9 @@ export function strip_prefix(str: string, prefix: string): string {
 }
 
 export function sanity_check_slice(start: number, end: number, list_len: number): void {
-  assert(start <= end);
-  assert(0 <= start && start <= list_len);
-  assert(0 <= end && end <= list_len);
+  ASSERT(start <= end);
+  ASSERT(0 <= start && start <= list_len);
+  ASSERT(0 <= end && end <= list_len);
 }
 
 // <https://docs.python.org/3/library/stdtypes.html#dict.setdefault>
