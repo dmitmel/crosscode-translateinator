@@ -140,6 +140,10 @@ function ts_assert_transformer(/** @type {ts.Program} */ _program) {
         if (ts.isIdentifier(callee) && callee.text === 'ASSERT' && args.length >= 1) {
           let condition_expr = args[0];
 
+          let inv_condition_expr = factory.createPrefixUnaryExpression(
+            /*operator*/ ts.SyntaxKind.ExclamationToken,
+            /*operand*/ condition_expr,
+          );
           let error_expr = factory.createNewExpression(
             /*expression*/ factory.createIdentifier('Error'),
             /*typeArguments*/ undefined,
@@ -153,26 +157,35 @@ function ts_assert_transformer(/** @type {ts.Program} */ _program) {
           );
 
           if (is_statement) {
-            node = factory.createIfStatement(
-              /*expression*/ factory.createPrefixUnaryExpression(
-                /*operator*/ ts.SyntaxKind.ExclamationToken,
-                /*operand*/ condition_expr,
+            node = ts.setTextRange(
+              factory.createIfStatement(
+                /*expression*/ inv_condition_expr,
+                /*thenStatement*/ ts.setTextRange(
+                  factory.createThrowStatement(/*expression*/ error_expr),
+                  call_expr,
+                ),
+                /*elseStatement*/ undefined,
               ),
-              /*thenStatement*/ factory.createThrowStatement(/*expression*/ error_expr),
-              /*elseStatement*/ undefined,
+              node,
             );
           } else {
             context.requestEmitHelper(throw_helper);
-            node = factory.createConditionalExpression(
-              /*condition*/ condition_expr,
-              /*questionToken*/ undefined,
-              /*whenTrue*/ factory.createVoidZero(),
-              /*colonToken*/ undefined,
-              /*whenFalse*/ factory.createCallExpression(
-                /*expression*/ factory.createIdentifier('__assert_throw'),
-                /*typeArguments*/ undefined,
-                /*argumentsArray*/ [error_expr],
+            node = ts.setTextRange(
+              factory.createConditionalExpression(
+                /*condition*/ inv_condition_expr,
+                /*questionToken*/ undefined,
+                /*whenTrue*/ ts.setTextRange(
+                  factory.createCallExpression(
+                    /*expression*/ factory.createIdentifier('__assert_throw'),
+                    /*typeArguments*/ undefined,
+                    /*argumentsArray*/ [error_expr],
+                  ),
+                  call_expr,
+                ),
+                /*colonToken*/ undefined,
+                /*whenFalse*/ ts.setTextRange(factory.createVoidZero(), node),
               ),
+              node,
             );
           }
         }
