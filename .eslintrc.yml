@@ -74,11 +74,14 @@ overrides:
         - selector: [objectLiteralProperty, objectLiteralMethod]
           format: null
 
+        - selector: [classProperty, classMethod, accessor]
+          modifiers: [override]
+          format: null
         - selector: method
-          filter: '^(?:componentDidMount|componentDidUpdate|componentWillUnmount|getSnapshotBeforeUpdate|toString)$'
+          filter: '^toString$'
           format: null
         - selector: property
-          filter: '^(?:contextType|defaultProps|className)$'
+          filter: '^defaultProps$|^className$'
           format: null
 
       '@typescript-eslint/no-use-before-define': off
