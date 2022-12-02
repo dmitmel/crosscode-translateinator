@@ -244,29 +244,64 @@ export class ListBoxGui<T = unknown> extends React.Component<ListBoxGuiProps<T>,
       this.set_focus(null);
     });
 
-    const add_motion_keymap = (key: KeyStrokeEncoded, index_kind: ListBoxGetIndexKind): void => {
-      this.keymap_layer.add(key, () => {
-        this.set_focus(this.get_index(index_kind));
-      });
+    const is_input_focused = (event: KeyboardEvent): boolean => {
+      let { target } = event;
+      return (
+        target instanceof Element && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
+      );
+    };
+    const is_input_not_focused = (event: KeyboardEvent): boolean => !is_input_focused(event);
 
-      this.keymap_layer.add(KeyMod.Shift | key, {
-        enabled: () => {
-          return this.props.allow_multi_selection;
-        },
-        handler: () => {
-          let prev_focused_index = this.focused_index;
-          this.set_focus(this.get_index(index_kind), { set_selection: false });
-          this.extend_selection(prev_focused_index, this.focused_index);
-        },
-      });
+    const add_motion_keymap = (
+      key: KeyStrokeEncoded,
+      index_kind: ListBoxGetIndexKind,
+      input_focused_key_mod = KeyMod.None,
+    ): void => {
+      const normal_motion_handler = (event: KeyboardEvent): void => {
+        this.set_focus(this.get_index(index_kind), { set_dom_focus: !is_input_focused(event) });
+      };
+      const select_motion_handler = (event: KeyboardEvent): void => {
+        if (!this.props.allow_multi_selection) {
+          normal_motion_handler(event);
+          return;
+        }
+        let prev_focused_index = this.focused_index;
+        this.set_focus(this.get_index(index_kind), {
+          set_dom_focus: !is_input_focused(event),
+          set_selection: false,
+        });
+        this.extend_selection(prev_focused_index, this.focused_index);
+      };
+
+      if (input_focused_key_mod === KeyMod.None) {
+        this.keymap_layer.add(key, normal_motion_handler);
+        this.keymap_layer.add(KeyMod.Shift | key, select_motion_handler);
+      } else {
+        this.keymap_layer.add(key, {
+          enabled: is_input_not_focused,
+          handler: normal_motion_handler,
+        });
+        this.keymap_layer.add(KeyMod.Shift | key, {
+          enabled: is_input_not_focused,
+          handler: select_motion_handler,
+        });
+        this.keymap_layer.add(input_focused_key_mod | key, {
+          enabled: is_input_focused,
+          handler: normal_motion_handler,
+        });
+        this.keymap_layer.add(input_focused_key_mod | KeyMod.Shift | key, {
+          enabled: is_input_focused,
+          handler: select_motion_handler,
+        });
+      }
     };
 
     add_motion_keymap(KeyCode.ArrowUp, ListBoxGetIndexKind.Prev);
     add_motion_keymap(KeyCode.ArrowDown, ListBoxGetIndexKind.Next);
     add_motion_keymap(KeyCode.PageUp, ListBoxGetIndexKind.PrevPage);
     add_motion_keymap(KeyCode.PageDown, ListBoxGetIndexKind.NextPage);
-    add_motion_keymap(KeyCode.Home, ListBoxGetIndexKind.First);
-    add_motion_keymap(KeyCode.End, ListBoxGetIndexKind.Last);
+    add_motion_keymap(KeyCode.Home, ListBoxGetIndexKind.First, KeyMod.Cmd);
+    add_motion_keymap(KeyCode.End, ListBoxGetIndexKind.Last, KeyMod.Cmd);
   }
 
   private on_key_down_capture = (event: React.KeyboardEvent): void => {

@@ -7,7 +7,7 @@ import * as React from 'react';
 import { FileType } from '../app';
 import { AppMainCtx } from './AppMainCtx';
 import { WrapperGui } from './Box';
-import { KeyCode, KeymapActionsLayer, KeyMod, KeyStrokeEncoded } from './keymap';
+import { KeyCode, KeymapActionsLayer } from './keymap';
 import { ListBoxGetIndexKind, ListBoxGui, ListBoxItem } from './ListBox';
 import { TextInputGui } from './TextInput';
 import { VirtualizedListGui } from './VirtualizedList';
@@ -169,51 +169,11 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     this.keymap_layer.add(KeyCode.Escape, () => {
       this.hide();
     });
-
-    this.keymap_layer.add(KeyCode.Enter, () => {
-      this.list_ref.current!.activate_selected();
-    });
-
-    const is_input_focused = (event: KeyboardEvent): boolean => {
-      let input = this.input_ref.current;
-      return input != null && event.target === input;
-    };
-
-    const add_motion_keymap = (
-      key: KeyStrokeEncoded,
-      index_kind: ListBoxGetIndexKind,
-      input_focused_key_mod: KeyMod = KeyMod.None,
-    ): void => {
-      const select = (set_dom_focus: boolean): void => {
-        let list = this.list_ref.current!;
-        list.set_focus(list.get_index(index_kind), { set_dom_focus });
-      };
-      if (input_focused_key_mod === KeyMod.None) {
-        this.keymap_layer.add(key, (event) => {
-          select(!is_input_focused(event));
-        });
-      } else {
-        this.keymap_layer.add(key, {
-          enabled: (event) => !is_input_focused(event),
-          handler: () => select(true),
-        });
-        this.keymap_layer.add(input_focused_key_mod | key, {
-          enabled: (event) => is_input_focused(event),
-          handler: () => select(false),
-        });
-      }
-    };
-
-    add_motion_keymap(KeyCode.ArrowUp, ListBoxGetIndexKind.Prev);
-    add_motion_keymap(KeyCode.ArrowDown, ListBoxGetIndexKind.Next);
-    add_motion_keymap(KeyCode.PageUp, ListBoxGetIndexKind.PrevPage);
-    add_motion_keymap(KeyCode.PageDown, ListBoxGetIndexKind.NextPage);
-    add_motion_keymap(KeyCode.Home, ListBoxGetIndexKind.First, KeyMod.Cmd);
-    add_motion_keymap(KeyCode.End, ListBoxGetIndexKind.Last, KeyMod.Cmd);
   }
 
   private on_key_down_capture = (event: React.KeyboardEvent): void => {
     let { keymap } = this.context;
+    keymap.add_layer_to_event(event.nativeEvent, this.list_ref.current!.keymap_layer);
     keymap.add_layer_to_event(event.nativeEvent, this.keymap_layer);
   };
 
