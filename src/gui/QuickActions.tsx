@@ -6,10 +6,10 @@ import { Fzf, FzfResultItem } from 'fzf';
 import * as React from 'react';
 
 import { FileType } from '../app';
-import { KeyCode, KeyMod, KeyStroke } from '../gui';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
 import { WrapperGui } from './Box';
+import { KeyCode, KeymapActionsLayer, KeyMod, KeyStrokeEncoded } from './keymap';
 import { LabelGui } from './Label';
 import { TextInputGui } from './TextInput';
 import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
@@ -48,6 +48,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
   };
 
   public root_ref = React.createRef<HTMLDivElement>();
+  public keymap_layer = new KeymapActionsLayer();
   public list_ref = React.createRef<VirtualizedListGui>();
   public input_ref = React.createRef<HTMLInputElement>();
   public entries_map = new WeakMap<QuickListMatchedEntry, QuickActionsEntryGui>();
@@ -57,6 +58,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
   }
 
   public override componentDidMount(): void {
+    this.setup_keymap();
     window.addEventListener('resize', this.on_window_resized);
 
     let { app } = this.context;
@@ -185,83 +187,77 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     );
   }
 
-  private on_key_down = (event: React.KeyboardEvent<HTMLDivElement>): void => {
-    let key_stroke = new KeyStroke(event.nativeEvent);
+  private setup_keymap(): void {
+    this.keymap_layer.add(KeyCode.Escape, () => {
+      this.hide();
+    });
 
-    let input = this.input_ref.current;
-    let input_is_focused = input != null && event.target === input;
-    let focus_item_callback = (): void => {
-      if (input_is_focused) return;
+    this.keymap_layer.add(KeyCode.Enter, () => {
+      this.setState((state) => {
+        if (state.matched_entries.length > 0) {
+          let entry = state.matched_entries[state.selected_index];
+          entry.item.on_selected();
+        }
+        return null;
+      });
+      this.hide();
+    });
+
+    const is_input_focused = (event: KeyboardEvent): boolean => {
+      let input = this.input_ref.current;
+      return input != null && event.target === input;
+    };
+
+    const focus_current_item = (): void => {
       this.get_entry(this.state.selected_index)?.root_ref.current!.focus();
     };
 
-    switch (key_stroke.code) {
-      case KeyCode.ArrowUp: {
-        this.select((i, len) => (i - 1 > 0 ? i - 1 : len - 1), focus_item_callback);
-        event.preventDefault();
-        break;
-      }
-      case KeyCode.ArrowDown: {
-        this.select((i, len) => (i + 1 < len ? i + 1 : 0), focus_item_callback);
-        event.preventDefault();
-        break;
-      }
-
-      case KeyCode.PageUp: {
-        this.select((i) => {
-          let list = this.list_ref.current!;
-          let start = list.state.visible_slice_start;
-          let end = list.state.visible_slice_end;
-          return i !== start ? start : i - (end - start);
-        }, focus_item_callback);
-        event.preventDefault();
-        break;
-      }
-      case KeyCode.PageDown: {
-        this.select((i) => {
-          let list = this.list_ref.current!;
-          let start = list.state.visible_slice_start;
-          let end = list.state.visible_slice_end;
-          return i !== end - 1 ? end - 1 : i + (end - start);
-        }, focus_item_callback);
-        event.preventDefault();
-        break;
-      }
-
-      case KeyCode.Home: {
-        if (!input_is_focused || key_stroke.modifiers === KeyMod.Cmd) {
-          this.select((_i) => 0, focus_item_callback);
-          event.preventDefault();
-        }
-        break;
-      }
-      case KeyCode.End: {
-        if (!input_is_focused || key_stroke.modifiers === KeyMod.Cmd) {
-          this.select((_i, len) => len - 1, focus_item_callback);
-          event.preventDefault();
-        }
-        break;
-      }
-
-      case KeyCode.Escape: {
-        this.hide();
-        event.preventDefault();
-        break;
-      }
-
-      case KeyCode.Enter: {
-        this.setState((state) => {
-          if (state.matched_entries.length > 0) {
-            let entry = state.matched_entries[state.selected_index];
-            entry.item.on_selected();
+    const add_motion_keymap = (
+      key: KeyStrokeEncoded,
+      get_index: (prev_index: number, list_length: number) => number,
+      input_focused_key_mod: KeyMod = KeyMod.None,
+    ): void => {
+      if (input_focused_key_mod === KeyMod.None) {
+        this.keymap_layer.add(key, (event) => {
+          if (!is_input_focused(event)) {
+            this.select(get_index, focus_current_item);
+          } else {
+            this.select(get_index);
           }
-          return null;
         });
-        this.hide();
-        event.preventDefault();
-        break;
+      } else {
+        this.keymap_layer.add(key, {
+          enabled: (event) => !is_input_focused(event),
+          handler: () => this.select(get_index, focus_current_item),
+        });
+        this.keymap_layer.add(input_focused_key_mod | key, {
+          enabled: (event) => is_input_focused(event),
+          handler: () => this.select(get_index),
+        });
       }
-    }
+    };
+
+    add_motion_keymap(KeyCode.ArrowUp, (i, len) => (i - 1 > 0 ? i - 1 : len - 1));
+    add_motion_keymap(KeyCode.ArrowDown, (i, len) => (i + 1 < len ? i + 1 : 0));
+    add_motion_keymap(KeyCode.PageUp, (i) => {
+      let list = this.list_ref.current!;
+      let start = list.state.visible_slice_start;
+      let end = list.state.visible_slice_end;
+      return i !== start ? start : i - (end - start);
+    });
+    add_motion_keymap(KeyCode.PageDown, (i) => {
+      let list = this.list_ref.current!;
+      let start = list.state.visible_slice_start;
+      let end = list.state.visible_slice_end;
+      return i !== end - 1 ? end - 1 : i + (end - start);
+    });
+    add_motion_keymap(KeyCode.Home, (_i) => 0, KeyMod.Cmd);
+    add_motion_keymap(KeyCode.End, (_i, len) => len - 1, KeyMod.Cmd);
+  }
+
+  private on_key_down_capture = (event: React.KeyboardEvent): void => {
+    let { keymap } = this.context;
+    keymap.add_layer_to_event(event.nativeEvent, this.keymap_layer);
   };
 
   public override render(): React.ReactNode {
@@ -270,7 +266,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
         ref={this.root_ref}
         className={cc(this.props.className, 'QuickActions')}
         style={{ display: this.state.is_visible ? null! : 'none' }}
-        onKeyDown={this.on_key_down}>
+        onKeyDownCapture={this.on_key_down_capture}>
         <WrapperGui className="QuickActions-Header">
           <TextInputGui
             ref={this.input_ref}

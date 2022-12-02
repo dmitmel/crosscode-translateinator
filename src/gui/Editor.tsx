@@ -4,7 +4,6 @@ import cc from 'clsx';
 import * as React from 'react';
 
 import { CurrentFragmentChangeTrigger, FragmentRoData, TranslationRoData } from '../app';
-import * as gui from '../gui';
 import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
 import { BoxItemFillerGui, HBoxGui, VBoxGui, WrapperGui } from './Box';
@@ -12,6 +11,7 @@ import { IconButtonGui } from './Button';
 import { EditorTabListGui } from './EditorTabs';
 import { FancyTextGui } from './FancyText';
 import { IconGui, IconlikeTextGui } from './Icon';
+import { KeyMod } from './keymap';
 import { LabelGui } from './Label';
 import { TextAreaGui, TextInputGui } from './TextInput';
 import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
@@ -444,13 +444,13 @@ export class FragmentPathGui extends React.PureComponent<
   private is_ctrl_pressed = false;
 
   public override componentDidMount(): void {
-    let { app } = this.context;
-    app.event_global_key_modifiers_change.on(this.on_keymod_event);
+    let { keymap } = this.context;
+    keymap.event_global_key_modifiers_change.on(this.on_keymod_event);
   }
 
   public override componentWillUnmount(): void {
-    let { app } = this.context;
-    app.event_global_key_modifiers_change.off(this.on_keymod_event);
+    let { keymap } = this.context;
+    keymap.event_global_key_modifiers_change.off(this.on_keymod_event);
   }
 
   private on_mouse_hover = (_event: React.MouseEvent<HTMLElement>): void => {
@@ -463,8 +463,8 @@ export class FragmentPathGui extends React.PureComponent<
     this.update_clickable_state();
   };
 
-  private on_keymod_event = (state: gui.KeyMod): void => {
-    this.is_ctrl_pressed = state === gui.KeyMod.Ctrl;
+  private on_keymod_event = (state: KeyMod): void => {
+    this.is_ctrl_pressed = state === KeyMod.Ctrl;
     this.update_clickable_state();
   };
 

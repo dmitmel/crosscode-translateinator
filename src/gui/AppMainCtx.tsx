@@ -3,9 +3,11 @@
 import React from 'react';
 
 import { AppMain } from '../app';
+import { KeymapHelper } from './keymap';
 
 export interface AppMainCtx {
   readonly app: AppMain;
+  readonly keymap: KeymapHelper;
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention

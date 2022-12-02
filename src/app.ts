@@ -1,6 +1,5 @@
 import * as backend from './backend';
 import { Event2 } from './events';
-import * as gui from './gui';
 import * as utils from './utils';
 
 declare global {
@@ -137,13 +136,6 @@ export class AppMain {
     index = utils.clamp(index, -1, this.current_fragment_list.length - 1);
     this.current_fragment_index = index;
     this.event_current_fragment_change.fire(trigger);
-  }
-
-  public global_key_modifiers = gui.KeyMod.None;
-  public event_global_key_modifiers_change = new Event2<[state: gui.KeyMod]>();
-  public set_global_key_modifiers(state: gui.KeyMod): void {
-    this.global_key_modifiers = state;
-    this.event_global_key_modifiers_change.fire(state);
   }
 
   // Fragments received from the game window are queued and processed
