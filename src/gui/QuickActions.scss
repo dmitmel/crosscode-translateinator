@@ -23,12 +23,3 @@
     max-height: 0;
   }
 }
-
-.QuickActionsEntry {
-  padding: theme.$spacing (theme.$spacing * 2);
-}
-
-.QuickActionsEntryLabel .highlight {
-  font-weight: bold;
-  color: theme.$list-highlight-fg;
-}

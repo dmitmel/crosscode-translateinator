@@ -337,6 +337,6 @@ export class KeymapActionsLayer {
 
 export interface KeymapAction {
   prevent_default?: boolean;
-  enabled?: (event: KeyboardEvent, context: KeymapEventContext) => boolean;
+  enabled?: (event: KeyboardEvent, context: KeymapEventContext) => boolean | null | undefined;
   handler: (event: KeyboardEvent, context: KeymapEventContext) => boolean | void;
 }

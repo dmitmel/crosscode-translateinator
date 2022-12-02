@@ -21,7 +21,8 @@
   font-size: calc(15em / 16);
 }
 
-.TreeItem {
+.ExplorerSection-Name,
+.ListBoxItem.TreeItem {
   padding: theme.$spacing;
   padding-left: calc(#{theme.$spacing} + var(--TreeItem-depth, 0) * #{theme.$spacing} * 2.5);
   cursor: pointer;

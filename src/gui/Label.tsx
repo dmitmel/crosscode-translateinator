@@ -17,7 +17,7 @@ export const LabelGui = React.forwardRef(function LabelGui(
   return (
     <span
       ref={ref}
-      className={cc(className, {
+      className={cc(className, 'Label', {
         'Label-block': block,
         'Label-ellipsis': ellipsis,
         'Label-selectable': selectable,

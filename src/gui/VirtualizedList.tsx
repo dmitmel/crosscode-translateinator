@@ -74,35 +74,20 @@
 import * as React from 'react';
 
 import * as utils from '../utils';
-import { WrapperGui } from './Box';
+import { WrapperGui, WrapperGuiProps } from './Box';
 
-export interface VirtListItemFnProps<T = unknown> {
+export interface VirtListRenderFnProps<T = unknown> extends VirtualizedListGuiState {
   list: VirtualizedListGui<T>;
-  index: number;
   data: T;
-}
-
-export interface VirtListContainerFnProps<T = unknown> {
-  list: VirtualizedListGui<T>;
-  inner_ref: React.RefCallback<HTMLElement>;
-  className?: string;
-  style?: React.CSSProperties;
+  ref: React.RefCallback<HTMLElement>;
   on_scroll: React.UIEventHandler<HTMLElement>;
-  children: React.ReactNode;
 }
 
 interface VirtualizedListGuiInternalProps<T = unknown> {
-  className?: string;
-  style?: React.CSSProperties;
   item_count: number;
   item_data?: T;
-  // Unlike react-window I use render props because that allows the user of the
-  // component to select which props they want to pass to the item components,
-  // which avoids problems (missing and/or excessive re-renders) when the item
-  // component is a pure one.
-  render_container: (props: VirtListContainerFnProps<T>) => React.ReactNode;
-  // NOTE: This function must also set the `key` on the components it creates!
-  render_item: (props: VirtListItemFnProps<T>) => React.ReactNode;
+  // Unlike react-window I use render props which provide way more flexibility.
+  render_items: (props: VirtListRenderFnProps<T>) => React.ReactNode;
   item_size: number;
   // TODO: This is an optimization, but has a low priority. The fixed size mode
   // would require bypassing the item_measurements array for most calculations,
@@ -188,13 +173,8 @@ export class VirtualizedListGui<T = unknown> extends React.Component<
 
   public static readonly defaultProps: Pick<
     VirtualizedListGuiInternalProps,
-    | 'render_container'
-    | 'overscan_count'
-    | 'fixed_size_items'
-    | 'last_page_behavior'
-    | 'estimate_average_item_size'
+    'overscan_count' | 'fixed_size_items' | 'last_page_behavior' | 'estimate_average_item_size'
   > = {
-    render_container: VirtListContainerGui,
     overscan_count: 2,
     fixed_size_items: false,
     last_page_behavior: 'normal',
@@ -304,7 +284,10 @@ export class VirtualizedListGui<T = unknown> extends React.Component<
     snapshot: VirtualizedListGuiSnapshot | null,
   ): void {
     this.extend_or_shrink_item_measurements();
-    let should_update_again = this.update({ snapshot });
+    if (snapshot != null) {
+      this.apply_scroll_offset_correction(snapshot.scroll_offset);
+    }
+    let should_update_again = this.update();
     if (!should_update_again) {
       this.scheduled_scroll_hook?.();
       this.props.on_items_rendered?.(this);
@@ -404,24 +387,15 @@ export class VirtualizedListGui<T = unknown> extends React.Component<
     }
   }
 
-  public update(
-    options?: {
-      snapshot?: VirtualizedListGuiSnapshot | null;
-      reset_item_sizes?: boolean | null;
-    } | null,
-  ): boolean {
+  public update(options?: { reset_item_sizes?: boolean | null } | null): boolean {
     let { props, state } = this;
     let { item_count } = props;
-    let { snapshot, reset_item_sizes } = options ?? {};
+    let { reset_item_sizes } = options ?? {};
 
     let slice_end = utils.clamp(state.slice_end, 0, item_count);
     let slice_start = utils.clamp(state.slice_start, 0, slice_end);
     let visible_slice_end = utils.clamp(state.visible_slice_end, 0, item_count);
     let visible_slice_start = utils.clamp(state.visible_slice_start, 0, visible_slice_end);
-
-    if (snapshot != null) {
-      this.apply_scroll_offset_correction(snapshot.scroll_offset);
-    }
 
     let scroll_delta = 0;
     scroll_delta -= this.get_item_offset_at_index(visible_slice_start);
@@ -605,11 +579,7 @@ export class VirtualizedListGui<T = unknown> extends React.Component<
     this.set_scroll_offset(this.align_scroll_offset(target_offset, 0, align));
   }
 
-  public scroll_to_item(
-    target_index: number,
-    align?: VirtListScrollAlign | null,
-    callback?: (() => void) | null,
-  ): void {
+  public scroll_to_item(target_index: number, align?: VirtListScrollAlign | null): void {
     this.scheduled_scroll_hook = null;
     align ??= VirtListScrollAlign.Smart;
     let { item_count } = this.props;
@@ -647,12 +617,10 @@ export class VirtualizedListGui<T = unknown> extends React.Component<
     if (this.get_scroll_offset() !== target_offset) {
       this.scheduled_scroll_hook = () => {
         this.scheduled_scroll_hook = null;
-        this.scroll_to_item(target_index, align, callback);
+        this.scroll_to_item(target_index, align);
       };
       // This will implicitly call the on_scroll handler.
       this.set_scroll_offset(target_offset);
-    } else {
-      callback?.();
     }
   }
 
@@ -687,37 +655,38 @@ export class VirtualizedListGui<T = unknown> extends React.Component<
     let { item_count } = props;
     let slice_end = utils.clamp(state.slice_end, 0, item_count);
     let slice_start = utils.clamp(state.slice_start, 0, slice_end);
+    let visible_slice_end = utils.clamp(state.visible_slice_end, 0, item_count);
+    let visible_slice_start = utils.clamp(state.visible_slice_start, 0, visible_slice_end);
 
-    let items: React.ReactNode[] = [];
-    for (let i = slice_start; i < slice_end; i++) {
-      items.push(props.render_item({ list: this, index: i, data: props.item_data! }));
-    }
-
-    return this.props.render_container({
+    return this.props.render_items({
+      ...this.state,
+      slice_start,
+      slice_end,
+      visible_slice_start,
+      visible_slice_end,
       list: this,
-      inner_ref: this.list_elem_ref,
-      className: props.className,
-      style: props.style,
+      data: this.props.item_data!,
+      ref: this.list_elem_ref,
       on_scroll: this.on_scroll,
-      children: items,
     });
   }
 }
 
-export function VirtListContainerGui<T = unknown>(
-  props: VirtListContainerFnProps<T>,
+export interface VirtListContainerGuiProps extends WrapperGuiProps {
+  offset_start: number;
+  offset_end: number;
+  children: React.ReactNode;
+}
+
+export const VirtListContainerGui = React.forwardRef(function VirtListContainerGui(
+  { offset_start, offset_end, children, ...rest }: VirtListContainerGuiProps,
+  ref: React.Ref<HTMLDivElement>,
 ): React.ReactElement {
-  let { list } = props;
   return (
-    <WrapperGui
-      ref={props.inner_ref}
-      scroll
-      className={props.className}
-      style={props.style}
-      onScroll={props.on_scroll}>
-      <div style={{ height: list.state.offset_start }} />
-      {props.children}
-      <div style={{ height: list.state.offset_end }} />
+    <WrapperGui scroll ref={ref} {...rest}>
+      <div style={{ height: offset_start }} />
+      {children}
+      <div style={{ height: offset_end }} />
     </WrapperGui>
   );
-}
+});

@@ -78,7 +78,7 @@ overrides:
           modifiers: [override]
           format: null
         - selector: method
-          filter: '^toString$'
+          filter: '^getDerivedStateFromProps$|^toString$'
           format: null
         - selector: property
           filter: '^defaultProps$|^className$'

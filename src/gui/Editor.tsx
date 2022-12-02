@@ -14,7 +14,12 @@ import { IconGui, IconlikeTextGui } from './Icon';
 import { KeyMod } from './keymap';
 import { LabelGui } from './Label';
 import { TextAreaGui, TextInputGui } from './TextInput';
-import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
+import {
+  VirtListContainerGui,
+  VirtListRenderFnProps,
+  VirtListScrollAlign,
+  VirtualizedListGui,
+} from './VirtualizedList';
 
 export interface EditorGuiProps {
   className?: string;
@@ -91,10 +96,8 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
       <VirtualizedListGui
         key={this.state.list_owner_id}
         ref={this.list_ref}
-        className={cc(this.props.className, 'FragmentList')}
-        style={{ overflowY: 'scroll' }}
         item_count={this.state.list.length}
-        render_item={this.render_item}
+        render_items={this.render_items}
         item_size={200}
         estimate_average_item_size
         overscan_count={3}
@@ -104,15 +107,31 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
     );
   }
 
-  private render_item = ({ index, list }: VirtListItemFnProps): React.ReactNode => {
-    let fragment = this.state.list[index];
+  private render_items = (props: VirtListRenderFnProps): React.ReactNode => {
+    let items = [];
+    for (let index = props.slice_start; index < props.slice_end; index++) {
+      let fragment = this.state.list[index];
+      items.push(
+        <FragmentGui
+          key={fragment.ref.obj_id}
+          list={props.list}
+          fragment={fragment}
+          index={index}
+          is_current={index === props.current_index}
+          is_visible={props.visible_slice_start <= index && index < props.visible_slice_end}
+        />,
+      );
+    }
+
     return (
-      <FragmentGui
-        key={fragment.ref.obj_id}
-        list={list}
-        fragment={fragment}
-        index={index}
-        is_current={index === list.state.current_index}
+      <VirtListContainerGui
+        ref={props.ref}
+        onScroll={props.on_scroll}
+        className={cc(this.props.className, 'FragmentList')}
+        style={{ overflowY: 'scroll' }}
+        offset_start={props.offset_start}
+        offset_end={props.offset_end}
+        children={items}
       />
     );
   };
@@ -295,6 +314,7 @@ export interface FragmentGuiProps {
   className?: string;
   index: number;
   is_current: boolean;
+  is_visible: boolean;
   fragment: FragmentRoData;
   list?: VirtualizedListGui;
 }
@@ -348,6 +368,7 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
 
   public override render(): React.ReactNode {
     let { fragment } = this.props;
+    let tab_index = this.props.is_visible ? 0 : -1;
     return (
       <WrapperGui
         ref={this.root_ref}
@@ -394,19 +415,29 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
                 icon="clipboard"
                 title="Copy the original text"
                 onClick={this.on_copy_original_text}
+                tabIndex={tab_index}
               />
-              <IconButtonGui icon="search" title="Search other fragments with this original text" />
+              <IconButtonGui
+                icon="search"
+                title="Search other fragments with this original text"
+                tabIndex={tab_index}
+              />
               <IconButtonGui
                 icon="plus-square"
                 title="Add a new translation"
                 onClick={this.on_new_translation_click}
+                tabIndex={tab_index}
               />
             </HBoxGui>
           </WrapperGui>
 
           <WrapperGui allow_overflow className="BoxItem-expand Fragment-Translations">
             {fragment.translations.map((translation) => (
-              <TranslationGui key={translation.ref.obj_id} translation={translation} />
+              <TranslationGui
+                key={translation.ref.obj_id}
+                translation={translation}
+                is_visible={this.props.is_visible}
+              />
             ))}
             {this.state.show_new_translation_gui || fragment.translations.length === 0 ? (
               <NewTranslationGui
@@ -520,6 +551,7 @@ export class FragmentPathGui extends React.PureComponent<
 
 export interface TranslationGuiProps {
   translation: TranslationRoData;
+  is_visible: boolean;
 }
 
 export class TranslationGui extends React.Component<TranslationGuiProps, unknown> {
@@ -529,7 +561,7 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
 
   public override render(): React.ReactNode {
     let { translation } = this.props;
-
+    let tab_index = this.props.is_visible ? 0 : -1;
     return (
       <WrapperGui allow_overflow className="Fragment-Translation">
         <LabelGui block selectable className="Fragment-TextBlock">
@@ -549,10 +581,15 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
             icon="clipboard"
             title="Copy the translation text"
             onClick={this.on_copy_text}
+            tabIndex={tab_index}
           />
-          <IconButtonGui icon="pencil-square" title="Edit this translation" />
-          <IconButtonGui icon="chat-left-quote" title="Add a comment about this translation" />
-          <IconButtonGui icon="trash" title="Delete this translation" />
+          <IconButtonGui icon="pencil-square" title="Edit this translation" tabIndex={tab_index} />
+          <IconButtonGui
+            icon="chat-left-quote"
+            title="Add a comment about this translation"
+            tabIndex={tab_index}
+          />
+          <IconButtonGui icon="trash" title="Delete this translation" tabIndex={tab_index} />
         </HBoxGui>
       </WrapperGui>
     );

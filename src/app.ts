@@ -392,7 +392,7 @@ export class FileTree extends BaseAppObject<FileTree> {
   public clear(): void {
     this.mark_changed();
     this.files.clear();
-    let root_dir = new FileTreeDir(FileTree.ROOT_DIR);
+    let root_dir = new FileTreeDir(FileTree.ROOT_DIR, null);
     this.files.set(root_dir.path, root_dir);
   }
 
@@ -410,12 +410,12 @@ export class FileTree extends BaseAppObject<FileTree> {
         // the structure.
         (parent_dir.children as Set<string>).add(component_path);
         if (component.is_last) {
-          let file = new FileTreeFile(component_path);
+          let file = new FileTreeFile(component_path, parent_dir);
           this.files.set(component_path, file);
         } else {
           let maybe_dir = this.files.get(component_path);
           if (!(maybe_dir instanceof FileTreeDir)) {
-            let dir = new FileTreeDir(component_path);
+            let dir = new FileTreeDir(component_path, parent_dir);
             this.files.set(dir.path, dir);
             parent_dir = dir;
           } else {
@@ -430,7 +430,7 @@ export class FileTree extends BaseAppObject<FileTree> {
 export class FileTreeFile {
   public readonly obj_id: number = utils.new_gui_id();
 
-  public constructor(public readonly path: string) {}
+  public constructor(public readonly path: string, public readonly parent: FileTreeDir | null) {}
 
   public get name(): string {
     let idx = this.path.lastIndexOf('/');
@@ -441,7 +441,7 @@ export class FileTreeFile {
     }
   }
 
-  public get is_dir(): boolean {
+  public is_dir(): this is FileTreeDir {
     return false;
   }
 }
@@ -449,8 +449,12 @@ export class FileTreeFile {
 export class FileTreeDir extends FileTreeFile {
   public readonly children: ReadonlySet<string> = new Set<string>();
 
-  public override get is_dir(): boolean {
+  public override is_dir(): this is FileTreeDir {
     return true;
+  }
+
+  public get is_root_dir(): boolean {
+    return this.parent == null;
   }
 }
 

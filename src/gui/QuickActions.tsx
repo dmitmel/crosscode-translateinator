@@ -1,18 +1,16 @@
 import './QuickActions.scss';
-import './List.scss';
 
 import cc from 'clsx';
 import { Fzf, FzfResultItem } from 'fzf';
 import * as React from 'react';
 
 import { FileType } from '../app';
-import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
 import { WrapperGui } from './Box';
 import { KeyCode, KeymapActionsLayer, KeyMod, KeyStrokeEncoded } from './keymap';
-import { LabelGui } from './Label';
+import { ListBoxGetIndexKind, ListBoxGui, ListBoxItem } from './ListBox';
 import { TextInputGui } from './TextInput';
-import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
+import { VirtualizedListGui } from './VirtualizedList';
 
 export interface QuickActionsEntry {
   readonly id: number;
@@ -20,7 +18,7 @@ export interface QuickActionsEntry {
   readonly on_selected: () => void;
 }
 
-export type QuickListMatchedEntry = FzfResultItem<QuickActionsEntry>;
+export type QuickActionsMatchedEntry = FzfResultItem<QuickActionsEntry>;
 
 export interface QuickActionsGuiProps {
   className?: string;
@@ -30,9 +28,8 @@ export interface QuickActionsGuiState {
   is_visible: boolean;
   filter_value: string;
   entries: Fzf<readonly QuickActionsEntry[]>;
-  matched_entries: readonly QuickListMatchedEntry[];
+  matched_entries: readonly QuickActionsMatchedEntry[];
   list_max_height: number;
-  selected_index: number;
 }
 
 export class QuickActionsGui extends React.Component<QuickActionsGuiProps, QuickActionsGuiState> {
@@ -44,17 +41,15 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     entries: this.create_fzf([]),
     matched_entries: [],
     list_max_height: 0,
-    selected_index: 0,
   };
 
   public root_ref = React.createRef<HTMLDivElement>();
   public keymap_layer = new KeymapActionsLayer();
-  public list_ref = React.createRef<VirtualizedListGui>();
+  public list_ref = React.createRef<ListBoxGui>();
   public input_ref = React.createRef<HTMLInputElement>();
-  public entries_map = new WeakMap<QuickListMatchedEntry, QuickActionsEntryGui>();
 
-  public get_entry(index: number): QuickActionsEntryGui | undefined {
-    return this.entries_map.get(this.state.matched_entries[index]);
+  public get virt_list_ref(): VirtualizedListGui | null | undefined {
+    return this.list_ref.current?.root_ref.current;
   }
 
   public override componentDidMount(): void {
@@ -83,7 +78,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     let entries: QuickActionsEntry[] = [];
     let file_tree = app.project_game_files_tree;
     for (let file of file_tree.files.values()) {
-      if (file !== file_tree.root_dir && !file.is_dir) {
+      if (!file.is_dir()) {
         let { path } = file;
         entries.push({
           id: file.obj_id,
@@ -118,11 +113,20 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
   private match_entries(): void {
     // TODO: perform the filtering asynchronously
     this.setState((state) => ({ matched_entries: state.entries.find(state.filter_value) }));
-    this.select(() => 0);
+    let list = this.list_ref.current!;
+    list.set_focus(list.get_index(ListBoxGetIndexKind.First), { set_dom_focus: false });
   }
 
-  private on_list_items_rendered = (_list: VirtualizedListGui): void => {
+  private on_list_items_rendered = (): void => {
     this.update_list_max_height();
+  };
+
+  private on_list_item_activated = (indices: number[]): void => {
+    for (let index of indices) {
+      let entry = this.state.matched_entries[index];
+      entry.item.on_selected();
+    }
+    this.hide();
   };
 
   private on_window_resized = (_event: UIEvent): void => {
@@ -136,8 +140,9 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     if (this.root_ref.current != null) {
       list_max_height = this.root_ref.current.parentElement!.offsetHeight * LIST_HEIGHT_PERCENT;
     }
-    if (this.list_ref.current != null) {
-      let item_size = this.list_ref.current.state.average_item_size;
+    let list = this.virt_list_ref;
+    if (list != null) {
+      let item_size = list.state.average_item_size;
       list_max_height =
         Math.max(Math.floor(list_max_height / item_size), LIST_MIN_ITEMS) * item_size;
     }
@@ -146,16 +151,8 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     }
   }
 
-  private on_entry_click = (
-    entry: QuickListMatchedEntry,
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    event.preventDefault();
-    entry.item.on_selected();
-  };
-
   public show(callback?: (() => void) | null): void {
-    this.setState({ is_visible: true, filter_value: '', selected_index: 0 }, () => {
+    this.setState({ is_visible: true, filter_value: '' }, () => {
       this.input_ref.current!.focus();
       callback?.();
     });
@@ -168,39 +165,13 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     });
   }
 
-  public select(
-    get_index: (prev_index: number, list_length: number) => number,
-    callback?: (() => void) | null,
-  ): void {
-    this.setState(
-      (state) => {
-        let len = state.matched_entries.length;
-        let idx = utils.clamp(get_index(state.selected_index, len), 0, len - 1);
-        return { selected_index: idx };
-      },
-      () => {
-        let list = this.list_ref.current!;
-        list.scroll_to_item(this.state.selected_index, VirtListScrollAlign.Auto, () => {
-          callback?.();
-        });
-      },
-    );
-  }
-
   private setup_keymap(): void {
     this.keymap_layer.add(KeyCode.Escape, () => {
       this.hide();
     });
 
     this.keymap_layer.add(KeyCode.Enter, () => {
-      this.setState((state) => {
-        if (state.matched_entries.length > 0) {
-          let entry = state.matched_entries[state.selected_index];
-          entry.item.on_selected();
-        }
-        return null;
-      });
-      this.hide();
+      this.list_ref.current!.activate_selected();
     });
 
     const is_input_focused = (event: KeyboardEvent): boolean => {
@@ -208,51 +179,37 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
       return input != null && event.target === input;
     };
 
-    const focus_current_item = (): void => {
-      this.get_entry(this.state.selected_index)?.root_ref.current!.focus();
-    };
-
     const add_motion_keymap = (
       key: KeyStrokeEncoded,
-      get_index: (prev_index: number, list_length: number) => number,
+      index_kind: ListBoxGetIndexKind,
       input_focused_key_mod: KeyMod = KeyMod.None,
     ): void => {
+      const select = (set_dom_focus: boolean): void => {
+        let list = this.list_ref.current!;
+        list.set_focus(list.get_index(index_kind), { set_dom_focus });
+      };
       if (input_focused_key_mod === KeyMod.None) {
         this.keymap_layer.add(key, (event) => {
-          if (!is_input_focused(event)) {
-            this.select(get_index, focus_current_item);
-          } else {
-            this.select(get_index);
-          }
+          select(!is_input_focused(event));
         });
       } else {
         this.keymap_layer.add(key, {
           enabled: (event) => !is_input_focused(event),
-          handler: () => this.select(get_index, focus_current_item),
+          handler: () => select(true),
         });
         this.keymap_layer.add(input_focused_key_mod | key, {
           enabled: (event) => is_input_focused(event),
-          handler: () => this.select(get_index),
+          handler: () => select(false),
         });
       }
     };
 
-    add_motion_keymap(KeyCode.ArrowUp, (i, len) => (i - 1 > 0 ? i - 1 : len - 1));
-    add_motion_keymap(KeyCode.ArrowDown, (i, len) => (i + 1 < len ? i + 1 : 0));
-    add_motion_keymap(KeyCode.PageUp, (i) => {
-      let list = this.list_ref.current!;
-      let start = list.state.visible_slice_start;
-      let end = list.state.visible_slice_end;
-      return i !== start ? start : i - (end - start);
-    });
-    add_motion_keymap(KeyCode.PageDown, (i) => {
-      let list = this.list_ref.current!;
-      let start = list.state.visible_slice_start;
-      let end = list.state.visible_slice_end;
-      return i !== end - 1 ? end - 1 : i + (end - start);
-    });
-    add_motion_keymap(KeyCode.Home, (_i) => 0, KeyMod.Cmd);
-    add_motion_keymap(KeyCode.End, (_i, len) => len - 1, KeyMod.Cmd);
+    add_motion_keymap(KeyCode.ArrowUp, ListBoxGetIndexKind.Prev);
+    add_motion_keymap(KeyCode.ArrowDown, ListBoxGetIndexKind.Next);
+    add_motion_keymap(KeyCode.PageUp, ListBoxGetIndexKind.PrevPage);
+    add_motion_keymap(KeyCode.PageDown, ListBoxGetIndexKind.NextPage);
+    add_motion_keymap(KeyCode.Home, ListBoxGetIndexKind.First, KeyMod.Cmd);
+    add_motion_keymap(KeyCode.End, ListBoxGetIndexKind.Last, KeyMod.Cmd);
   }
 
   private on_key_down_capture = (event: React.KeyboardEvent): void => {
@@ -279,87 +236,38 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
             placeholder="Search quick actions"
           />
         </WrapperGui>
-        <VirtualizedListGui
+        <ListBoxGui
           ref={this.list_ref}
-          className={cc('BoxItem-expand', 'QuickActions-List', 'List')}
+          className={cc('BoxItem-expand', 'QuickActions-List')}
           style={{ maxHeight: this.state.list_max_height }}
           item_count={this.state.matched_entries.length}
+          item_key={this.get_list_item_key}
           render_item={this.render_list_item}
-          item_size={30}
-          fixed_size_items
           on_items_rendered={this.on_list_items_rendered}
+          selection_follows_focus
+          always_highlight
+          on_item_activated={this.on_list_item_activated}
         />
       </WrapperGui>
     );
   }
 
-  public render_list_item = ({ index, list }: VirtListItemFnProps): React.ReactNode => {
+  private get_list_item_key = (index: number): React.Key => {
     let match = this.state.matched_entries[index];
-    return (
-      <QuickActionsEntryGui
-        key={match.item.id}
-        list={list}
-        index={index}
-        selected={index === this.state.selected_index}
-        match={match}
-        map={this.entries_map}
-        on_click={this.on_entry_click}
-      />
-    );
-  };
-}
-
-export interface QuickActionsEntryGuiProps {
-  list: VirtualizedListGui;
-  index: number;
-  selected: boolean;
-  match: QuickListMatchedEntry;
-  map?: WeakMap<QuickListMatchedEntry, QuickActionsEntryGui>;
-  on_click?: (match: QuickListMatchedEntry, event: React.MouseEvent<HTMLButtonElement>) => void;
-}
-
-export class QuickActionsEntryGui extends React.Component<QuickActionsEntryGuiProps, unknown> {
-  public root_ref = React.createRef<HTMLButtonElement>();
-
-  public override componentDidMount(): void {
-    this.props.list?.on_item_mounted(this.props.index, this.root_ref.current!);
-    this.props.map?.set(this.props.match, this);
-  }
-
-  public override componentDidUpdate(prev_props: QuickActionsEntryGuiProps): void {
-    this.props.list?.on_item_updated(prev_props.index, this.props.index, this.root_ref.current!);
-    prev_props.map?.delete(prev_props.match);
-    this.props.map?.set(this.props.match, this);
-  }
-
-  public override componentWillUnmount(): void {
-    this.props.list?.on_item_unmounted(this.props.index, this.root_ref.current!);
-    this.props.map?.delete(this.props.match);
-  }
-
-  private on_click = (event: React.MouseEvent<HTMLButtonElement>): void => {
-    this.props.on_click?.(this.props.match, event);
+    return match.item.id;
   };
 
-  public override render(): React.ReactNode {
-    return (
-      <button
-        ref={this.root_ref}
-        type="button"
-        className={cc('block', 'QuickActionsEntry', 'ListItem', {
-          selected: this.props.selected,
-          focused: this.props.selected,
-        })}
-        tabIndex={this.props.selected ? 0 : -1}
-        onClick={this.on_click}>
-        <QuickActionsEntryLabelGui match={this.props.match} />
-      </button>
-    );
-  }
+  private render_list_item = (index: number): ListBoxItem => {
+    let match = this.state.matched_entries[index];
+    return {
+      icon: 'file-earmark',
+      label: <QuickActionsEntryLabelGui match={match} />,
+    };
+  };
 }
 
 export interface QuickActionsEntryLabelGuiProps {
-  match: QuickListMatchedEntry;
+  match: QuickActionsMatchedEntry;
 }
 
 export const QuickActionsEntryLabelGui = React.memo(function QuickActionsEntryLabelGui(
@@ -397,9 +305,5 @@ export const QuickActionsEntryLabelGui = React.memo(function QuickActionsEntryLa
   flush_slice(match.end, prev_state);
   flush_slice(label.length, false);
 
-  return (
-    <LabelGui block ellipsis className="QuickActionsEntryLabel">
-      {elements.length > 0 ? elements : '\u00A0'}
-    </LabelGui>
-  );
+  return <>{elements.length > 0 ? elements : '\u00A0'}</>;
 });

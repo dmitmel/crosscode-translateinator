@@ -1,6 +1,5 @@
 import './Explorer.scss';
 import './Button';
-import './List.scss';
 
 import cc from 'clsx';
 import Immutable from 'immutable';
@@ -19,8 +18,9 @@ import * as utils from '../utils';
 import { AppMainCtx } from './AppMainCtx';
 import { VBoxGui } from './Box';
 import { IconGui } from './Icon';
-import { LabelGui } from './Label';
-import { VirtListItemFnProps, VirtListScrollAlign, VirtualizedListGui } from './VirtualizedList';
+import { KeyCode, KeymapActionsLayer } from './keymap';
+import { ListBoxGetIndexKind, ListBoxGui, ListBoxItem } from './ListBox';
+import { VirtListScrollAlign } from './VirtualizedList';
 
 export interface ExplorerGuiProps {
   className?: string;
@@ -94,6 +94,7 @@ export class ExplorerGui extends React.Component<ExplorerGuiProps, ExplorerGuiSt
 export interface ExplorerSectionGuiProps {
   name: string;
   default_opened?: boolean;
+  children: React.ReactNode;
 }
 
 export interface ExplorerSectionGuiState {
@@ -167,10 +168,13 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     opened_states: Immutable.Map(),
   };
 
-  public list_ref = React.createRef<VirtualizedListGui<TreeVirtListData>>();
-  public item_indexes_map = new Map<string, number>();
+  public list_ref = React.createRef<ListBoxGui<TreeVirtListData>>();
+  public list_extra_keymap_layer = new KeymapActionsLayer();
+  public paths_to_indexes_map = new Map<string, number>();
+  public indexes_to_files_map = new Map<number, FileTreeFile>();
 
   public override componentDidMount(): void {
+    this.setup_keymap();
     let { app } = this.context;
     app.event_current_tab_change.on(this.on_current_tab_change);
     app.event_project_opened.on(this.on_file_tree_updated);
@@ -182,6 +186,13 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     app.event_current_tab_change.off(this.on_current_tab_change);
     app.event_project_opened.off(this.on_file_tree_updated);
     app.event_project_closed.off(this.on_file_tree_updated);
+  }
+
+  public set_path_opened_state(
+    path: string,
+    updater: (prev_state: boolean | undefined) => boolean,
+  ): void {
+    this.setState(({ opened_states }) => ({ opened_states: opened_states.update(path, updater) }));
   }
 
   public set_current(path: string | null, callback?: () => void): void {
@@ -202,7 +213,8 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     }, callback);
   }
 
-  private on_current_tab_change = (_trigger: TabChangeTrigger | null): void => {
+  private on_current_tab_change = (trigger: TabChangeTrigger | null): void => {
+    if (trigger === TabChangeTrigger.FileTree) return;
     let { app } = this.context;
     let tab = app.current_tab;
     let file_path: string | null = null;
@@ -211,7 +223,12 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     }
     this.set_current(file_path, () => {
       if (file_path != null) {
-        this.scroll_to_file(file_path);
+        let index = this.paths_to_indexes_map.get(file_path) ?? null;
+        this.list_ref.current!.set_focus(index, {
+          set_selection: true,
+          set_dom_focus: false,
+          scroll_to_align: VirtListScrollAlign.Smart,
+        });
       }
     });
   };
@@ -220,60 +237,89 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
     this.setState({ tree_data: this.props.tree_ref.get_render_data() });
   };
 
-  public scroll_to_file(path: string): void {
-    let index = this.item_indexes_map.get(path);
-    if (index != null) {
-      this.list_ref.current!.scroll_to_item(index, VirtListScrollAlign.Smart);
-    }
-  }
-
-  private on_item_click = (
-    file: FileTreeFile,
-    _event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    let { app } = this.context;
-    let file_path = file.path;
-    if (file.is_dir) {
-      this.setState(({ opened_states }) => ({
-        opened_states: opened_states.set(file_path, !opened_states.get(file_path)),
-      }));
-    } else {
-      app.open_file(this.props.files_type, file_path, TabChangeTrigger.FileTree);
+  private on_item_activated = (indices: number[], items: TreeVirtListData): void => {
+    for (let index of indices) {
+      let { file } = items[index];
+      let { app } = this.context;
+      if (file.is_dir()) {
+        this.set_path_opened_state(file.path, (opened) => !opened);
+      } else {
+        app.open_file(this.props.files_type, file.path, TabChangeTrigger.FileTree);
+      }
     }
   };
 
+  private setup_keymap(): void {
+    const get_focused_file = (): FileTreeFile | undefined => {
+      let current_index = this.list_ref.current!.get_focused_index();
+      return current_index != null ? this.indexes_to_files_map.get(current_index) : null!;
+    };
+
+    this.list_extra_keymap_layer.add(KeyCode.ArrowLeft, () => {
+      let current_file = get_focused_file();
+      if (current_file == null) return;
+      if (current_file.is_dir() && this.state.opened_states.get(current_file.path)) {
+        this.set_path_opened_state(current_file.path, () => false);
+      } else if (current_file.parent != null && !current_file.parent.is_root_dir) {
+        let index = this.paths_to_indexes_map.get(current_file.parent.path);
+        this.list_ref.current!.set_focus(index);
+      }
+    });
+
+    this.list_extra_keymap_layer.add(KeyCode.ArrowRight, () => {
+      let current_file = get_focused_file();
+      if (current_file?.is_dir() && !this.state.opened_states.get(current_file.path)) {
+        this.set_path_opened_state(current_file.path, () => true);
+      } else {
+        let list = this.list_ref.current!;
+        list.set_focus(list.get_index(ListBoxGetIndexKind.Next));
+      }
+    });
+  }
+
   public override render(): React.ReactNode {
     let items: PreparedTreeItem[] = [];
-    this.item_indexes_map.clear();
+    this.paths_to_indexes_map.clear();
+    this.indexes_to_files_map.clear();
     this.prepare_items(this.state.tree_data.root_dir, this.props.base_depth ?? 0, items);
 
     return (
-      <VirtualizedListGui
+      <ListBoxGui
         ref={this.list_ref}
         className={cc(this.props.className, 'TreeView')}
         item_count={items.length}
         item_data={items}
+        item_key={this.get_list_item_key}
         render_item={this.render_list_item}
-        item_size={30}
-        fixed_size_items
+        allow_multi_selection
+        on_item_activated={this.on_item_activated}
+        extra_keymap_layer={this.list_extra_keymap_layer}
       />
     );
   }
 
-  private render_list_item = (props: VirtListItemFnProps<TreeVirtListData>): React.ReactNode => {
-    let item = props.data[props.index];
-    return (
-      <TreeItemGui
-        key={item.file.path}
-        list={props.list}
-        file_type={this.props.files_type}
-        file={item.file}
-        is_opened={item.is_opened}
-        depth={item.depth}
-        index={props.index}
-        on_click={this.on_item_click}
-      />
-    );
+  private get_list_item_key = (index: number, items: TreeVirtListData): React.Key => {
+    return items[index].file.obj_id;
+  };
+
+  private render_list_item = (index: number, items: TreeVirtListData): ListBoxItem => {
+    let item = items[index];
+
+    let gui_data = GameFileGuiData.get(this.props.files_type, item.file.path);
+    let label = item.file.path;
+    let { icon } = gui_data;
+    if (item.file.is_dir()) {
+      label += '/';
+      icon = `chevron-${item.is_opened ? 'down' : 'right'}`;
+    }
+
+    return {
+      className: 'TreeItem',
+      style: { '--TreeItem-depth': item.depth } as React.CSSProperties,
+      label: item.file.name,
+      tooltip: label,
+      icon,
+    };
   };
 
   private prepare_items(dir: FileTreeDir, depth: number, out_items: PreparedTreeItem[]): void {
@@ -301,72 +347,9 @@ export class TreeViewGui extends React.Component<TreeViewGuiProps, TreeViewGuiSt
   }
 
   private prepare_item(file: FileTreeFile, depth: number, index: number): PreparedTreeItem {
-    this.item_indexes_map.set(file.path, index);
+    this.paths_to_indexes_map.set(file.path, index);
+    this.indexes_to_files_map.set(index, file);
     return { file, is_opened: this.state.opened_states.get(file.path) ?? false, depth };
-  }
-}
-
-export interface TreeItemGuiProps {
-  file_type: FileType;
-  file: FileTreeFile;
-  is_opened: boolean;
-  depth: number;
-  index: number;
-  on_click?: (file: FileTreeFile, event: React.MouseEvent<HTMLButtonElement>) => void;
-  list?: VirtualizedListGui<TreeVirtListData>;
-}
-
-export class TreeItemGui extends React.Component<TreeItemGuiProps, unknown> {
-  public root_ref = React.createRef<HTMLButtonElement>();
-
-  public override componentDidMount(): void {
-    this.props.list?.on_item_mounted(this.props.index, this.root_ref.current!);
-  }
-
-  public override componentDidUpdate(prev_props: TreeItemGuiProps): void {
-    this.props.list?.on_item_updated(prev_props.index, this.props.index, this.root_ref.current!);
-  }
-
-  public override componentWillUnmount(): void {
-    this.props.list?.on_item_unmounted(this.props.index, this.root_ref.current!);
-  }
-
-  private on_click = (event: React.MouseEvent<HTMLButtonElement>): void => {
-    this.props.on_click?.(this.props.file, event);
-  };
-
-  public override render(): React.ReactNode {
-    let { props } = this;
-
-    let gui_data = GameFileGuiData.get(props.file_type, props.file.path);
-    let label = props.file.path;
-    let { icon } = gui_data;
-    if (props.file.is_dir) {
-      label += '/';
-      icon = `chevron-${props.is_opened ? 'down' : 'right'}`;
-    }
-
-    return (
-      <button
-        ref={this.root_ref}
-        type="button"
-        className={cc('block', 'TreeItem', 'ListItem', {
-          selected: !props.file.is_dir && props.is_opened,
-        })}
-        style={{ '--TreeItem-depth': props.depth } as React.CSSProperties}
-        title={label}
-        tabIndex={0}
-        onClick={this.on_click}>
-        {
-          // Note that a container element is necessary for enabling ellipsis,
-          // otherwise the tree item shrinks when the enclosing list begins
-          // overflowing.
-        }
-        <LabelGui block ellipsis>
-          <IconGui icon={icon} /> {props.file.name}
-        </LabelGui>
-      </button>
-    );
   }
 }
 

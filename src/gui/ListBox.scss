@@ -1,0 +1,29 @@
+@use '../theme.scss';
+
+.ListBox {
+  background-color: theme.$editor-widget-bg;
+}
+
+.ListBoxItem {
+  padding: theme.$spacing (theme.$spacing * 2);
+  cursor: pointer;
+
+  &:hover {
+    background-color: theme.$list-hover-bg;
+  }
+
+  &.selected {
+    background-color: theme.$list-inactive-selection-bg;
+  }
+
+  .ListBox-always-highlight > &.selected,
+  &.selected:focus,
+  .ListBox:focus-within > &.selected {
+    background-color: theme.$list-active-selection-bg;
+  }
+
+  .Label > .highlight {
+    font-weight: bold;
+    color: theme.$list-highlight-fg;
+  }
+}
