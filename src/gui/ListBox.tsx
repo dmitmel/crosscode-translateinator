@@ -266,6 +266,13 @@ export class ListBoxGui<T = unknown> extends React.Component<ListBoxGuiProps<T>,
     };
     const is_input_not_focused = (event: KeyboardEvent): boolean => !is_input_focused(event);
 
+    this.keymap_layer.add(KeyMod.Ctrl | KeyCode.KeyA, {
+      enabled: (event) => this.props.allow_multi_selection && !is_input_focused(event),
+      handler: () => {
+        this.set_selected_range(0, this.props.item_count);
+      },
+    });
+
     const add_motion_keymap = (
       key: KeyStrokeEncoded,
       index_kind: ListBoxGetIndexKind,
