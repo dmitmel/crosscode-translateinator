@@ -32,9 +32,9 @@
   > .Fragment {
     padding: $spacing-FragmentList 0;
   }
-  > .Fragment:last-child {
-    // <https://stackoverflow.com/a/31343927>
-    height: 100%;
+
+  &:focus {
+    outline: none;
   }
 }
 

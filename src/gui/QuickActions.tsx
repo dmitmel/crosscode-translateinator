@@ -177,13 +177,25 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     keymap.add_layer_to_event(event.nativeEvent, this.keymap_layer);
   };
 
+  // A more advanced implementation of focus tracking:
+  // <https://github.com/microsoft/vscode/blob/1.73.1/src/vs/base/browser/dom.ts#L857-L919>
+  private on_child_blur = (event: React.FocusEvent): void => {
+    let root_elem = event.currentTarget;
+    // <https://developer.mozilla.org/en-US/docs/Web/API/FocusEvent/relatedTarget>
+    let next_focused_elem = event.relatedTarget;
+    if (!root_elem.contains(next_focused_elem)) {
+      this.hide();
+    }
+  };
+
   public override render(): React.ReactNode {
     return (
       <WrapperGui
         ref={this.root_ref}
         className={cc(this.props.className, 'QuickActions')}
         style={{ display: this.state.is_visible ? null! : 'none' }}
-        onKeyDownCapture={this.on_key_down_capture}>
+        onKeyDownCapture={this.on_key_down_capture}
+        onBlur={this.on_child_blur}>
         <WrapperGui className="QuickActions-Header">
           <TextInputGui
             ref={this.input_ref}

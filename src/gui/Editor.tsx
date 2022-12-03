@@ -65,6 +65,15 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
     app.event_current_fragment_change.off(this.on_current_fragment_change);
   }
 
+  public override componentDidUpdate(
+    _prev_props: Readonly<FragmentListGuiProps>,
+    prev_state: Readonly<FragmentListGuiState>,
+  ): void {
+    if (this.state.list_owner_id !== prev_state.list_owner_id) {
+      this.list_ref.current?.list_elem?.focus();
+    }
+  }
+
   private on_fragment_list_update = (): void => {
     this.setState(this.copy_fragment_list());
   };
@@ -129,6 +138,7 @@ export class FragmentListGui extends React.Component<FragmentListGuiProps, Fragm
         onScroll={props.on_scroll}
         className={cc(this.props.className, 'FragmentList')}
         style={{ overflowY: 'scroll' }}
+        tabIndex={-1}
         offset_start={props.offset_start}
         offset_end={props.offset_end}
         children={items}
