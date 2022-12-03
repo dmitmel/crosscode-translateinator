@@ -142,7 +142,7 @@ export class ListBoxGui<T = unknown> extends React.Component<ListBoxGuiProps<T>,
   public set_selected_range(start: number, end: number): void {
     end = utils.clamp(end, -1, this.props.item_count - 1);
     start = utils.clamp(start, 0, end);
-    if (!this.props.allow_multi_selection) {
+    if (!this.props.allow_multi_selection && end > start) {
       if (start === this.selection_range_start) {
         start = end;
       } else {
@@ -168,6 +168,20 @@ export class ListBoxGui<T = unknown> extends React.Component<ListBoxGuiProps<T>,
     } else {
       this.unset_selected_range();
     }
+  }
+
+  public get_selection_size(): number {
+    return this.props.item_count > 0
+      ? this.selection_range_end - this.selection_range_start + 1
+      : 0;
+  }
+
+  public get_selected_indices(): number[] {
+    let indices: number[] = [];
+    for (let i = this.selection_range_start; i <= this.selection_range_end; i++) {
+      indices.push(i);
+    }
+    return indices;
   }
 
   public extend_selection(prev_index: number | null, curr_index: number | null): void {
@@ -221,27 +235,27 @@ export class ListBoxGui<T = unknown> extends React.Component<ListBoxGuiProps<T>,
     }
   }
 
-  public activate_selected(): void {
-    if (this.props.item_count === 0) return;
-    if (this.selection_range_start < this.selection_range_end) {
-      let indices: number[] = [];
-      for (let i = this.selection_range_start; i <= this.selection_range_end; i++) {
-        indices.push(i);
-      }
-      this.props.on_item_activated?.(indices, this.props.item_data!);
-    } else if (this.focused_index != null) {
-      this.activate(this.focused_index);
-    }
-  }
-
   private setup_keymap(): void {
     this.keymap_layer.add(KeyCode.Enter, () => {
-      this.activate_selected();
+      if (this.props.item_count === 0) return;
+      if (this.get_selection_size() > 1) {
+        this.props.on_item_activated?.(this.get_selected_indices(), this.props.item_data!);
+      } else if (this.focused_index != null) {
+        this.activate(this.focused_index);
+      }
     });
 
     this.keymap_layer.add(KeyCode.Escape, () => {
-      this.root_ref.current!.list_elem?.focus();
-      this.set_focus(null);
+      if (this.get_selection_size() > 0) {
+        if (this.props.selection_follows_focus) {
+          this.select_index(this.focused_index);
+        } else {
+          this.unset_selected_range();
+        }
+      } else {
+        this.root_ref.current!.list_elem?.focus();
+        this.set_focus(null);
+      }
     });
 
     const is_input_focused = (event: KeyboardEvent): boolean => {

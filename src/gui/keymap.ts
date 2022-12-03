@@ -304,7 +304,11 @@ export class KeymapHelper {
         }
       } finally {
         if (should_prevent_default) {
-          event.preventDefault();
+          if (event.preventDefault != null) {
+            event.preventDefault();
+          } else {
+            event.returnValue = false;
+          }
         }
       }
 

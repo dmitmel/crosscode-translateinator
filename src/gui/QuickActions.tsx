@@ -46,6 +46,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
   public root_ref = React.createRef<HTMLDivElement>();
   public keymap_layer = new KeymapActionsLayer();
   public list_ref = React.createRef<ListBoxGui>();
+  public list_extra_keymap_layer = new KeymapActionsLayer();
   public input_ref = React.createRef<HTMLInputElement>();
 
   public get virt_list_ref(): VirtualizedListGui | null | undefined {
@@ -166,9 +167,8 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
   }
 
   private setup_keymap(): void {
-    this.keymap_layer.add(KeyCode.Escape, () => {
-      this.hide();
-    });
+    this.keymap_layer.add(KeyCode.Escape, () => this.hide());
+    this.list_extra_keymap_layer.add(KeyCode.Escape, () => this.hide());
   }
 
   private on_key_down_capture = (event: React.KeyboardEvent): void => {
@@ -207,6 +207,7 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
           selection_follows_focus
           always_highlight
           on_item_activated={this.on_list_item_activated}
+          extra_keymap_layer={this.list_extra_keymap_layer}
         />
       </WrapperGui>
     );
