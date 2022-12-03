@@ -208,25 +208,27 @@ export class FragmentListToolbarGui extends React.Component<
   };
 
   private on_jump_button_click = (
-    jump_type: 'first' | 'back_many' | 'back_one' | 'fwd_one' | 'fwd_many' | 'last',
+    pos_updater: (pos: number, count: number) => number,
     _event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
     let { app } = this.context;
     let jump_pos = app.current_fragment_index;
-    let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
     let fragment_count = app.current_fragment_list.length;
-    // prettier-ignore
-    switch (jump_type) {
-      case 'first':     { jump_pos  = 0;                break; }
-      case 'back_many': { jump_pos -= long_jump;        break; }
-      case 'back_one':  { jump_pos -= 1;                break; }
-      case 'fwd_one':   { jump_pos += 1;                break; }
-      case 'fwd_many':  { jump_pos += long_jump;        break; }
-      case 'last':      { jump_pos  = fragment_count-1; break; }
-    }
+    jump_pos = pos_updater(jump_pos, fragment_count);
     jump_pos = utils.clamp(jump_pos, 0, fragment_count);
     app.set_current_fragment_index(jump_pos, CurrentFragmentChangeTrigger.Jump);
   };
+
+  private on_jump_button_first_click = this.on_jump_button_click.bind(this, () => 0);
+  private on_jump_button_last_click = this.on_jump_button_click.bind(this, (_pos, len) => len - 1);
+  private on_jump_button_back_one_click = this.on_jump_button_click.bind(this, (pos) => pos - 1);
+  private on_jump_button_fwd_one_click = this.on_jump_button_click.bind(this, (pos) => pos + 1);
+  private on_jump_button_back_many_click = this.on_jump_button_click.bind(this, (pos) => {
+    return pos - FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
+  });
+  private on_jump_button_fwd_many_click = this.on_jump_button_click.bind(this, (pos) => {
+    return pos + FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
+  });
 
   private on_filter_submit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -244,17 +246,17 @@ export class FragmentListToolbarGui extends React.Component<
           <IconButtonGui
             icon="chevron-bar-left"
             title="First"
-            onClick={(event) => this.on_jump_button_click('first', event)}
+            onClick={this.on_jump_button_first_click}
           />
           <IconButtonGui
             icon="chevron-double-left"
             title={`Back by ${long_jump}`}
-            onClick={(event) => this.on_jump_button_click('back_many', event)}
+            onClick={this.on_jump_button_back_many_click}
           />
           <IconButtonGui
             icon="chevron-left"
             title="Previous"
-            onClick={(event) => this.on_jump_button_click('back_one', event)}
+            onClick={this.on_jump_button_back_one_click}
           />
           <form onSubmit={this.on_jump_pos_submit}>
             <input
@@ -279,17 +281,17 @@ export class FragmentListToolbarGui extends React.Component<
           <IconButtonGui
             icon="chevron-right"
             title="Next"
-            onClick={(event) => this.on_jump_button_click('fwd_one', event)}
+            onClick={this.on_jump_button_fwd_one_click}
           />
           <IconButtonGui
             icon="chevron-double-right"
             title={`Forward by ${long_jump}`}
-            onClick={(event) => this.on_jump_button_click('fwd_many', event)}
+            onClick={this.on_jump_button_fwd_many_click}
           />
           <IconButtonGui
             icon="chevron-bar-right"
             title="Last"
-            onClick={(event) => this.on_jump_button_click('last', event)}
+            onClick={this.on_jump_button_last_click}
           />
           <BoxItemFillerGui />
           <form onSubmit={this.on_filter_submit}>

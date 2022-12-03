@@ -58,7 +58,7 @@ export enum ListBoxGetIndexKind {
 export class ListBoxGui<T = unknown> extends React.Component<ListBoxGuiProps<T>, ListBoxGuiState> {
   public static override contextType = AppMainCtx;
   public override context!: AppMainCtx;
-  public override state: ListBoxGuiState = {
+  public override state: Readonly<ListBoxGuiState> = {
     focused_index: null,
     selected_range_start: 0,
     selected_range_end: 0,
