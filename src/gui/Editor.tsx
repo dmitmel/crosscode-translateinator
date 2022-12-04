@@ -251,7 +251,7 @@ export class FragmentListToolbarGui extends React.Component<
   public override render(): React.ReactNode {
     let long_jump = FragmentListToolbarGui.FRAGMENT_PAGINATION_JUMP;
     return (
-      <WrapperGui className={cc('FragmentListToolbar', this.props.className)}>
+      <WrapperGui className={cc(this.props.className, 'FragmentListToolbar')}>
         <HBoxGui align_items="center" className="FragmentListToolbar-Pagination">
           <IconButtonGui
             icon="chevron-bar-left"
@@ -466,6 +466,7 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
 }
 
 export interface FragmentPathGuiProps {
+  className?: string;
   path: string;
   on_click?: (component_path: string) => void;
 }
@@ -550,7 +551,7 @@ export class FragmentPathGui extends React.PureComponent<
     // mouse events is needed.
     return (
       <LabelGui
-        className="FragmentPath"
+        className={cc(this.props.className, 'FragmentPath')}
         selectable
         onMouseEnter={this.on_mouse_hover}
         onMouseMove={this.on_mouse_hover}
@@ -562,6 +563,7 @@ export class FragmentPathGui extends React.PureComponent<
 }
 
 export interface TranslationGuiProps {
+  className?: string;
   translation: TranslationRoData;
   is_visible: boolean;
 }
@@ -575,7 +577,7 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
     let { translation } = this.props;
     let tab_index = this.props.is_visible ? 0 : -1;
     return (
-      <WrapperGui allow_overflow className="Fragment-Translation">
+      <WrapperGui allow_overflow className={cc(this.props.className, 'Fragment-Translation')}>
         <LabelGui block selectable className="Fragment-TextBlock">
           <FancyTextGui highlight_crosscode_markup highlight_newlines>
             {translation.text}
@@ -609,6 +611,7 @@ export class TranslationGui extends React.Component<TranslationGuiProps, unknown
 }
 
 export interface NewTranslationGuiProps {
+  className?: string;
   fragment: FragmentRoData;
   on_cancel_click: React.MouseEventHandler<HTMLButtonElement>;
 }
@@ -641,7 +644,7 @@ export class NewTranslationGui extends React.Component<
   public override render(): React.ReactNode {
     let { text_area_height } = this.state;
     return (
-      <WrapperGui allow_overflow className="Fragment-NewTranslation">
+      <WrapperGui allow_overflow className={cc(this.props.className, 'Fragment-NewTranslation')}>
         <textarea
           id={this.text_area_id}
           name={this.text_area_id}

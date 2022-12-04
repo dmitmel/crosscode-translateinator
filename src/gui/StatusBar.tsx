@@ -1,7 +1,12 @@
 import './StatusBar.scss';
 
+import cc from 'clsx';
 import * as React from 'react';
 
-export function StatusBarGui(): React.ReactElement {
-  return <div className="StatusBar">Hi!</div>;
+export interface StatusBarGuiProps {
+  className?: string;
+}
+
+export function StatusBarGui(props: StatusBarGuiProps): React.ReactElement {
+  return <div className={cc(props.className, 'StatusBar')}>Hi!</div>;
 }

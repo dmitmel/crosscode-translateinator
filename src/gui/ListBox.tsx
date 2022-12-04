@@ -432,6 +432,7 @@ export class ListBoxGui<T = unknown> extends React.Component<ListBoxGuiProps<T>,
 }
 
 export interface ListBoxItemGuiProps {
+  className?: string;
   list?: VirtualizedListGui;
   map?: Map<React.Key, ListBoxItemGui>;
   item_key: React.Key;
@@ -471,7 +472,7 @@ export class ListBoxItemGui extends React.Component<ListBoxItemGuiProps, unknown
       <button
         ref={this.root_ref}
         type="button"
-        className={cc(item.className, 'block', 'ListBoxItem', {
+        className={cc(this.props.className, item.className, 'block', 'ListBoxItem', {
           selected,
           focused,
         })}

@@ -144,6 +144,7 @@ TabSearchRoData.prototype[TAB_RENDERER_SYM] = class TabSearchRenderer implements
 };
 
 export interface EditorTabGuiDisplayProps {
+  className?: string;
   icon: string;
   title: string;
   description?: string;
@@ -201,7 +202,7 @@ export class EditorTabGui extends React.Component<EditorTabGuiProps, unknown> {
       <button
         ref={this.root_ref}
         type="button"
-        className={cc('EditorTab', {
+        className={cc(this.props.className, 'EditorTab', {
           'EditorTab-active': this.props.is_active,
           'EditorTab-closeable': this.props.tab.is_closeable,
         })}

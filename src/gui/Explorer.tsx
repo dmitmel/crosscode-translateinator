@@ -92,6 +92,7 @@ export class ExplorerGui extends React.Component<ExplorerGuiProps, ExplorerGuiSt
 }
 
 export interface ExplorerSectionGuiProps {
+  className?: string;
   name: string;
   default_opened?: boolean;
   children: React.ReactNode;
@@ -117,7 +118,7 @@ export class ExplorerSectionGui extends React.Component<
     let { is_opened } = this.state;
     return (
       <VBoxGui
-        className={cc('ExplorerSection', {
+        className={cc(this.props.className, 'ExplorerSection', {
           'ExplorerSection-opened': is_opened,
           'BoxItem-expand': is_opened,
         })}>

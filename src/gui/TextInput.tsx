@@ -23,9 +23,7 @@ export const TextInputGui = React.forwardRef(function TextInputGui(
   );
 });
 
-export interface TextAreaGuiProps extends React.HTMLAttributes<HTMLTextAreaElement> {
-  style?: React.CSSProperties;
-}
+export interface TextAreaGuiProps extends React.HTMLAttributes<HTMLTextAreaElement> {}
 
 // Fun fact: this component is a partial port of
 // <https://github.com/uisky/notabenoid/blob/0840a9dd1932f6d254a1c9a022b77fc478afadc4/www/js/jquery.elastic.mod.js>.
