@@ -354,6 +354,9 @@ export class FragmentGui extends React.Component<FragmentGuiProps, FragmentGuiSt
 
   public override componentWillUnmount(): void {
     this.props.list?.on_item_unmounted(this.props.index, this.root_ref.current!);
+    if (this.root_ref.current!.contains(document.activeElement)) {
+      this.props.list!.list_elem!.focus();
+    }
   }
 
   private on_file_path_component_click = (component_path: string): void => {
