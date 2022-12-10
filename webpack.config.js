@@ -47,6 +47,7 @@ module.exports = (_env, { mode }) => ({
           {
             loader: 'ts-loader',
             options: {
+              configFile: paths.join(__dirname, 'tsconfig.json'),
               getCustomTransformers: (/** @type {ts.Program} */ program) => ({
                 before: [ts_assert_transformer(program)],
               }),

@@ -11,13 +11,12 @@
     "build:prod": "webpack --mode=production",
     "watch:prod": "webpack --mode=production --watch",
     "check": "tsc --noEmit",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --ignore-path .gitignore",
-    "check-fmt": "prettier --check '**/*.{js,jsx,ts,tsx,json,css,scss,html}' --ignore-path .gitignore"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "check-fmt": "prettier --check '**/*.{js,jsx,ts,tsx,json,css,scss,html}'"
   },
   "dependencies": {
     "bootstrap-icons": "^1.7.2",
     "clsx": "^1.1.1",
-    "fzf": "^0.5.1",
     "immutable": "^4.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"

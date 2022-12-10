@@ -1,10 +1,10 @@
 import './QuickActions.scss';
 
 import cc from 'clsx';
-import { Fzf, FzfResultItem } from 'fzf';
 import * as React from 'react';
 
 import { FileType } from '../app';
+import { FuzzyMatcher, FzfResultItem } from '../fuzzy_matcher';
 import { AppMainCtx } from './AppMainCtx';
 import { WrapperGui } from './Box';
 import { KeyCode, KeymapActionsLayer } from './keymap';
@@ -27,7 +27,7 @@ export interface QuickActionsGuiProps {
 export interface QuickActionsGuiState {
   is_visible: boolean;
   filter_value: string;
-  entries: Fzf<readonly QuickActionsEntry[]>;
+  entries: FuzzyMatcher<QuickActionsEntry>;
   matched_entries: readonly QuickActionsMatchedEntry[];
   list_max_height: number;
 }
@@ -96,8 +96,8 @@ export class QuickActionsGui extends React.Component<QuickActionsGuiProps, Quick
     this.show();
   };
 
-  private create_fzf(entries: readonly QuickActionsEntry[]): Fzf<readonly QuickActionsEntry[]> {
-    return new Fzf(entries, {
+  private create_fzf(entries: readonly QuickActionsEntry[]): FuzzyMatcher<QuickActionsEntry> {
+    return new FuzzyMatcher(entries, {
       selector: (entry) => entry.label,
       // Backward matching is intended for use with file paths. We will need a
       // hint system for switching this on or off.
