@@ -55,6 +55,20 @@ export class AppMainGui extends React.Component<unknown, unknown> {
       let { app } = this.child_context;
       app.close_tab(app.current_tab_index);
     });
+
+    this.root_keymap_layer.add(KeyMod.Cmd | KeyCode.PageUp, () => {
+      let { app } = this.child_context;
+      if (app.current_tab_index > 0) {
+        app.set_current_tab_index(app.current_tab_index - 1);
+      }
+    });
+
+    this.root_keymap_layer.add(KeyMod.Cmd | KeyCode.PageDown, () => {
+      let { app } = this.child_context;
+      if (app.current_tab_index < app.opened_tabs.length - 1) {
+        app.set_current_tab_index(app.current_tab_index + 1);
+      }
+    });
   }
 
   public override componentWillUnmount(): void {
