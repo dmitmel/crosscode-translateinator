@@ -73,21 +73,51 @@ ig.module('translateinator.connector')
     });
 
     Object.assign(sc.tr2, {
-      findTrTool() {
-        let instances = [];
-        for (let [otherNwWindow] of Object.values(global.__nw_windows)) {
-          let otherWindow = otherNwWindow.window;
-          if (utils.hasKey(otherWindow, '__crosscode_translation_tool__')) {
-            instances.push(otherWindow.__app__);
-          }
+      trToolQueuedFragments: [],
+      sendingFragmentsToTrTool: false,
+
+      getAllNwWindows(callback) {
+        if (global.__nw_windows != null) {
+          // Nw versions <= 0.42.3
+          callback(Object.values(global.__nw_windows).map(([nwWindow, _callbacks]) => nwWindow));
+        } else if (nw.Window.getAll != null) {
+          // Nw versions >= 0.42.6
+          nw.Window.getAll((nwWindows) => callback(nwWindows));
+        } else {
+          // I don't know of a way of finding the other windows in versions
+          // v0.42.4 and v0.42.5. `chrome.windows.getCurrent` seems to be it,
+          // but it only returns some internal IDs of the windows, tabs and
+          // frames, though there is no API in either the `chrome` or `nw`
+          // namespaces to find the underlying DOM window object by that ID.
+          callback([]);
         }
-        return instances;
+      },
+
+      findTrToolWindows(callback) {
+        this.getAllNwWindows((allNwWindows) => {
+          let toolWindows = allNwWindows
+            .map((nwWindow) => nwWindow.window)
+            .filter((otherWindow) => otherWindow.__crosscode_translation_tool__);
+          callback(toolWindows);
+        });
       },
 
       sendLangLabelToTrTool(filePath, jsonPath) {
-        for (let tool of sc.tr2.findTrTool()) {
-          tool.receive_fragments_from_game([{ file_path: filePath, json_path: jsonPath }]);
+        this.trToolQueuedFragments.push({ file_path: filePath, json_path: jsonPath });
+        if (this.trToolQueuedFragments.length > 1) {
+          return;
         }
+        this.findTrToolWindows((toolWindows) => {
+          let fragments = this.trToolQueuedFragments.slice();
+          this.trToolQueuedFragments.length = 0;
+          for (let tool of toolWindows) {
+            try {
+              tool.__app__.receive_fragments_from_game(fragments);
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        });
       },
     });
   });
