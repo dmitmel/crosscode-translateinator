@@ -1,4 +1,4 @@
-import { Event2 } from '../events';
+import { EventBox } from '../events';
 import { IS_FIREFOX, IS_MAC } from '../gui';
 import { has_key } from '../utils';
 
@@ -240,7 +240,7 @@ export class KeymapHelper {
   public readonly event_context_sym = Symbol(KeymapEventContext.constructor.name);
 
   public global_key_modifiers = KeyMod.None;
-  public event_global_key_modifiers_change = new Event2<[state: KeyMod]>();
+  public event_global_key_modifiers_change = new EventBox<[state: KeyMod]>();
   public set_global_key_modifiers(state: KeyMod): void {
     this.global_key_modifiers = state;
     this.event_global_key_modifiers_change.fire(state);

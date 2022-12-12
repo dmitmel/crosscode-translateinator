@@ -1,5 +1,5 @@
 import * as crosslocale_bridge from './backend/ffi_bridge';
-import { Event2 } from './events';
+import { EventBox } from './events';
 import * as utils from './utils';
 
 export const PROTOCOL_VERSION = 0;
@@ -267,9 +267,9 @@ export class Backend {
   private sent_request_success_callbacks = new Map<number, (data: unknown) => void>();
   private sent_request_error_callbacks = new Map<number, (error: Error) => void>();
 
-  public event_error = new Event2<[request_id: number | null, error: Error]>();
-  public event_connected = new Event2();
-  public event_disconnected = new Event2();
+  public event_error = new EventBox<[request_id: number | null, error: Error]>();
+  public event_connected = new EventBox();
+  public event_disconnected = new EventBox();
 
   // eslint-disable-next-line @typescript-eslint/require-await
   public async connect(): Promise<void> {

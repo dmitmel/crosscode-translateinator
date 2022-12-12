@@ -1,4 +1,4 @@
-export class Event2<Args extends unknown[] = []> {
+export class EventBox<Args extends unknown[] = []> {
   public listeners = new Set<(...args: Args) => void>();
 
   public on(listener: (...args: Args) => void): void {

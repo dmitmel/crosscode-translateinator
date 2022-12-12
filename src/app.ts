@@ -1,5 +1,5 @@
 import * as backend from './backend';
-import { Event2 } from './events';
+import { EventBox } from './events';
 import * as utils from './utils';
 
 declare global {
@@ -53,8 +53,8 @@ export class AppMain {
 
   public current_project: Project | null = null;
   public current_project_meta: ProjectMeta | null = null;
-  public event_project_opened = new Event2();
-  public event_project_closed = new Event2();
+  public event_project_opened = new EventBox();
+  public event_project_closed = new EventBox();
 
   public project_game_files_tree = new FileTree();
   public project_tr_files_tree = new FileTree();
@@ -62,12 +62,12 @@ export class AppMain {
   public queue = new TabQueue(this);
   public search = new TabSearch(this);
   public opened_tabs: BaseTab[] = [this.queue, this.search];
-  public event_tab_opened = new Event2<[tab: BaseTab, index: number]>();
-  public event_tab_closed = new Event2<[tab: BaseTab, index: number]>();
+  public event_tab_opened = new EventBox<[tab: BaseTab, index: number]>();
+  public event_tab_closed = new EventBox<[tab: BaseTab, index: number]>();
 
   public current_tab_index = 0;
   public current_tab: BaseTab | null = this.opened_tabs[this.current_tab_index];
-  public event_current_tab_change = new Event2<[trigger: TabChangeTrigger | null]>();
+  public event_current_tab_change = new EventBox<[trigger: TabChangeTrigger | null]>();
   private current_tab_loading_promise: Promise<void> | null = null;
 
   public set_current_tab_index(index: number, trigger: TabChangeTrigger | null = null): void {
@@ -119,13 +119,13 @@ export class AppMain {
 
   public current_fragment_list: Fragment[] = [];
   public current_fragment_list_owner: BaseAppObject | null = null;
-  public event_fragment_list_update = new Event2();
+  public event_fragment_list_update = new EventBox();
 
   public current_fragment_index = -1; // TODO: save a position per each tab
   // TODO: Actually, store the object ID of the current fragment. The fragment
   // ID shouldn't be used because the fragment list should be able to handle
   // two instances of the same fragment.
-  public event_current_fragment_change = new Event2<
+  public event_current_fragment_change = new EventBox<
     [trigger: CurrentFragmentChangeTrigger | null]
   >();
   public set_current_fragment_index(
@@ -163,7 +163,7 @@ export class AppMain {
     }
   }
 
-  public event_quick_actions_pick = new Event2();
+  public event_quick_actions_pick = new EventBox();
 }
 
 export abstract class BaseAppObject<T extends object = object> {
