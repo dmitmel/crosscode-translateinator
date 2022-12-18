@@ -237,7 +237,7 @@ export class KeyStroke {
 }
 
 export class KeymapHelper {
-  public readonly event_context_sym = Symbol(KeymapEventContext.constructor.name);
+  public readonly event_context_sym = Symbol(KeymapEventContext.name);
 
   public global_key_modifiers = KeyMod.None;
   public event_global_key_modifiers_change = new EventBox<[state: KeyMod]>();
@@ -251,7 +251,7 @@ export class KeymapHelper {
     let event_any: any = event;
     if (event_any[this.event_context_sym] != null) {
       throw new Error(
-        `This KeyboardEvent has already been fitted with a ${KeymapEventContext.constructor.name}`,
+        `This KeyboardEvent has already been fitted with a ${KeymapEventContext.name}`,
       );
     }
 
