@@ -193,6 +193,12 @@ export abstract class BaseAppObject<T extends object = object> {
     return this.render_data_cached!;
   }
 
+  public get_render_data_force(): ReturnType<typeof this.get_render_data_impl> {
+    this.render_data_cached = this.get_render_data_impl();
+    this.render_data_changetick = this.changetick;
+    return this.render_data_cached;
+  }
+
   protected abstract get_render_data_impl(): T;
 }
 

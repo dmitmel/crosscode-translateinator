@@ -378,7 +378,7 @@ export class Backend {
 
     this.current_request_id = Math.max(this.current_request_id, 1);
     let id = this.current_request_id;
-    this.current_request_id = utils.u32(this.current_request_id + 1);
+    this.current_request_id = (this.current_request_id + 1) | 0;
 
     try {
       let response_promise = new Promise<unknown>((resolve, reject) => {

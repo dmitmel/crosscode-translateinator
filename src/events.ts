@@ -23,4 +23,8 @@ export class EventBox<Args extends unknown[] = []> {
       listener(...args);
     }
   }
+
+  public remove_all_listeners(): void {
+    this.listeners.clear();
+  }
 }

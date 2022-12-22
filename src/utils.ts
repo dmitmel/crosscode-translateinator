@@ -1,6 +1,6 @@
-export function u32(num: number): number {
-  return num | 0;
-}
+import { EventBox } from './events';
+
+export const CHAR_NBSP = '\u00A0';
 
 export function clamp(n: number, min: number, max: number): number {
   // NOTE: if min > max, min will be returned
@@ -9,10 +9,6 @@ export function clamp(n: number, min: number, max: number): number {
 
 export function random(min = 0, max = 1): number {
   return Math.random() * (max - min) + min;
-}
-
-export function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function has_key(obj: unknown, key: PropertyKey): boolean {
@@ -211,4 +207,177 @@ export class Unique {
   public toString(): string {
     return '[object Unique]';
   }
+}
+
+export class Queue<T> {
+  protected elements: Array<T | null>;
+  protected head: number;
+
+  public constructor(elements?: Array<T | null> | Iterable<T> | null) {
+    if (Array.isArray(elements)) {
+      this.elements = elements; // Take over the array as our internal storage
+    } else if (elements != null) {
+      this.elements = Array.from(elements);
+    } else {
+      this.elements = [];
+    }
+    this.head = 0;
+  }
+
+  public clone(): Queue<T> {
+    return new Queue(this.elements.slice(this.head));
+  }
+
+  public size(): number {
+    return this.elements.length - this.head;
+  }
+
+  public capacity(): number {
+    return this.elements.length;
+  }
+
+  public is_empty(): boolean {
+    return this.head >= this.elements.length;
+  }
+
+  public at(index: number): T {
+    return this.elements[this.head + Math.max(0, index)]!;
+  }
+
+  public front(): T | null {
+    return this.head < this.elements.length ? this.elements[this.head] : null;
+  }
+
+  public back(): T | null {
+    return this.head < this.elements.length ? this.elements[this.elements.length - 1] : null;
+  }
+
+  public get_slice(): T[] {
+    return this.elements.slice(this.head) as T[];
+  }
+
+  public *[Symbol.iterator](): Generator<T, void> {
+    // NOTE: The iterator must account for changes of the queue while it is
+    // being iterated.
+    for (let i = 0; i < this.size(); i++) {
+      yield this.at(i);
+    }
+  }
+
+  public enqueue(element: T): void {
+    this.elements.push(element);
+  }
+
+  public enqueue_many(new_elements: readonly T[]): void {
+    for (let i = 0, len = new_elements.length; i < len; i++) {
+      this.elements.push(new_elements[i]);
+    }
+  }
+
+  public dequeue(): T | undefined {
+    let out: T | undefined;
+    let i = this.head;
+    if (i < this.elements.length) {
+      out = this.elements[i]!;
+      this.elements[i] = null;
+      this.head = i + 1;
+    }
+    this.shrink_if_needed();
+    return out;
+  }
+
+  public dequeue_many(count: number, out: T[] = []): T[] {
+    let next_head = Math.min(this.head + count, this.elements.length);
+    for (let i = this.head; i < next_head; i++) {
+      out.push(this.elements[i]!);
+      this.head = i + 1;
+      this.elements[i] = null;
+    }
+    this.shrink_if_needed();
+    return out;
+  }
+
+  public shrink_if_needed(): void {
+    if (this.head >= this.elements.length) {
+      this.clear();
+    } else if (this.head >= this.elements.length / 2) {
+      this.shrink();
+    }
+  }
+
+  public clear(): void {
+    this.elements.length = 0;
+    this.head = 0;
+  }
+
+  public shrink(): void {
+    this.elements.splice(0, this.head);
+    this.head = 0;
+  }
+}
+
+export class CancellationError extends Error {
+  public constructor() {
+    super('Canceled');
+    this.name = this.constructor.name;
+  }
+}
+
+export class CancellationToken {
+  public readonly is_cancelled = false;
+  public readonly event_cancelled = new EventBox();
+
+  public throw_if_cancelled(): void {
+    if (this.is_cancelled) {
+      throw new CancellationError();
+    }
+  }
+
+  public cancel(): void {
+    if (!this.is_cancelled) {
+      (this as { is_cancelled: boolean }).is_cancelled = true;
+      this.event_cancelled.fire();
+      this.event_cancelled.remove_all_listeners();
+      (this as { event_cancelled: EventBox }).event_cancelled = null!;
+    }
+  }
+
+  public on_cancelled(listener: () => void): () => void {
+    if (this.is_cancelled) {
+      listener();
+      return () => {};
+    }
+    this.event_cancelled.on(listener);
+    let removed = false;
+    return () => {
+      if (removed) return;
+      removed = true;
+      this.event_cancelled.off(listener);
+    };
+  }
+}
+
+export function wait(ms: number, token?: CancellationToken | null): Promise<void> {
+  ASSERT(0 <= ms && ms <= 0x7fffffff);
+  if (token == null) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  return new Promise((resolve, reject) => {
+    let id = setTimeout(() => {
+      remove_cancelled();
+      if (token.is_cancelled) {
+        reject(new CancellationError());
+      } else {
+        resolve();
+      }
+    }, ms);
+    let remove_cancelled = token.on_cancelled(() => {
+      clearTimeout(id);
+      reject(new CancellationError());
+    });
+  });
+}
+
+export function wait_next_tick(token?: CancellationToken | null): Promise<void> {
+  return wait(0, token);
 }

@@ -100,7 +100,7 @@ export class TextAreaGui extends React.Component<TextAreaGuiProps, unknown> {
     let total_border_size =
       parseFloat(real_style.borderBottomWidth) + parseFloat(real_style.borderTopWidth);
 
-    const ROW_MEASURING_TEXT = '\u00A0'; // non-breaking whitespace
+    const ROW_MEASURING_TEXT = utils.CHAR_NBSP;
     hidden.value = ROW_MEASURING_TEXT;
     let row_height = hidden.scrollHeight - total_padding_size;
     let min_rows = real.rows;

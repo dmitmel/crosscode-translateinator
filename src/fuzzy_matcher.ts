@@ -1,188 +1,342 @@
+import { PriorityQueue } from 'js-sdsl';
+
+import { BaseAppObject, BaseRenderData } from './app';
+import { EventBox } from './events';
 import * as utils from './utils';
 import { AlgoFn, exactMatchNaive, fuzzyMatchV1, fuzzyMatchV2 } from './vendor/fzf/algo';
 import { computeExtendedMatch } from './vendor/fzf/extended';
-import { SyncOptionsTuple } from './vendor/fzf/finders';
-import { basicMatch, extendedMatch } from './vendor/fzf/matchers';
 import { buildPatternForBasicMatch, buildPatternForExtendedMatch } from './vendor/fzf/pattern';
 import { Rune, strToRunes } from './vendor/fzf/runes';
 import { slab } from './vendor/fzf/slab';
-import { byLengthAsc, byStartAsc } from './vendor/fzf/tiebreakers';
-import { FzfResultItem, SyncOptions } from './vendor/fzf/types';
 
-export { FzfResultItem };
+export enum FuzzyMatcherCasing {
+  Smart = 'smart-case',
+  Sensitive = 'case-sensitive',
+  Insensitive = 'case-insensitive',
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const DEFAULT_OPTIONS: SyncOptions<any> = {
-  limit: Infinity,
-  selector: (v) => v,
-  casing: 'smart-case',
-  normalize: true,
-  fuzzy: 'v2',
-  tiebreakers: [byLengthAsc, byStartAsc],
-  sort: true,
-  forward: true,
-  match: basicMatch,
-};
+export enum FuzzyMatcherAlgorithm {
+  Exact = 'exact',
+  V1 = 'v1',
+  V2 = 'v2',
+}
+
+export class FuzzyItemRoData extends BaseRenderData {
+  public constructor(public override readonly ref: FuzzyItem<unknown>) {
+    super(ref);
+  }
+  public readonly text: string = this.ref.text;
+  public readonly runes: readonly Rune[] | undefined = this.ref.runes?.slice();
+  public readonly match_start: number = this.ref.match_start;
+  public readonly match_end: number = this.ref.match_end;
+  public readonly match_score: number = this.ref.match_score;
+  public readonly match_positions: ReadonlySet<number> = new Set(this.ref.match_positions);
+}
+
+export class FuzzyItem<T> extends BaseAppObject<FuzzyItemRoData> {
+  public id = utils.new_gui_id();
+  public runes: readonly Rune[] | null = null;
+  public match_start = -1;
+  public match_end = -1;
+  public match_score = 0;
+  public match_positions = new Set<number>();
+
+  public constructor(public text: string, public data: T) {
+    super();
+  }
+
+  protected override get_render_data_impl(): FuzzyItemRoData {
+    return new FuzzyItemRoData(this);
+  }
+
+  public set_text(text: string): void {
+    this.text = text;
+    this.runes = null;
+  }
+
+  public get_runes(): readonly Rune[] {
+    let { runes } = this;
+    if (runes == null) {
+      runes = strToRunes(this.text.normalize());
+      this.runes = runes;
+    }
+    return runes;
+  }
+
+  public unset_match(): void {
+    this.match_start = -1;
+    this.match_end = -1;
+    this.match_score = 0;
+    this.match_positions.clear();
+  }
+
+  public has_match(): boolean {
+    return this.match_start >= 0;
+  }
+}
+
+export interface FuzzyQueryOptions {
+  case_sensitivity: FuzzyMatcherCasing;
+  unicode_normalize: boolean;
+  fuzzy_algorithm: FuzzyMatcherAlgorithm;
+  forward_matching: boolean;
+  extended_matching: boolean;
+  millis_per_tick_budget: number;
+}
 
 export class FuzzyMatcher<T> {
-  public readonly runes_list: Rune[][];
-  public readonly items: readonly T[];
-  public readonly opts: SyncOptions<T>;
-  public readonly algo_fn: AlgoFn;
+  private task_token: utils.CancellationToken | null = null;
+  private readonly items_queue = new utils.Queue<FuzzyItem<T>>();
+  // Other implementations of a heap/priority queue:
+  // <https://github.com/datastructures-js/heap/blob/v4.1.2/src/heap.js>
+  // <https://github.com/mgechev/javascript-algorithms/blob/213636fc58768364fd60ae959c61e1b136a5e85e/src/data-structures/heap.js>
+  // <https://github.com/js-sdsl/js-sdsl/blob/v4.2.0/src/container/OtherContainer/PriorityQueue.ts>
+  // <https://github.com/samvv/scl.js/blob/a07d6f6993c03a7ca1e7e5d153b87ace9d9880af/src/Heap.ts>
+  // <https://github.com/montagejs/collections/blob/v5.1.13/heap.js>
+  private readonly sorted_items_heap = new PriorityQueue<FuzzyItem<T>>(
+    [],
+    this.compare_items.bind(this),
+    /* copy */ false,
+  );
+  private readonly sorted_items_cache: Array<FuzzyItem<T>> = [];
 
-  public constructor(list: readonly T[], ...options_tuple: SyncOptionsTuple<T>) {
-    this.opts = { ...DEFAULT_OPTIONS, ...options_tuple[0] };
-    this.items = list;
-    this.runes_list = list.map((item) => strToRunes(this.opts.selector(item).normalize()));
-    this.algo_fn = exactMatchNaive;
-    switch (this.opts.fuzzy) {
-      case 'v2':
-        this.algo_fn = fuzzyMatchV2;
-        break;
-      case 'v1':
-        this.algo_fn = fuzzyMatchV1;
-        break;
-    }
+  public readonly event_start = new EventBox();
+  public readonly event_matching_tick = new EventBox();
+  public readonly event_sorting_tick = new EventBox();
+  public readonly event_completed = new EventBox();
+  public readonly event_cancelled = new EventBox();
+
+  public constructor() {
+    this.reset_state();
   }
 
-  public find(query: string): Array<FzfResultItem<T>> {
-    if (query.length === 0 || this.items.length === 0) {
-      return this.items.slice(0, this.opts.limit).map((item) => {
-        return { item, start: -1, end: -1, score: 0, positions: new Set() };
-      });
-    }
+  public reset_state(): void {
+    this.stop_task();
+    this.items_queue.clear();
+    this.clear_sorted_items();
+  }
 
-    query = query.normalize();
+  public queued_items_count(): number {
+    return this.items_queue.size();
+  }
 
-    let iter: (idx: number) => FzfResultItem<T> | null;
-    if (this.opts.match === basicMatch) {
-      iter = this.get_basic_match_iter(query);
-    } else if (this.opts.match === extendedMatch) {
-      iter = this.get_extended_match_iter(query);
-    } else {
-      throw new Error('Unsupported matching function');
-    }
+  public clear_queued_items(): void {
+    this.items_queue.clear();
+  }
 
-    let score_map = new Map<number, Array<FzfResultItem<T>>>();
-    for (let i = 0, len = this.runes_list.length; i < len; i++) {
-      let match = iter(i);
-      if (match == null) continue;
-      // If we aren't sorting, we'll put all items in the same score bucket
-      // (we've chosen zero score for it below). This will result in us getting
-      // items in the same order in which we've send them in the list.
-      let score_key = this.opts.sort ? match.score : 0;
-      let score_list = score_map.get(score_key);
-      if (score_list != null) {
-        score_list.push(match);
-      } else {
-        score_map.set(score_key, [match]);
+  public enqueue_items(new_items: ReadonlyArray<FuzzyItem<T>>): void {
+    this.items_queue.enqueue_many(new_items);
+  }
+
+  public enqueue_item(item: FuzzyItem<T>): void {
+    this.items_queue.enqueue(item);
+  }
+
+  public is_task_in_progress(): boolean {
+    return this.task_token != null && !this.task_token.is_cancelled;
+  }
+
+  public stop_task(): void {
+    this.task_token?.cancel();
+    this.task_token = null;
+  }
+
+  public async start_task(query: string, opts: Partial<FuzzyQueryOptions>): Promise<void> {
+    this.stop_task();
+    let token = new utils.CancellationToken();
+    this.task_token = token;
+
+    try {
+      await utils.wait_next_tick(token);
+
+      this.event_start.fire();
+      if (token.is_cancelled) return;
+
+      let all_opts: FuzzyQueryOptions = {
+        case_sensitivity: FuzzyMatcherCasing.Smart,
+        unicode_normalize: false,
+        fuzzy_algorithm: FuzzyMatcherAlgorithm.V2,
+        forward_matching: true,
+        extended_matching: false,
+        millis_per_tick_budget: 8,
+        ...opts,
+      };
+
+      let algo_fn_map = new Map<FuzzyMatcherAlgorithm, AlgoFn>([
+        [FuzzyMatcherAlgorithm.Exact, exactMatchNaive],
+        [FuzzyMatcherAlgorithm.V1, fuzzyMatchV1],
+        [FuzzyMatcherAlgorithm.V2, fuzzyMatchV2],
+      ]);
+      let algo_fn = algo_fn_map.get(all_opts.fuzzy_algorithm);
+      if (algo_fn == null) {
+        throw new Error(`Unknown FuzzyMatcherAlgorithm: ${all_opts.fuzzy_algorithm}`);
       }
-    }
-    let result = this.get_result_from_score_map(score_map);
 
-    if (this.opts.sort) {
-      let { selector } = this.opts;
+      let do_match = all_opts.extended_matching
+        ? this.extended_match_impl(query, all_opts, algo_fn)
+        : this.basic_match_impl(query, all_opts, algo_fn);
 
-      result.sort((a, b) => {
-        if (a.score === b.score) {
-          for (let tiebreaker of this.opts.tiebreakers) {
-            let diff = tiebreaker(a, b, selector);
-            if (diff !== 0) {
-              return diff;
-            }
+      while (!this.items_queue.is_empty()) {
+        let start_time = performance.now();
+        do {
+          let item = this.items_queue.dequeue();
+          if (item == null) break;
+          let matched = do_match(item);
+          if (matched) {
+            this.sorted_items_heap.push(item);
           }
-        }
-        return 0;
-      });
-    }
+        } while (performance.now() - start_time < all_opts.millis_per_tick_budget);
+        this.event_matching_tick.fire();
+        await utils.wait_next_tick(token);
+      }
 
-    if (Number.isFinite(this.opts.limit)) {
-      result.splice(this.opts.limit);
-    }
+      while (!this.sorted_items_heap.empty()) {
+        let start_time = performance.now();
+        do {
+          let item = this.sorted_items_heap.pop();
+          if (item == null) break;
+          this.sorted_items_cache.push(item);
+        } while (performance.now() - start_time < all_opts.millis_per_tick_budget);
+        this.event_sorting_tick.fire();
+        await utils.wait_next_tick(token);
+      }
 
-    return result;
-  }
-
-  private get_result_from_score_map<T>(
-    score_map: Map<number, Array<FzfResultItem<T>>>,
-  ): Array<FzfResultItem<T>> {
-    let scores_in_desc = Array.from(score_map.keys()).sort((a, b) => b - a);
-
-    let result: Array<FzfResultItem<T>> = [];
-
-    for (let score of scores_in_desc) {
-      result = result.concat(score_map.get(score)!);
-      if (result.length >= this.opts.limit) {
-        break;
+      this.event_completed.fire();
+    } catch (error) {
+      if (!(error instanceof utils.CancellationError)) {
+        throw error;
+      }
+    } finally {
+      if (token.is_cancelled) {
+        this.event_cancelled.fire();
+      }
+      if (this.task_token === token) {
+        this.task_token = null;
       }
     }
-
-    return result;
   }
 
-  private get_basic_match_iter(query: string): (idx: number) => FzfResultItem<T> | null {
-    let pattern = buildPatternForBasicMatch(query, this.opts.casing, this.opts.normalize);
+  private basic_match_impl(
+    query: string,
+    opts: FuzzyQueryOptions,
+    algo_fn: AlgoFn,
+  ): (item: FuzzyItem<T>) => boolean {
+    let pattern = buildPatternForBasicMatch(query, opts.case_sensitivity, opts.unicode_normalize);
     let query_runes = pattern.queryRunes;
     let case_sensitive = pattern.caseSensitive;
 
-    return (idx: number) => {
-      let item_runes = this.runes_list[idx];
-      if (query_runes.length > item_runes.length) return null;
+    return (item) => {
+      let item_runes = item.get_runes();
+      item.unset_match();
+      item.mark_changed();
 
-      let [match, positions] = this.algo_fn(
+      if (query_runes.length > item_runes.length) {
+        return false;
+      }
+      let [match, positions] = algo_fn(
         case_sensitive,
-        this.opts.normalize,
-        this.opts.forward,
-        item_runes,
+        opts.unicode_normalize,
+        opts.forward_matching,
+        item_runes as Rune[],
         query_runes,
         true,
         slab,
       );
-      if (match.start === -1) return null;
-
-      // We don't get positions array back for exact match, so we'll fill it by ourselves.
-      if (this.opts.fuzzy === false) {
-        positions = new Set();
-        for (let position = match.start; position < match.end; ++position) {
-          positions.add(position);
-        }
+      if (match.start < 0) {
+        return false;
       }
 
-      return {
-        item: this.items[idx],
-        ...match,
-        positions: positions ?? new Set(),
-      };
+      item.match_start = match.start;
+      item.match_end = match.end;
+      item.match_score = match.score;
+      if (positions == null) {
+        positions = new Set();
+        for (let pos = match.start; pos < match.end; pos++) {
+          positions.add(pos);
+        }
+      }
+      item.match_positions = positions;
+      return true;
     };
   }
 
-  private get_extended_match_iter(query: string): (idx: number) => FzfResultItem<T> | null {
+  private extended_match_impl(
+    query: string,
+    opts: FuzzyQueryOptions,
+    algo_fn: AlgoFn,
+  ): (item: FuzzyItem<T>) => boolean {
     let pattern = buildPatternForExtendedMatch(
-      Boolean(this.opts.fuzzy),
-      this.opts.casing,
-      this.opts.normalize,
+      opts.fuzzy_algorithm !== FuzzyMatcherAlgorithm.Exact,
+      opts.case_sensitivity,
+      opts.unicode_normalize,
       query,
     );
 
-    return (idx: number) => {
-      let runes = this.runes_list[idx];
-      let match = computeExtendedMatch(runes, pattern, this.algo_fn, this.opts.forward);
-      if (match.offsets.length !== pattern.termSets.length) return null;
+    return (item) => {
+      let item_runes = item.get_runes();
+      item.unset_match();
+      item.mark_changed();
 
-      let sidx = -1;
-      let eidx = -1;
-      if (match.allPos.size > 0) {
-        sidx = Math.min(...match.allPos);
-        eidx = Math.max(...match.allPos) + 1;
+      let match = computeExtendedMatch(
+        item_runes as Rune[],
+        pattern,
+        algo_fn,
+        opts.forward_matching,
+      );
+      if (match.offsets.length !== pattern.termSets.length) {
+        return false;
       }
 
-      return {
-        score: match.totalScore,
-        item: this.items[idx],
-        positions: match.allPos,
-        start: sidx,
-        end: eidx,
-      };
+      item.match_score = match.totalScore;
+      item.match_start = -1;
+      item.match_end = -1;
+      if (match.allPos.size > 0) {
+        item.match_start = Math.min(...match.allPos);
+        item.match_end = Math.max(...match.allPos) + 1;
+      }
+      item.match_positions = match.allPos;
+      return true;
     };
+  }
+
+  public compare_items(a: FuzzyItem<T>, b: FuzzyItem<T>): number {
+    if (a.match_score !== b.match_score) {
+      return b.match_score - a.match_score;
+    }
+    if (a.runes!.length !== b.runes!.length) {
+      return a.runes!.length - b.runes!.length;
+    }
+    if (a.match_start !== b.match_start) {
+      return a.match_start - b.match_start;
+    }
+    return a.id - b.id;
+  }
+
+  public clear_sorted_items(): void {
+    this.sorted_items_heap.clear();
+    this.sorted_items_cache.length = 0;
+  }
+
+  public sorted_items_count(): number {
+    return this.sorted_items_heap.size() + this.sorted_items_cache.length;
+  }
+
+  public get_sorted(index: number): FuzzyItem<T> | null {
+    if (index !== (index | 0) || !(0 <= index && index < this.sorted_items_count())) {
+      return null;
+    }
+    for (let i = this.sorted_items_cache.length; i <= index; i++) {
+      this.sorted_items_cache.push(this.sorted_items_heap.pop()!);
+    }
+    return this.sorted_items_cache[index];
+  }
+
+  public get_sorted_items_list(): Array<FuzzyItem<T>> {
+    while (true) {
+      let item = this.sorted_items_heap.pop();
+      if (item == null) break;
+      this.sorted_items_cache.push(item);
+    }
+    return this.sorted_items_cache.slice();
   }
 }
